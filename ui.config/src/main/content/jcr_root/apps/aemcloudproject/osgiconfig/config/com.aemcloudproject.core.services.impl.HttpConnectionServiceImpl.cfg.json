@@ -1,0 +1,5 @@
+{
+  "reqResGetUrl": "https://reqres.in/api/users",
+  "connectTimeout": 5000,
+  "socketTimeout": 5000
+}

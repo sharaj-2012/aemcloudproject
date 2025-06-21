@@ -1,0 +1,43 @@
+<sly data-sly-use.model="com.aemcloudproject.core.models.UserInfoModel" />
+
+<div class="reqres-users">
+    <h1>Hello <strong>ReqRes</strong> users!</h1>
+    <div class="users-grid">
+        <sly data-sly-list.user="${model.userDTOList}">
+            <div class="user-card">
+                <img src="${user.avatar}" alt="${user.firstName}" />
+                <h3>${user.firstName} ${user.lastName}</h3>
+                <p>${user.email}</p>
+            </div>
+        </sly>
+    </div>
+</div>
+
+<style>
+    .reqres-users {
+        text-align: center;
+        font-family: sans-serif;
+    }
+
+    .users-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 30px;
+    }
+
+    .user-card {
+        width: 180px;
+        text-align: center;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    .user-card img {
+        width: 100%;
+        border-radius: 50%;
+        margin-bottom: 10px;
+    }
+</style>

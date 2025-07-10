@@ -11,3 +11,6 @@ $include "./default_filters.any"
 
 # Allow manifest.webmanifest files located in the content
 /0102 { /type "allow" /extension "webmanifest" /path "/content/*/manifest" }
+
+# Allow GET based servlet API calls for the defined selectors
+/0105 { /type "allow" /path "/content/aemcloudproject/*" /method "GET" /selectors "regres" /extension "json"}≠≠

@@ -27,8 +27,7 @@ import java.util.Map;
         extensions = "json",
         selectors = "regres")
 public class ReqResUsersServlet extends SlingSafeMethodsServlet {
-
-    public static final String COMPONENT = "aemcloudproject/components/reqresusersnew";
+    public static final String COMPONENT = "aemcloudproject/components/customcomponents/reqresusersnew";
     private static final Logger log = LoggerFactory.getLogger(ReqResUsersServlet.class);
 
     @Reference

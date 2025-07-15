@@ -1,0 +1,6 @@
+{
+  "service.ranking:Integer":1,
+  "user.mapping":[
+    "aemcloudproject.core:myaemproject-serviceuser=[myaemproject-serviceuser]"
+  ]
+}

@@ -15,6 +15,7 @@
  */
 package com.aemcloudproject.core.servlets;
 
+import com.aemcloudproject.core.services.LoginCredConfigService;
 import com.day.cq.commons.jcr.JcrConstants;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
@@ -24,11 +25,13 @@ import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.apache.sling.servlets.annotations.SlingServletResourceTypes;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.propertytypes.ServiceDescription;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Servlet that writes some sample content into the response. It is mounted for
@@ -40,9 +43,13 @@ import java.io.IOException;
 @SlingServletResourceTypes(
         resourceTypes="aemcloudproject/components/page",
         methods=HttpConstants.METHOD_GET,
-        extensions="txt")
+        selectors = "demo",
+        extensions={"json","html"})
 @ServiceDescription("Simple Demo Servlet")
 public class SimpleServlet extends SlingSafeMethodsServlet {
+
+    @Reference
+    transient LoginCredConfigService loginCredConfigService;
 
     private static final long serialVersionUID = 1L;
 
@@ -50,7 +57,14 @@ public class SimpleServlet extends SlingSafeMethodsServlet {
     protected void doGet(final SlingHttpServletRequest req,
             final SlingHttpServletResponse resp) throws ServletException, IOException {
         final Resource resource = req.getResource();
+
         resp.setContentType("text/plain");
         resp.getWriter().write("Title = " + resource.getValueMap().get(JcrConstants.JCR_TITLE));
+        resp.getWriter().write("First Name = " + loginCredConfigService.getFirstName());
+        resp.getWriter().write("Age = " + loginCredConfigService.getAge());
+        resp.getWriter().write("is Adult = " + (loginCredConfigService.isAdult()?"is Adult":"Not an Adult"));
+        resp.getWriter().write("Hobbies are = "+ Arrays.toString(loginCredConfigService.getHobbies()) );
+        resp.getWriter().write("loginCredConfigService = "+ loginCredConfigService.toString() );
+
     }
 }

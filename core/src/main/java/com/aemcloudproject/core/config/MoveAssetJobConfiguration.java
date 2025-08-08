@@ -12,4 +12,7 @@ public @interface MoveAssetJobConfiguration {
 
     @AttributeDefinition(name = "Cron Expression", description = "Cron expression used by the job scheduler", type = AttributeType.STRING)
     public String cronExpression() default "0 0 0/12 ? * * *";
+
+    @AttributeDefinition(name = "Hobbies" , description = "Hobbies" , type = AttributeType.STRING)
+    String[] hobbies();
 }

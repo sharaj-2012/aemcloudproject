@@ -1,0 +1,14 @@
+    .people-search-component {
+      padding: 1rem;
+      border: 1px solid #ddd;
+      max-width: 600px;
+    }
+    #people-search {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .person-entry {
+      border-bottom: 1px solid #ccc;
+      padding: 0.5rem 0;
+    }

@@ -1,0 +1,11 @@
+query allProjects {
+  projectCfModelList {
+    items {
+      _path
+      projectName
+      projectDescription {
+        plaintext
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+query filterListListByName($namefirst : String!) {
+  demoBookList(
+    filter:{
+     firstName:{
+      _expressions:[{
+        value:$namefirst
+        _operator:EQUALS
+    		_ignoreCase:true
+      }]
+    } 
+    }) {
+    items {
+      _path
+      firstName
+      lastName
+      emailId
+      hobbies
+      dateOfBirth
+      tellMeAboutYourself {
+        plaintext
+      }
+      isEmployed
+      jobType
+      salary
+      uploadPhoto {
+        ... on ImageRef {
+          _path
+        }
+      }
+      projectsCompleted {
+        ... on ProjectCfModelModel {
+          projectName
+          projectDescription {
+            plaintext
+          }
+        }
+      }
+    }
+  }
+}

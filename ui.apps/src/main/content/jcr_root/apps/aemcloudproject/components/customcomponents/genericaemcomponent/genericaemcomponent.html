@@ -1,0 +1,21 @@
+<sly
+  data-sly-use.genericAemModel="com.aemcloudproject.core.models.GenericAemModel"
+  data-sly-use.templates="core/wcm/components/commons/v1/templates.html"
+  data-sly-test.hasContent="${genericAemModel.getTitle}">
+   1.  ${genericAemModel.getTitle}
+   2.  ${genericAemModel.getLinkurl}
+   3.  ${genericAemModel.parentPath}
+
+    page title of the link is ${genericAemModel.pageTitle}
+
+    <div data-sly-list.item="${genericAemModel.tabList}">
+        <ul data-sly-list.entry="${item}">
+            <li>
+                <strong>Key:</strong> ${entry}
+                <br/>
+                <strong>Value:</strong> ${item[entry]}
+            </li>
+        </ul>
+    </div>
+</sly>
+<sly data-sly-call="${templates.placeholder @ isEmpty=!hasContent}"></sly>

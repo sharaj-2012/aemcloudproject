@@ -600,6 +600,12 @@ Bundle-DocURL:
         <version>1.0.1</version>
         <scope>test</scope>
       </dependency>
+      <!-- SDI -->
+      <dependency>
+        <groupId>org.apache.sling</groupId>
+        <artifactId>org.apache.sling.dynamic-include</artifactId>
+        <version>3.3.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>

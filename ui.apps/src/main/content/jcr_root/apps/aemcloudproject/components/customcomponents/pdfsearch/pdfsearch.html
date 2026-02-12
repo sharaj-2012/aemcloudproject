@@ -1,0 +1,22 @@
+<sly data-sly-use.clientlib="/libs/granite/sightly/templates/clientlib.html"/>
+<sly data-sly-call="${clientlib.all @ categories='aem.pdfsearch'}"/>
+
+<div class="pdfsearch" data-topk="${properties.topK @ context='text'}">
+    <div class="row">
+        <label>Upload PDF</label>
+        <input type="file" accept="application/pdf" class="ps-file">
+        <button type="button" class="ps-upload">Upload</button>
+        <span class="ps-status"></span>
+    </div>
+
+    <input type="hidden" class="ps-docid">
+
+    <div class="row">
+        <label>Search</label>
+        <input type="text" class="ps-query" placeholder="Type and press Enter">
+        <button type="button" class="ps-search">Search</button>
+        <span class="ps-hint"></span>
+    </div>
+
+    <div class="ps-results"></div>
+</div>

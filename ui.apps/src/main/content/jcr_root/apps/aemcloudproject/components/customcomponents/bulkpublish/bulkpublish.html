@@ -1,0 +1,16 @@
+<div>
+	<title>AJAX File Upload</title>
+	<div id="bulkpublish-component" data-path="${resource.path}"></div>
+</div>
+<h2>Upload a File using JavaScript</h2>
+<form id="uploadForm">
+	<input type="file" id="uploadedFile" name="uploadedFile" required />
+	<br><br>
+	<button id="uploadBtn">Upload</button>
+</form>
+
+<div id="response"></div>
+
+<sly data-sly-use.clientLib="/libs/granite/sightly/templates/clientlib.html">
+	<sly data-sly-call="${clientlib.all @ categories='aemcloudproject.bulkpublish'}"/>
+</sly>

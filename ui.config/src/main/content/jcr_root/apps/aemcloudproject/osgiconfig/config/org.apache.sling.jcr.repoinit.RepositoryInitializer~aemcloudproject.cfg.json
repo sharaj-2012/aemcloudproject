@@ -2,6 +2,8 @@
     "scripts": [
         "create path (sling:OrderedFolder) /content/dam/aemcloudproject",
         "create path (nt:unstructured) /content/dam/aemcloudproject/jcr:content",
-        "set properties on /content/dam/aemcloudproject/jcr:content\n  set cq:conf{String} to /conf/aemcloudproject\n  set jcr:title{String} to \"Aem Cloud Project\"\nend"
+        "set properties on /content/dam/aemcloudproject/jcr:content\n  set cq:conf{String} to /conf/aemcloudproject\n  set jcr:title{String} to \"Aem Cloud Project\"\nend",
+        "create service user myaemproject-serviceuser with path /home/users/system",
+        "set ACL for myaemproject-serviceuser \nallow jcr:read,rep:write,jcr:versionManagement,jcr:lockManagement on /content/aemcloudproject \nallow jcr:read on /conf/aemcloudproject \nallow jcr:read,rep:write,jcr:versionManagement,jcr:lockManagement,crx:replicate on /content/dam/aemcloudproject \nend"
     ]
 }

@@ -1,0 +1,9 @@
+query pratikshaDetails{
+demoBookByPath(_path:"/content/dam/aemcloudproject/content-fragments/pratiksha"){
+  item{
+    firstName
+    lastName
+    _path
+  }
+}
+}

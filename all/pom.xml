@@ -77,6 +77,11 @@
                             <type>zip</type>
                             <target>/apps/aemcloudproject-packages/application/install</target>
                         </embedded>
+                        <embedded>
+                            <groupId>org.apache.sling</groupId>
+                            <artifactId>org.apache.sling.dynamic-include</artifactId>
+                            <target>/apps/aemcloudproject-packages/application/install</target>
+                        </embedded>
                     </embeddeds>
                 </configuration>
             </plugin>
@@ -195,6 +200,11 @@
             <artifactId>aemcloudproject.ui.config</artifactId>
             <version>${project.version}</version>
             <type>zip</type>
+        </dependency>
+        <!-- SDI -->
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.dynamic-include</artifactId>
         </dependency>
 
     </dependencies>

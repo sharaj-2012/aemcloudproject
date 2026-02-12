@@ -1,0 +1,18 @@
+query peopleList{
+  demoBookList{
+    items{
+      firstName
+      lastName
+      emailId
+      hobbies
+      dateOfBirth
+      tellMeAboutYourself {
+        markdown
+      }
+      isEmployed
+      jobType
+      salary
+      
+    }
+  }
+}

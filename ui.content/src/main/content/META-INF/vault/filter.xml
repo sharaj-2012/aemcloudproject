@@ -2,6 +2,7 @@
 <workspaceFilter version="1.0">
     <filter root="/conf/aemcloudproject" mode="merge"/>
     <filter root="/content/aemcloudproject" mode="merge"/>
+    <filter root="/content/cq:graphql/aemcloudproject"/>
     <filter root="/content/dam/aemcloudproject" mode="merge">
         <exclude pattern="/content/dam/aemcloudproject(/.*)?"/>
         <include pattern="/content/dam/aemcloudproject/jcr:content(/.*)?"/>

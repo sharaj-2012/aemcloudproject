@@ -1,0 +1,8 @@
+<div class="people-search-component" data-endpoint="/graphql/execute.json/aemcloudproject">
+    <input type="text" id="people-search" placeholder="Search by First Name..." />
+    <div id="people-results"></div>
+</div>
+
+<sly data-sly-use.clientLib="/libs/granite/sightly/templates/clientlib.html">
+    <sly data-sly-call="${clientlib.all @ categories='aemcloudproject.peoplelist'}"/>
+</sly>

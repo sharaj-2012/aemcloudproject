@@ -1,0 +1,22 @@
+<sly data-sly-use.model="com.aemcloudproject.core.models.ContentImageModel"
+     data-sly-use.templates="core/wcm/components/commons/v1/templates.html"
+     data-sly-test.hasContent="${model.title || model.description || model.fileReference}">
+    <article class="content-image">
+        <h2 data-sly-test="${model.title}" class="content-image__title">${model.title}</h2>
+        <p data-sly-test="${model.description}" class="content-image__description">${model.description}</p>
+
+        <a data-sly-test="${model.fileReference && model.imageUrl}"
+           class="content-image__link"
+           href="${model.imageUrl}">
+            <img class="content-image__image"
+                 src="${model.fileReference}"
+                 alt="${model.altText}"/>
+        </a>
+
+        <img data-sly-test="${model.fileReference && !model.imageUrl}"
+             class="content-image__image"
+             src="${model.fileReference}"
+             alt="${model.altText}"/>
+    </article>
+</sly>
+<sly data-sly-call="${templates.placeholder @ isEmpty=!hasContent}"></sly>

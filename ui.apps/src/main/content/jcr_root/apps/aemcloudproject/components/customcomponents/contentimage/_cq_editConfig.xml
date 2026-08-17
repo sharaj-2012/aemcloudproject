@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Declared locally so the component does NOT inherit the Core Image edit config
+  through sling:resourceSuperType. That config wires up the in-place image
+  editor and a cq-dd-image drop target against markup this component does not
+  render, which would give authors editing affordances that do nothing.
+-->
+<jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          jcr:primaryType="cq:EditConfig">
+    <cq:listeners
+            jcr:primaryType="cq:EditListenersConfig"
+            afterEdit="REFRESH_SELF"/>
+</jcr:root>

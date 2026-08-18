@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
+    <!-- This repo is the source of truth for the page-content template's policy MAPPINGS,
+         so they install in replace mode. The broad /conf filter below is mode="merge",
+         which skips the whole policies aggregate as soon as its root node exists on the
+         instance - new mapping nodes would silently never deploy. Listed first so it wins.
+
+         Scope note: this covers only which policy each component is mapped to. The policy
+         definitions themselves live under /conf/aemcloudproject/settings/wcm/policies and
+         are still merged, so author-created policies are not touched. Mappings added
+         through the template editor and not committed here WILL be replaced on deploy. -->
+    <filter root="/conf/aemcloudproject/settings/wcm/templates/page-content/policies"/>
     <filter root="/conf/aemcloudproject" mode="merge"/>
     <filter root="/content/aemcloudproject" mode="merge"/>
     <filter root="/content/cq:graphql/aemcloudproject"/>

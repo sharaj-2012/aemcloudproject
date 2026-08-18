@@ -55,6 +55,30 @@
                                 cq:policy="aemcloudproject/components/download/policy_1575032193319"
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="wcm/core/components/policies/mapping"/>
+                            <!-- The desktop and mobile children of Custom Image reuse the Content
+                                 Image policy. Without this, Core Image v3 finds no
+                                 allowedRenditionWidths on currentStyle and getSrcset() returns
+                                 null, so the <picture> degrades to a single unsized image.
+
+                                 The mapping must name the child's OWN resource type
+                                 (custom-image/desktop), not the parent it is nested in: the policy
+                                 is resolved per image resource, so mappings on custom-image or on
+                                 customcomponents/contentimage have no effect here. The custom-image
+                                 node below is only a path segment and carries no policy itself.
+
+                                 This is render time only. At servlet time the Adaptive Image
+                                 Servlet already resolves the same policy through the imageDelegate
+                                 property on the two child components. -->
+                            <custom-image jcr:primaryType="nt:unstructured">
+                                <desktop
+                                    cq:policy="aemcloudproject/components/image/policy_651483963895698"
+                                    jcr:primaryType="nt:unstructured"
+                                    sling:resourceType="wcm/core/components/policies/mapping"/>
+                                <mobile
+                                    cq:policy="aemcloudproject/components/image/policy_651483963895698"
+                                    jcr:primaryType="nt:unstructured"
+                                    sling:resourceType="wcm/core/components/policies/mapping"/>
+                            </custom-image>
                         </components>
                     </aemcloudproject>
                 </container>

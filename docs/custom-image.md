@@ -47,7 +47,7 @@ CUSTOM IMAGE  (orchestration only)
 | `custom-image/desktop/.content.xml` | Hidden (`componentGroup=".hidden"`) internal type. `sling:resourceSuperType = aemcloudproject/components/image`, `imageDelegate = aemcloudproject/components/image`. |
 | `custom-image/mobile/.content.xml` | Same, for mobile. |
 | `custom-image/dialogfields/desktop`, `.../mobile` | Reusable Granite field fragments (`./desktop/*`, `./mobile/*`). Included, not duplicated, by consumer dialogs. |
-| `custom-image/_cq_dialog/.content.xml` | Tabs: Desktop Image, Mobile Image (both `granite/ui/components/coral/foundation/include`), Properties (breakpoint). |
+| `custom-image/_cq_dialog/.content.xml` | **Does not exist.** `custom-image` has no dialog of its own and is not authorable standalone; consumers include the two `dialogfields` fragments in their own dialog. A consequence is that `./breakpoint`, which `CustomImageImpl` reads, has no field anywhere — `getMobileMedia()` is always the 768px default. |
 | `custom-image/custom-image.html` | The `<picture>` markup. |
 | `customcomponents/contentimage/*` | Refactored consumer: title, description, link + delegated image. |
 
@@ -68,11 +68,19 @@ CUSTOM IMAGE  (orchestration only)
   existing *Content Image* policy (`aemcloudproject/components/image/policy_651483963895698`
   — widths `[320,480,600,800,1024,1200,1600]`, `jpegQuality=85`, `disableLazyLoading=false`,
   `enableAssetDelivery=true`, crop/rotate plugins) is the single source of truth.
-* `templates/page-content/policies/.content.xml` — mappings only. Both
-  `aemcloudproject/components/custom-image` and
-  `aemcloudproject/components/customcomponents/contentimage` point at that same Content
-  Image policy, each with a nested mapping for the delegated child image resources.
-  One policy object, several mappings.
+* `templates/page-content/policies/.content.xml` — mappings only. The mapped types are the
+  two **child** types, `aemcloudproject/components/custom-image/desktop` and
+  `.../custom-image/mobile`, both pointing at that same Content Image policy. The
+  `custom-image` node above them is a path segment and carries no policy.
+
+  Mapping the parent types instead (`custom-image`, `customcomponents/contentimage`) has
+  **no effect** — measured, see R1. The policy is resolved per image resource from that
+  resource's own type, not from the component it is nested inside.
+* `META-INF/vault/filter.xml` — the page-content template's `policies` node is filtered in
+  replace mode, ahead of the broad `mode="merge"` `/conf/aemcloudproject` filter. Under
+  merge, FileVault skips the entire `policies` aggregate once its root node exists on the
+  instance, so mapping nodes added here would never reach an already-provisioned
+  environment. Policy *definitions* are unaffected and still merge.
 
 **ui.frontend** — `components/_custom-image.scss` (layout only, no breakpoint, no JS).
 
@@ -142,29 +150,33 @@ A link is a business property, not image delivery.
 
 ## 6. Risks that need a running AEM to close
 
-**R1 — content policy resolution for the nested child resources (§16).**
-Render-time: Core `ImageImpl` reads `currentStyle` as a `@ScriptVariable`, which comes from
-the component context in scope when the child Image models are built. On a running instance
-that turned out to be the *authored* component (`customcomponents/contentimage`) rather than
-the delegated `custom-image` type — which is why both resource types are mapped. Both
-resolve to the same Content Image policy, so whichever one wins supplies identical
-`allowedRenditionWidths`, `jpegQuality`, `sizes`, lazy loading and Asset Delivery values.
+**R1 — content policy resolution for the nested child resources (§16). CLOSED, measured on
+a running instance.** The two times resolve through completely different mechanisms, and
+only one of them needs a mapping.
 
-Servlet-time is the open question. `AdaptiveImageServlet#getContentPolicy` does:
+*Servlet-time works with no mapping of its own.* `AdaptiveImageServlet#getContentPolicy`
+re-types the resource through the `imageDelegate` property on the child component and asks
+`ContentPolicyManager`, so it lands on the already-mapped
+`aemcloudproject/components/image`. Confirmed by requesting widths directly against
+`/…/contentimage/desktop`: `85.800` and `85.1600` return 200, `85.777` returns **404**.
+That 404 is the assertion — an unresolved policy would not enforce the width list.
 
-```java
-if (request.getResource().isResourceType(IMAGE_RESOURCE_TYPE)) { imageResource = request.getResource(); }
-… component.getProperties().get(IMAGE_DELEGATE, String.class)   // -> re-types the resource
-contentPolicy = policyManager.getPolicy(imageResource, request);
-```
+*Render-time needs the child types mapped explicitly.* Core `ImageImpl` (v1, inherited by
+v2 and v3) sets `smartSizes` from `currentStyle.get("allowedRenditionWidths", …)`, and
+`getSrcset()` returns null when `getWidths()` is empty. `currentStyle` is resolved from the
+image resource's **own** resource type — `aemcloudproject/components/custom-image/desktop` —
+not from the component it is nested in and not from the delegate. Mappings on
+`custom-image` and on `customcomponents/contentimage` were added, measured, and made no
+difference; removing them again changed nothing. Mapping `custom-image/desktop` and
+`custom-image/mobile` produced the full 7-candidate srcset immediately.
 
-so it re-types `/test/desktop` to the Image proxy and then asks `ContentPolicyManager`.
-Whether AEM's policy mapping resolves for a resource nested *inside* a component could
-not be determined offline. **Verify first:** request
-`/content/.../test/desktop.coreimg.85.640.jpeg` directly. If a non-default width 404s,
-the policy did not resolve; the mapping added under the `custom-image` mapping node is
-the first thing to try, and note that with `enableAssetDelivery=true` on AEMaaCS the
-URLs bypass the servlet entirely.
+The earlier guess in this section — that `currentStyle` follows the ambient component
+context — was wrong. It follows the resource.
+
+Note this failure is quiet: with no widths the component still renders a working `<img>`
+via the plain `.coreimg.jpeg` URL, so it looks fine until you check for `srcset`. On
+AEMaaCS with `enableAssetDelivery=true` the servlet is bypassed, but the render-time
+`currentStyle` lookup is unchanged, so the mapping is still required.
 
 **R2 — in-place editing / crop / rotate (§22).** Not verified. Standard Image v3
 in-place editing assumes one image resource per component; two image children inside one
@@ -180,11 +192,10 @@ rather than Adobe's `cmp-image` wrapper. DM/NGDM features that depend on that JS
 
 ## 7. Verification checklist
 
-Build (Maven Central was not reachable from the environment this was written in, so the
-build has **not** been run here):
+Build (`aem.port` defaults to **4507** in the root `pom.xml`, so the single-package profile
+targets that instance, not the usual 4502):
 
 ```bash
-mvn -f /Users/shashankraj/Documents/aemcloudproject clean install
 mvn -f /Users/shashankraj/Documents/aemcloudproject clean install -PautoInstallSinglePackage
 ```
 
@@ -198,6 +209,10 @@ Then, on the instance:
    `<picture>`, one `<source media="(max-width: 768px)">`, one `<img>`.
 4. Inspect both `srcset` values — every desktop candidate must contain
    `/test/desktop`, every mobile candidate `/test/mobile`. No mixed families.
+   **Steps 3 and 4 verified** on `/content/aemcloudproject/us/en/test-page-latest`: one
+   `<source media="(max-width: 768px)">` with 7 mobile candidates, one `<img>` with 7
+   desktop candidates, no mixing, all 16 delivery URLs returning 200.
+   A missing `srcset` here means R1's policy mapping, not a Java bug.
 5. Network tab at a wide viewport → a `/test/desktop…` request. Narrow viewport →
    a `/test/mobile…` request. Test DPR 1 and DPR 2. Do **not** assert a specific width
    candidate — the browser owns that choice; assert the family.

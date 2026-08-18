@@ -1,10 +1,16 @@
 package com.aemcloudproject.core.models.impl;
 
 import com.aemcloudproject.core.models.ContentImageModel;
+import com.day.cq.wcm.api.components.Component;
+import com.day.cq.wcm.api.components.ComponentManager;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.models.annotations.DefaultInjectionStrategy;
 import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
 import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
+
+import javax.annotation.PostConstruct;
 
 @Model(
         adaptables = Resource.class,
@@ -12,10 +18,13 @@ import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
         resourceType = ContentImageModelImpl.RESOURCE_TYPE,
         defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
 )
-public class ContentImageModelImpl implements ContentImageModel {
+public class ContentImageModelImpl extends AbstractDelegatingImageModel implements ContentImageModel {
 
     public static final String RESOURCE_TYPE =
             "aemcloudproject/components/customcomponents/contentimage";
+
+    @ScriptVariable
+    private Component component;
 
     @ValueMapValue
     private String title;
@@ -26,11 +35,29 @@ public class ContentImageModelImpl implements ContentImageModel {
     @ValueMapValue
     private String fileReference;
 
-    @ValueMapValue
+    @ValueMapValue(name = "alt")
+    private String alt;
+
+    /** Kept as a fallback for content authored before Core Image delegation. */
+    @ValueMapValue(name = "altText")
     private String altText;
 
     @ValueMapValue
     private String imageUrl;
+
+    @Self
+    private Resource resource;
+
+    private boolean hasImage;
+
+    @PostConstruct
+    protected void init() {
+        hasImage = hasResolvableAsset(resource, resource.getResourceResolver());
+
+        if (hasImage) {
+            initImageResource(component,resource);
+        }
+    }
 
     @Override
     public String getTitle() {
@@ -49,11 +76,21 @@ public class ContentImageModelImpl implements ContentImageModel {
 
     @Override
     public String getAltText() {
-        return altText;
+        return alt != null ? alt : altText;
     }
 
     @Override
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    @Override
+    public Resource getImageResource() {
+        return getWrappedImageResource();
+    }
+
+    @Override
+    public boolean hasImage() {
+        return hasImage;
     }
 }

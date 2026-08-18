@@ -1,9 +1,5 @@
 package com.aemcloudproject.core.models.impl;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import com.drew.lang.annotations.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
@@ -31,8 +27,6 @@ public abstract class AbstractDelegatingImageModel {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDelegatingImageModel.class);
 
     private Resource imageResource;
-    private boolean resolved;
-
     protected void setImageResource(@NotNull Resource toBeWrappedResource) {
         this.imageResource = toBeWrappedResource;
     }

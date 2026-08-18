@@ -1,8 +1,6 @@
 package com.aemcloudproject.core.internal.resource;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -42,7 +40,9 @@ public class DelegatingImageResourceWrapper extends ResourceWrapper {
         this.resourceType = resourceType;
 
         Map<String, Object> properties = new HashMap<>(resource.getValueMap());
-        valueMap = new ValueMapDecorator(properties);
+        properties.put(ResourceResolver.PROPERTY_RESOURCE_TYPE, resourceType);
+
+        this.valueMap = new ValueMapDecorator(properties);
     }
 
     @Override

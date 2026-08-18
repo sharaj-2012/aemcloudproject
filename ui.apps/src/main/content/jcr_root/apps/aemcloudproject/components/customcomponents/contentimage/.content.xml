@@ -3,5 +3,5 @@
           xmlns:cq="http://www.day.com/jcr/cq/1.0"
           jcr:primaryType="cq:Component"
           jcr:title="Content Image"
-          jcr:description="Displays a title, description, and DAM image"
+          jcr:description="Title, description and an art-directed responsive image delegated to the Custom Image component"
           componentGroup="Aem Cloud Project - Content"/>

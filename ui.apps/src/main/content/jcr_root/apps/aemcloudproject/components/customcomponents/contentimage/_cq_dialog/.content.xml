@@ -39,33 +39,29 @@
                                                     sling:resourceType="granite/ui/components/coral/foundation/form/textarea"
                                                     fieldLabel="Description"
                                                     name="./description"/>
-                                            <fileReference
+                                            <linkUrl
                                                     jcr:primaryType="nt:unstructured"
                                                     sling:resourceType="granite/ui/components/coral/foundation/form/pathfield"
-                                                    fieldDescription="Select an image from the DAM"
-                                                    fieldLabel="Image"
-                                                    name="./fileReference"
-                                                    rootPath="/content/dam"
-                                                    required="{Boolean}true"/>
-                                            <altText
-                                                    jcr:primaryType="nt:unstructured"
-                                                    sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                                                    fieldDescription="Describe the image for accessibility"
-                                                    fieldLabel="Alt Text"
-                                                    name="./altText"
-                                                    required="{Boolean}true"/>
-                                            <imageUrl
-                                                    jcr:primaryType="nt:unstructured"
-                                                    sling:resourceType="granite/ui/components/coral/foundation/form/pathfield"
-                                                    fieldDescription="Optional URL opened when the image is selected"
-                                                    fieldLabel="Image URL"
-                                                    name="./imageUrl"/>
+                                                    fieldDescription="Optional link the image is wrapped in"
+                                                    fieldLabel="Link"
+                                                    name="./linkUrl"
+                                                    rootPath="/content"/>
                                         </items>
                                     </column>
                                 </items>
                             </columns>
                         </items>
                     </properties>
+                    <desktop
+                            jcr:primaryType="nt:unstructured"
+                            jcr:title="Desktop Image"
+                            sling:resourceType="granite/ui/components/coral/foundation/include"
+                            path="/apps/aemcloudproject/components/custom-image/dialogfields/desktop"/>
+                    <mobile
+                            jcr:primaryType="nt:unstructured"
+                            jcr:title="Mobile Image"
+                            sling:resourceType="granite/ui/components/coral/foundation/include"
+                            path="/apps/aemcloudproject/components/custom-image/dialogfields/mobile"/>
                 </items>
             </tabs>
         </items>

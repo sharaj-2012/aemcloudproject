@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Reusable Mobile Image authoring fragment for the Custom Image component.
+
+    Every field persists under the ./mobile child node so that the asset ends up on a
+    real, independently addressable AEM resource that inherits Core Image v3. Any
+    consuming component (Hero, Banner, Card, Promo, ...) includes this fragment via
+    granite/ui/components/coral/foundation/include instead of duplicating the fields.
+-->
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          jcr:primaryType="nt:unstructured"
+          sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns"
+          margin="{Boolean}true">
+    <items jcr:primaryType="nt:unstructured">
+        <column
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/container">
+            <items jcr:primaryType="nt:unstructured">
+                <primaryType
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/hidden"
+                        name="./mobile/jcr:primaryType"
+                        value="nt:unstructured"/>
+                <resourceType
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/hidden"
+                        name="./mobile/sling:resourceType"
+                        value="aemcloudproject/components/custom-image/mobile"/>
+                <file
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="cq/gui/components/authoring/dialog/fileupload"
+                        allowUpload="{Boolean}false"
+                        autoStart="{Boolean}false"
+                        class="cq-droptarget"
+                        fieldLabel="Mobile Image"
+                        fieldDescription="Optional art direction. Rendered by the &lt;source> element at or below the mobile breakpoint."
+                        fileNameParameter="./mobile/fileName"
+                        fileReferenceParameter="./mobile/fileReference"
+                        mimeTypes="[image]"
+                        multiple="{Boolean}false"
+                        name="./mobile/file"
+                        title="Select Mobile Image"
+                        useHTML5="{Boolean}true"/>
+                <altValueFromDAM
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                        name="./mobile/altValueFromDAM"
+                        text="Inherit alternative text from DAM"
+                        value="{Boolean}true"
+                        uncheckedValue="{Boolean}false"
+                        checked="{Boolean}true"/>
+                <alt
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                        name="./mobile/alt"
+                        fieldLabel="Alternative Text"
+                        fieldDescription="Used when the alternative text is not inherited from DAM. The final &lt;img> element always carries the desktop alternative text - a &lt;source> element cannot."/>
+                <isDecorative
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                        name="./mobile/isDecorative"
+                        text="Image is decorative"
+                        value="{Boolean}true"
+                        uncheckedValue="{Boolean}false"/>
+            </items>
+        </column>
+    </items>
+</jcr:root>

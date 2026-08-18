@@ -1,0 +1,43 @@
+<!--/*
+    Custom Image - art-directed responsive image.
+
+    This component owns no image-delivery logic. It composes two independent Core
+    Image v3 models - one for the ./desktop child resource, one for the ./mobile child
+    resource - and combines their output into a native <picture> element:
+
+        <picture>  -> the browser picks the image FAMILY (mobile vs desktop)
+        srcset     -> the browser picks the RESOLUTION within that family
+
+    src / srcset / sizes / width / height / alt all come straight from the Core Image v3
+    public API, so Adaptive Image Servlet URLs, Web Optimized Image Delivery (Asset
+    Delivery) URLs and Dynamic Media URLs are all passed through untouched. There is
+    deliberately no JavaScript that swaps sources based on the viewport width.
+*/-->
+<sly data-sly-use.customImage="com.aemcloudproject.core.models.CustomImage"
+     data-sly-use.templates="core/wcm/components/commons/v1/templates.html"
+     data-sly-test.desktop="${customImage.desktopImage}">
+
+    <picture class="cmp-custom-image">
+
+        <!--/* Mobile family. Rendered only when a mobile asset is actually authored, so
+               there is never an empty <source>. A <source> carries no alternative text. */-->
+        <sly data-sly-test.mobile="${customImage.mobileImage}">
+            <source data-sly-test="${mobile.srcset}"
+                    media="${customImage.mobileMedia}"
+                    srcset="${mobile.srcset}"
+                    sizes="${mobile.sizes}"/>
+        </sly>
+
+        <!--/* Desktop family and fallback. Owns the semantic alternative text. */-->
+        <img class="cmp-custom-image__image"
+             src="${desktop.src}"
+             srcset="${desktop.srcset}"
+             sizes="${desktop.sizes}"
+             width="${desktop.width}"
+             height="${desktop.height}"
+             loading="${desktop.lazyEnabled ? 'lazy' : ''}"
+             alt="${desktop.alt || true}"
+             title="${desktop.displayPopupTitle && desktop.title}"/>
+    </picture>
+</sly>
+<sly data-sly-call="${templates.placeholder @ isEmpty = !customImage.hasDesktopImage, classAppend = 'cmp-custom-image'}"></sly>

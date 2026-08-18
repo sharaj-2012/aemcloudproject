@@ -1,22 +1,22 @@
+<!--/*
+    Content Image - example consumer of the reusable Custom Image component.
+
+    This component knows nothing about <picture>, srcset, sizes, coreimg, Asset Delivery
+    or Dynamic Media. It owns a title, a description and an optional link, and delegates
+    everything image related by rendering its own resource as the Custom Image component.
+*/-->
 <sly data-sly-use.model="com.aemcloudproject.core.models.ContentImageModel"
      data-sly-use.templates="core/wcm/components/commons/v1/templates.html"
-     data-sly-test.hasContent="${model.title || model.description || model.fileReference}">
+     data-sly-test.hasContent="${model.title || model.description || model.imageResource}">
     <article class="content-image">
         <h2 data-sly-test="${model.title}" class="content-image__title">${model.title}</h2>
         <p data-sly-test="${model.description}" class="content-image__description">${model.description}</p>
 
-        <a data-sly-test="${model.fileReference && model.imageUrl}"
-           class="content-image__link"
-           href="${model.imageUrl}">
-            <img class="content-image__image"
-                 src="${model.fileReference}"
-                 alt="${model.altText}"/>
-        </a>
-
-        <img data-sly-test="${model.fileReference && !model.imageUrl}"
-             class="content-image__image"
-             src="${model.fileReference}"
-             alt="${model.altText}"/>
+        <div data-sly-test="${model.imageResource}" class="content-image__media">
+            <a data-sly-unwrap="${!model.link}" class="content-image__link" href="${model.link}">
+                <sly data-sly-resource="${model.imageResource @ wcmmode='disabled'}"></sly>
+            </a>
+        </div>
     </article>
 </sly>
 <sly data-sly-call="${templates.placeholder @ isEmpty=!hasContent}"></sly>

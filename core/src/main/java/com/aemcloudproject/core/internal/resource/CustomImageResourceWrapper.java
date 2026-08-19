@@ -1,7 +1,14 @@
-package com.aemcloudproject.core.models.impl;
+package com.aemcloudproject.core.internal.resource;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceWrapper;
+import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.api.wrappers.ValueMapDecorator;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Re-types a resource so that it renders as another component, without changing its path
@@ -30,14 +37,44 @@ import org.apache.sling.api.resource.ResourceWrapper;
 public class CustomImageResourceWrapper extends ResourceWrapper {
 
     private final String resourceType;
+    private final ValueMap valueMap;
 
     /**
      * @param resource     the resource to wrap
      * @param resourceType the resource type to render the resource as
      */
+
     public CustomImageResourceWrapper(Resource resource, String resourceType) {
+        this(resource, resourceType, null);
+    }
+
+    /**
+     * @param resource             the resource to wrap
+     * @param resourceType         the resource type to render the resource as
+     * @param overriddenProperties extra properties to expose on the wrapped resource, or
+     *                             {@code null}. They are visible to the delegated script as
+     *                             {@code properties} but are never written back to the JCR.
+     */
+    public CustomImageResourceWrapper(Resource resource, String resourceType,
+                                      Map<String, Object> overriddenProperties) {
         super(resource);
+
+        if (resource == null) {
+            throw new IllegalArgumentException("The " + CustomImageResourceWrapper.class.getName()
+                    + " cannot wrap a null resource.");
+        }
+        if (StringUtils.isEmpty(resourceType)) {
+            throw new IllegalArgumentException("The " + CustomImageResourceWrapper.class.getName() + " needs to override the resource type of " +
+                    "the wrapped resource, but the resourceType argument was null or empty.");
+        }
         this.resourceType = resourceType;
+
+        Map<String,Object> properties = new HashMap<>(resource.getValueMap());
+        properties.put(ResourceResolver.PROPERTY_RESOURCE_TYPE,resourceType);
+        if (overriddenProperties != null) {
+            properties.putAll(overriddenProperties);
+        }
+        this.valueMap = new ValueMapDecorator(properties);
     }
 
     @Override
@@ -46,9 +83,12 @@ public class CustomImageResourceWrapper extends ResourceWrapper {
     }
 
     @Override
+    public ValueMap getValueMap(){
+        return valueMap;
+    }
+
+    @Override
     public String getResourceSuperType() {
-        // Let Sling resolve the super type from the overridden resource type in /apps
-        // instead of inheriting the wrapped resource's super type.
         return null;
     }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    jcr:primaryType="cq:Component"
+    jcr:title="Custom Image - Source Element"
+    jcr:description="Internal resource type. Renders nothing but a bare &lt;source> element from the Core Image v3 model, so it can sit as a direct child of &lt;picture>. Never authored directly - the Custom Image model re-types the mobile child to this."
+    componentGroup=".hidden"
+    sling:resourceSuperType="aemcloudproject/components/image"/>

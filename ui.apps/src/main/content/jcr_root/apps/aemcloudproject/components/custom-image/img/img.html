@@ -1,0 +1,23 @@
+<!--/*
+    Bare <img> element for the Custom Image <picture>.
+
+    The resource being rendered IS the image resource - the desktop child, re-typed by
+    CustomImageImpl - so Adobe's Image model is obtained with a plain data-sly-use. No
+    ModelFactory is involved anywhere.
+
+    This script must emit the <img> and nothing else. <picture> only drives an <img> that
+    is its direct child, so any wrapper element here would silently disable art direction.
+    The include in custom-image.html therefore passes decoration=false.
+
+    This element owns the semantic alternative text; a <source> cannot carry one.
+*/-->
+<sly data-sly-use.image="com.adobe.cq.wcm.core.components.models.Image"><img
+    class="cmp-custom-image__image"
+    src="${image.src}"
+    srcset="${image.srcset}"
+    sizes="${image.sizes}"
+    width="${image.width}"
+    height="${image.height}"
+    loading="${image.lazyEnabled ? 'lazy' : ''}"
+    alt="${image.alt || true}"
+    title="${image.displayPopupTitle && image.title}"/></sly>

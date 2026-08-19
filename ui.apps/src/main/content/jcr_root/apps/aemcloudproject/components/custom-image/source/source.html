@@ -1,0 +1,22 @@
+<!--/*
+    Bare <source> element for the Custom Image <picture>.
+
+    The resource being rendered IS the image resource - the mobile child, re-typed by
+    CustomImageImpl - so Adobe's Image model is obtained with a plain data-sly-use. No
+    ModelFactory is involved anywhere.
+
+    ${properties.media} is not authored content. CustomImageImpl puts it on the re-typed
+    resource, so the breakpoint stays defined in exactly one place (Java) and this script
+    never has to know the default or reach back up the tree for it.
+
+    srcset falls back to the single src: art direction is the job of <source> and must not
+    depend on the content policy supplying rendition widths. When widths are policed,
+    srcset holds the full candidate list and the browser picks the resolution; when they
+    are not, the one delivery URL still wins the media query.
+
+    A <source> carries no alternative text - the <img> owns that.
+*/-->
+<sly data-sly-use.image="com.adobe.cq.wcm.core.components.models.Image"><source
+    media="${properties.media}"
+    srcset="${image.srcset || image.src}"
+    sizes="${image.sizes}"/></sly>

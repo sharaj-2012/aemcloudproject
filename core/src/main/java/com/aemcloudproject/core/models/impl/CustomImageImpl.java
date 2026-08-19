@@ -1,42 +1,36 @@
 package com.aemcloudproject.core.models.impl;
 
+import java.util.Collections;
+
 import javax.annotation.PostConstruct;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.models.annotations.DefaultInjectionStrategy;
 import org.apache.sling.models.annotations.Model;
-import org.apache.sling.models.annotations.injectorspecific.OSGiService;
-import org.apache.sling.models.annotations.injectorspecific.Self;
+import org.apache.sling.models.annotations.injectorspecific.SlingObject;
 import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
-import org.apache.sling.models.factory.ModelFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.adobe.cq.wcm.core.components.models.Image;
 import com.aemcloudproject.core.models.CustomImage;
 
 /**
  * Implementation of {@link CustomImage}.
  *
- * <p>Deliberately contains no image logic. For each of the two child resources it asks
- * Sling's {@link ModelFactory} for the Adobe {@link Image} model, using a request whose
- * resource is overridden with that child. Core Image v3 is request based, so adapting
- * the child {@link Resource} directly would not be sufficient.</p>
+ * <p>Deliberately contains no image logic. It re-types each of the two child resources to
+ * a dedicated hidden component - {@link #RT_SOURCE} for mobile, {@link #RT_IMG} for
+ * desktop - whose scripts render nothing but a {@code <source>} or an {@code <img>}. That
+ * keeps both elements direct children of the {@code <picture>}, which is what the browser
+ * requires for art direction to work.</p>
  *
  * <pre>
- *   original request -&gt; wrapped request (getResource() == /&lt;component&gt;/desktop)
- *                    -&gt; ModelFactory -&gt; Image.class
+ *   /&lt;component&gt;/desktop  -&gt; re-typed to custom-image/img     -&gt; &lt;img&gt;
+ *   /&lt;component&gt;/mobile   -&gt; re-typed to custom-image/source  -&gt; &lt;source media&gt;
  * </pre>
  *
- * <p>Because the wrapped request keeps the original request attributes, the Core Image
- * model still sees the component context of this component and therefore resolves
- * {@code currentStyle} from the Custom Image content policy - which is where the allowed
- * rendition widths, sizes, JPEG quality and lazy loading settings live. The child
- * resources keep their own identity and path, so their generated delivery URLs are
- * distinct and the Adaptive Image Servlet can resolve the correct {@code fileReference}
- * later.</p>
+ * <p>The children keep their own path, so their delivery URLs stay distinct and the
+ * Adaptive Image Servlet resolves the correct {@code fileReference}. Both re-typed types
+ * are mapped to the Content Image policy in the page template, which is where their
+ * rendition widths come from.</p>
  */
 @Model(
         adaptables = SlingHttpServletRequest.class,
@@ -44,16 +38,25 @@ import com.aemcloudproject.core.models.CustomImage;
         resourceType = CustomImageImpl.RESOURCE_TYPE,
         defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL
 )
-public class CustomImageImpl implements CustomImage {
+public class CustomImageImpl extends AbstractImageDelegatingModel implements CustomImage {
 
     /** Resource type of the reusable Custom Image component. */
     public static final String RESOURCE_TYPE = "aemcloudproject/components/custom-image";
+
+    /** Hidden component that renders a bare {@code <img>} element. */
+    public static final String RT_IMG = "aemcloudproject/components/custom-image/img";
+
+    /** Hidden component that renders a bare {@code <source>} element. */
+    public static final String RT_SOURCE = "aemcloudproject/components/custom-image/source";
 
     /** Name of the child resource holding the desktop asset. */
     public static final String NN_DESKTOP = "desktop";
 
     /** Name of the child resource holding the mobile asset. */
     public static final String NN_MOBILE = "mobile";
+
+    /** Property carrying the media condition down to the {@code <source>} script. */
+    public static final String PN_MEDIA = "media";
 
     /**
      * Default mobile breakpoint in pixels. Matches the {@code phone} breakpoint of the
@@ -62,45 +65,44 @@ public class CustomImageImpl implements CustomImage {
      */
     public static final int DEFAULT_BREAKPOINT = 768;
 
-    private static final Logger LOG = LoggerFactory.getLogger(CustomImageImpl.class);
-
-    @Self
-    private SlingHttpServletRequest request;
-
-    @OSGiService
-    private ModelFactory modelFactory;
+    @SlingObject
+    private Resource resource;
 
     @ValueMapValue
     private Integer breakpoint;
 
-    private Image desktopImage;
+    private Resource desktopImageResource;
 
-    private Image mobileImage;
+    private Resource mobileImageResource;
 
     @PostConstruct
     protected void initModel() {
-        this.desktopImage = imageModelOf(NN_DESKTOP);
-        this.mobileImage = imageModelOf(NN_MOBILE);
+        if (resource == null) {
+            return;
+        }
+        this.desktopImageResource = imageResourceOf(resource, NN_DESKTOP, RT_IMG, null);
+        this.mobileImageResource = imageResourceOf(resource, NN_MOBILE, RT_SOURCE,
+                Collections.singletonMap(PN_MEDIA, getMobileMedia()));
     }
 
     @Override
-    public Image getDesktopImage() {
-        return desktopImage;
+    public Resource getDesktopImageResource() {
+        return desktopImageResource;
     }
 
     @Override
-    public Image getMobileImage() {
-        return mobileImage;
+    public Resource getMobileImageResource() {
+        return mobileImageResource;
     }
 
     @Override
     public boolean hasDesktopImage() {
-        return desktopImage != null;
+        return desktopImageResource != null;
     }
 
     @Override
     public boolean hasMobileImage() {
-        return mobileImage != null;
+        return mobileImageResource != null;
     }
 
     @Override
@@ -110,45 +112,5 @@ public class CustomImageImpl implements CustomImage {
 
     private int effectiveBreakpoint() {
         return (breakpoint != null && breakpoint > 0) ? breakpoint : DEFAULT_BREAKPOINT;
-    }
-
-    /**
-     * Builds a Core Image v3 model for the given child resource.
-     *
-     * @param childName {@link #NN_DESKTOP} or {@link #NN_MOBILE}
-     * @return the {@link Image} model, or {@code null} when the child resource is absent,
-     *         has no authored asset, or could not be adapted
-     */
-    private Image imageModelOf(String childName) {
-        if (request == null) {
-            return null;
-        }
-        Resource parent = request.getResource();
-        Resource child = parent.getChild(childName);
-        if (child == null) {
-            LOG.debug("No '{}' child resource below {}", childName, parent.getPath());
-            return null;
-        }
-        if (modelFactory == null) {
-            LOG.error("ModelFactory is not available, cannot build the Core Image model for {}",
-                    child.getPath());
-            return null;
-        }
-        try {
-            Image image = modelFactory.getModelFromWrappedRequest(request, child, Image.class);
-            if (image == null) {
-                LOG.warn("{} could not be adapted to {}. Check that its resource type inherits "
-                        + "core/wcm/components/image/v3/image.", child.getPath(), Image.class.getName());
-                return null;
-            }
-            if (StringUtils.isBlank(image.getSrc())) {
-                LOG.debug("No asset authored on {}", child.getPath());
-                return null;
-            }
-            return image;
-        } catch (Exception e) {
-            LOG.error("Unable to create a Core Image model for {}", child.getPath(), e);
-            return null;
-        }
     }
 }

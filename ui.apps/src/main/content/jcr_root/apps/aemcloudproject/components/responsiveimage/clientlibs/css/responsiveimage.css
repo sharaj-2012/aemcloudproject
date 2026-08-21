@@ -1,0 +1,24 @@
+/*
+ * Art direction for the Responsive Image component.
+ * The visibility rules only apply when BOTH variants are authored
+ * (.cmp-responsiveimage--art-directed). With a single variant, the one
+ * delegated Image v3 rendering is shown on all devices and its srcset
+ * handles resolution selection.
+ *
+ * Hidden variants use display:none; combined with Image v3 lazy loading
+ * the browser does not fetch the hidden image (it never intersects the
+ * viewport), avoiding a double download.
+ */
+.cmp-responsiveimage--art-directed .cmp-responsiveimage__mobile {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .cmp-responsiveimage--art-directed .cmp-responsiveimage__desktop {
+        display: none;
+    }
+
+    .cmp-responsiveimage--art-directed .cmp-responsiveimage__mobile {
+        display: block;
+    }
+}

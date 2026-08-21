@@ -1,0 +1,22 @@
+<!--/*
+    Responsive Image
+    Delegates the actual image rendering to Core Components Image v3 through the
+    wrapped resources exposed by the ResponsiveImage Sling Model. Two delegated
+    renderings with media-query-based visibility are used; lazy loading keeps the
+    hidden variant from being downloaded.
+*/-->
+<sly data-sly-use.model="com.aemcloudproject.core.models.ResponsiveImage"/>
+
+<div class="cmp-responsiveimage${model.artDirected ? ' cmp-responsiveimage--art-directed' : ''}"
+     data-sly-test="${model.hasContent}">
+    <div class="cmp-responsiveimage__desktop cq-dd-desktopimage"
+         data-sly-test="${model.desktopImageResource}"
+         data-sly-resource="${model.desktopImageResource @ decorationTagName='div'}"></div>
+    <div class="cmp-responsiveimage__mobile cq-dd-mobileimage"
+         data-sly-test="${model.mobileImageResource}"
+         data-sly-resource="${model.mobileImageResource @ decorationTagName='div'}"></div>
+</div>
+
+<div data-sly-test="${!model.hasContent && (wcmmode.edit || wcmmode.preview)}"
+     class="cq-placeholder cq-dd-desktopimage cq-dd-mobileimage"
+     data-emptytext="Responsive Image – configure or drop a desktop/mobile image"></div>

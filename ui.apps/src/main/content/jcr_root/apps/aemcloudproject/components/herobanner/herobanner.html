@@ -1,0 +1,15 @@
+<!--/*
+    Hero Banner
+    Reuses the Responsive Image component the same way Core Teaser reuses Core Image:
+    the image is authored in THIS component's dialog (inherited desktop/mobile tabs,
+    same custom property names on this node) but rendered by the responsiveimage HTL,
+    which in turn delegates to Core Image v3.
+*/-->
+<div class="cmp-herobanner">
+    <div class="cmp-herobanner__image"
+         data-sly-resource="${resource @ resourceType='aemcloudproject/components/responsiveimage', decorationTagName='div'}"></div>
+    <div class="cmp-herobanner__content" data-sly-test="${properties.jcr:title || properties.jcr:description}">
+        <h2 class="cmp-herobanner__title" data-sly-test="${properties.jcr:title}">${properties.jcr:title}</h2>
+        <p class="cmp-herobanner__description" data-sly-test="${properties.jcr:description}">${properties.jcr:description}</p>
+    </div>
+</div>

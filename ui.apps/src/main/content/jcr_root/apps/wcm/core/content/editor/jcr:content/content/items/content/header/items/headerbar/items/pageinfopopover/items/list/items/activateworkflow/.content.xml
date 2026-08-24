@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:granite="http://www.adobe.com/jcr/granite/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          granite:class="aemcloudproject-pageinfo-activate-workflow"
+          granite:title="Activate Workflow"
+          jcr:primaryType="sling:Folder"
+          sling:orderBefore="lock"
+          sling:resourceType="granite/ui/components/coral/foundation/button"
+          text="Activate Workflow">
+    <granite:data
+        jcr:primaryType="nt:unstructured"
+        workflow-model-title="Practice Workflow"
+        workflow-model-title-alias="PracticeWorkflowModel"/>
+</jcr:root>

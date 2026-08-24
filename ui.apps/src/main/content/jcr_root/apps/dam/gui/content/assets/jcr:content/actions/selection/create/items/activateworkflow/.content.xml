@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:granite="http://www.adobe.com/jcr/granite/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          jcr:primaryType="sling:Folder"
+          sling:orderBefore="createworkflow"
+          sling:resourceType="granite/ui/components/coral/foundation/collection/actionlink"
+          action="foundation.dialog"
+          activeSelectionCount="multiple"
+          granite:class="aemcloudproject-assets-activate-workflow cq-damadmin-admin-actions-createworkflow"
+          granite:rel="cq-damadmin-admin-actions-createworkflow"
+          icon="workflow"
+          text="Activate Workflow">
+    <data
+        jcr:primaryType="nt:unstructured"
+        nesting="hide"
+        src.uritemplate="/mnt/overlay/dam/gui/content/commons/createworkflowdialog.html{+args}"/>
+    <granite:data
+        jcr:primaryType="nt:unstructured"
+        multipleWorkflowLimit="{Long}15"
+        trackingElement="assets-create-activate-workflow"
+        workflow-model-title="Practice Workflow"
+        workflow-model-title-alias="PracticeWorkflowModel"/>
+    <granite:rendercondition
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="cq/gui/components/renderconditions/canreadworkflowmodels"/>
+</jcr:root>

@@ -1,39 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
     jcr:primaryType="nt:unstructured"
     jcr:title="Responsive Image"
     sling:resourceType="cq/gui/components/authoring/dialog">
     <content
         jcr:primaryType="nt:unstructured"
-        sling:resourceType="granite/ui/components/coral/foundation/container"
-        granite:class="cmp-responsiveimage__editor">
+        sling:resourceType="granite/ui/components/coral/foundation/container">
         <items jcr:primaryType="nt:unstructured">
+            <!--
+                A single tab holding both variants, stacked in their own wells. The tabs
+                container is kept so components reusing this dialog (Hero Banner) can
+                merge tabs of their own next to it via sling:orderBefore="images".
+            -->
             <tabs
                 jcr:primaryType="nt:unstructured"
                 sling:resourceType="granite/ui/components/coral/foundation/tabs"
                 maximized="{Boolean}true">
                 <items jcr:primaryType="nt:unstructured">
-                    <asset
+                    <images
                         jcr:primaryType="nt:unstructured"
-                        sling:hideResource="{Boolean}true"/>
-                    <metadata
-                        jcr:primaryType="nt:unstructured"
-                        sling:hideResource="{Boolean}true"/>
-                    <desktop
-                        jcr:primaryType="nt:unstructured"
-                        jcr:title="Desktop Image"
+                        jcr:title="Image"
                         sling:resourceType="granite/ui/components/coral/foundation/container"
                         margin="{Boolean}true">
                         <items jcr:primaryType="nt:unstructured">
-                            <columns
+                            <desktop
                                 jcr:primaryType="nt:unstructured"
-                                sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns"
-                                margin="{Boolean}true">
+                                sling:resourceType="granite/ui/components/coral/foundation/well">
                                 <items jcr:primaryType="nt:unstructured">
-                                    <column
+                                    <group
                                         jcr:primaryType="nt:unstructured"
-                                        sling:resourceType="granite/ui/components/coral/foundation/container">
+                                        jcr:title="Desktop Image"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/fieldset">
                                         <items jcr:primaryType="nt:unstructured">
+                                            <!-- Stamps the image resource type on the child node so it IS an
+                                                 Image v3 resource: no wrapper, no post processor, and the
+                                                 Adaptive Image Servlet resolves ./desktopImage.coreimg. URLs. -->
+                                            <resourceType
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/hidden"
+                                                name="./desktopImage/sling:resourceType"
+                                                value="aemcloudproject/components/image"/>
                                             <file
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="cq/gui/components/authoring/dialog/fileupload"
@@ -41,49 +47,49 @@
                                                 autoStart="{Boolean}false"
                                                 class="cq-droptarget"
                                                 fieldLabel="Desktop image asset"
-                                                fileNameParameter="./desktopImageName"
-                                                fileReferenceParameter="./desktopImagePath"
+                                                fieldDescription="Rendered on all screen sizes unless a mobile image is set."
+                                                fileNameParameter="./desktopImage/fileName"
+                                                fileReferenceParameter="./desktopImage/fileReference"
                                                 mimeTypes="[image/gif,image/jpeg,image/png,image/svg+xml,image/tiff,image/webp]"
                                                 multiple="{Boolean}false"
-                                                name="./desktopImageFile"
+                                                name="./desktopImage/file"
                                                 title="Drag a DAM image here, or pick one with the asset selector"
-                                                uploadUrl="${suffix.path}"
                                                 useHTML5="{Boolean}true"/>
                                             <altValueFromDAM
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
                                                 checked="{Boolean}true"
-                                                name="./desktopAltValueFromDAM"
+                                                name="./desktopImage/altValueFromDAM"
                                                 text="Get alternative text from DAM metadata"
                                                 uncheckedValue="false"
                                                 value="{Boolean}true"/>
                                             <alt
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                                                fieldDescription="Used when 'Get alternative text from DAM metadata' is unchecked."
+                                                fieldDescription="Used when 'Get alternative text from DAM metadata' is unchecked. This is the text the picture element exposes."
                                                 fieldLabel="Alternative text"
-                                                name="./desktopAltText"/>
+                                                name="./desktopImage/alt"/>
                                         </items>
-                                    </column>
+                                    </group>
                                 </items>
-                            </columns>
-                        </items>
-                    </desktop>
-                    <mobile
-                        jcr:primaryType="nt:unstructured"
-                        jcr:title="Mobile Image"
-                        sling:resourceType="granite/ui/components/coral/foundation/container"
-                        margin="{Boolean}true">
-                        <items jcr:primaryType="nt:unstructured">
-                            <columns
+                            </desktop>
+                            <mobile
                                 jcr:primaryType="nt:unstructured"
-                                sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns"
-                                margin="{Boolean}true">
+                                sling:resourceType="granite/ui/components/coral/foundation/well">
                                 <items jcr:primaryType="nt:unstructured">
-                                    <column
+                                    <group
                                         jcr:primaryType="nt:unstructured"
-                                        sling:resourceType="granite/ui/components/coral/foundation/container">
+                                        jcr:title="Mobile Image"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/fieldset">
                                         <items jcr:primaryType="nt:unstructured">
+                                            <!-- Stamps the image resource type on the child node so it IS an
+                                                 Image v3 resource: no wrapper, no post processor, and the
+                                                 Adaptive Image Servlet resolves ./mobileImage.coreimg. URLs. -->
+                                            <resourceType
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/hidden"
+                                                name="./mobileImage/sling:resourceType"
+                                                value="aemcloudproject/components/image"/>
                                             <file
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="cq/gui/components/authoring/dialog/fileupload"
@@ -91,35 +97,34 @@
                                                 autoStart="{Boolean}false"
                                                 class="cq-droptarget"
                                                 fieldLabel="Mobile image asset"
-                                                fieldDescription="Optional. When empty, the desktop image is rendered on all devices and the responsive srcset covers small screens."
-                                                fileNameParameter="./mobileImageName"
-                                                fileReferenceParameter="./mobileImagePath"
+                                                fieldDescription="Optional. When set, it replaces the desktop image below 768px."
+                                                fileNameParameter="./mobileImage/fileName"
+                                                fileReferenceParameter="./mobileImage/fileReference"
                                                 mimeTypes="[image/gif,image/jpeg,image/png,image/svg+xml,image/tiff,image/webp]"
                                                 multiple="{Boolean}false"
-                                                name="./mobileImageFile"
+                                                name="./mobileImage/file"
                                                 title="Drag a DAM image here, or pick one with the asset selector"
-                                                uploadUrl="${suffix.path}"
                                                 useHTML5="{Boolean}true"/>
                                             <altValueFromDAM
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
                                                 checked="{Boolean}true"
-                                                name="./mobileAltValueFromDAM"
+                                                name="./mobileImage/altValueFromDAM"
                                                 text="Get alternative text from DAM metadata"
                                                 uncheckedValue="false"
                                                 value="{Boolean}true"/>
                                             <alt
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                                                fieldDescription="Used when 'Get alternative text from DAM metadata' is unchecked."
+                                                fieldDescription="Used only when no desktop image is set - a picture element carries a single alternative text."
                                                 fieldLabel="Alternative text"
-                                                name="./mobileAltText"/>
+                                                name="./mobileImage/alt"/>
                                         </items>
-                                    </column>
+                                    </group>
                                 </items>
-                            </columns>
+                            </mobile>
                         </items>
-                    </mobile>
+                    </images>
                 </items>
             </tabs>
         </items>

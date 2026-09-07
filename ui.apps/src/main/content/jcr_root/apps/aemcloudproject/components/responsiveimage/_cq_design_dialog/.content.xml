@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    jcr:title="Responsive Image"
+    sling:resourceType="cq/gui/components/authoring/dialog">
+    <!--
+        Only the Art Direction settings below are read by this component's own model,
+        from this component's policy.
+
+        The Image v3 settings (widths, sizes, JPEG quality, lazy loading) are read by
+        the Image model and by the AdaptiveImageServlet from the content policy of the
+        resource being rendered - the desktopImage / mobileImage CHILD node, not this
+        node. Those children are typed aemcloudproject/components/image, so they
+        currently resolve to the shared Image policy and these fields have no effect
+        on them. Left in place pending the policy-resolution diagnostic.
+    -->
+    <content
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="granite/ui/components/coral/foundation/container">
+        <items jcr:primaryType="nt:unstructured">
+            <tabs
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/tabs"
+                maximized="{Boolean}true">
+                <items jcr:primaryType="nt:unstructured">
+                    <main
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Main"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <artDirection
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/well">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <group
+                                        jcr:primaryType="nt:unstructured"
+                                        jcr:title="Art Direction"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/fieldset">
+                                        <items jcr:primaryType="nt:unstructured">
+                                            <mobileBreakpoint
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                                emptyText="767px"
+                                                fieldDescription="Width below which the mobile image replaces the desktop one, as a CSS length. Used for the media condition of the picture element's source. Defaults to 767px."
+                                                fieldLabel="Mobile breakpoint"
+                                                name="./mobileBreakpoint"/>
+                                        </items>
+                                    </group>
+                                </items>
+                            </artDirection>
+                            <renditions
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/well">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <group
+                                        jcr:primaryType="nt:unstructured"
+                                        jcr:title="Image Renditions"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/fieldset">
+                                        <items jcr:primaryType="nt:unstructured">
+                                            <allowedRenditionWidths
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/multifield"
+                                                fieldDescription="Widths, in pixels, of the renditions the Adaptive Image Servlet may generate. These become the srcset. Leave empty to serve only the original."
+                                                fieldLabel="Widths">
+                                                <field
+                                                    jcr:primaryType="nt:unstructured"
+                                                    sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                                    min="{Long}1"
+                                                    name="./allowedRenditionWidths"/>
+                                            </allowedRenditionWidths>
+                                            <sizes
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/multifield"
+                                                fieldDescription="Media conditions and widths for the sizes attribute, e.g. '(max-width: 767px) 100vw'. Without them the browser assumes 100vw."
+                                                fieldLabel="Sizes">
+                                                <field
+                                                    jcr:primaryType="nt:unstructured"
+                                                    sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                                    name="./sizes"/>
+                                            </sizes>
+                                            <jpegQuality
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                                fieldDescription="Quality of generated JPEG renditions, 0-100. Defaults to 82."
+                                                fieldLabel="JPEG Quality"
+                                                max="{Long}100"
+                                                min="{Long}0"
+                                                name="./jpegQuality"
+                                                value="{Long}82"/>
+                                        </items>
+                                    </group>
+                                </items>
+                            </renditions>
+                            <behaviour
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/well">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <group
+                                        jcr:primaryType="nt:unstructured"
+                                        jcr:title="Behaviour"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/fieldset">
+                                        <items jcr:primaryType="nt:unstructured">
+                                            <disableLazyLoading
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                                                name="./disableLazyLoading"
+                                                text="Disable lazy loading"
+                                                uncheckedValue="false"
+                                                value="{Boolean}true"/>
+                                            <altValueFromDAM
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                                                checked="{Boolean}true"
+                                                name="./altValueFromDAM"
+                                                text="Default to taking the alternative text from DAM metadata"
+                                                uncheckedValue="false"
+                                                value="{Boolean}true"/>
+                                            <enableAssetDelivery
+                                                jcr:primaryType="nt:unstructured"
+                                                sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                                                name="./enableAssetDelivery"
+                                                text="Enable web-optimized image delivery"
+                                                uncheckedValue="false"
+                                                value="{Boolean}true"/>
+                                        </items>
+                                    </group>
+                                </items>
+                            </behaviour>
+                        </items>
+                    </main>
+                </items>
+            </tabs>
+        </items>
+    </content>
+</jcr:root>

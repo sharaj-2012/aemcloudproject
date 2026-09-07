@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
     jcr:primaryType="cq:Component"
     jcr:title="Hero Banner"
-    jcr:description="Hero banner reusing the Responsive Image component (dialog and rendering) via delegation"
+    jcr:description="Hero banner reusing the Responsive Image dialog and rendering"
     sling:resourceSuperType="aemcloudproject/components/responsiveimage"
-    componentGroup="Aem Cloud Project - Content"
-    imageDelegate="aemcloudproject/components/image"/>
+    componentGroup="Aem Cloud Project - Content">
+    <cq:template
+        jcr:primaryType="nt:unstructured"
+        jcr:title="Hero Banner"
+        sling:resourceType="aemcloudproject/components/herobanner">
+        <desktopImage
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="aemcloudproject/components/image"/>
+        <mobileImage
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="aemcloudproject/components/image"/>
+    </cq:template>
+</jcr:root>

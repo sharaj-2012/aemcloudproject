@@ -1,51 +1,167 @@
 package com.aemcloudproject.core.models;
 
+import java.util.Arrays;
+
+import javax.annotation.PostConstruct;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.models.annotations.DefaultInjectionStrategy;
+import org.apache.sling.models.annotations.Model;
+import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy;
+import org.apache.sling.models.annotations.injectorspecific.OSGiService;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
+import org.apache.sling.models.factory.ModelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.adobe.cq.wcm.core.components.models.Image;
+import com.day.cq.wcm.api.designer.Style;
+import com.day.cq.wcm.api.policies.ContentPolicy;
+import com.day.cq.wcm.api.policies.ContentPolicyManager;
 
 /**
- * Sling Model for the Responsive Image component. Exposes desktop and mobile
- * image resources that delegate rendering to Core Components Image v3.
+ * Exposes the desktop and mobile variants of the Responsive Image component as
+ * Core Components Image v3 models, so the HTL can assemble a {@code <picture>}.
+ * <p>
+ * Each variant lives on its own child node ({@code desktopImage} /
+ * {@code mobileImage}) that carries the <em>standard</em> Image v3 properties
+ * ({@code sling:resourceType}, {@code fileReference}, {@code alt},
+ * {@code altValueFromDAM}). Because those are real JCR nodes of a real image
+ * resource type, nothing has to be renamed, wrapped or mirrored: Image v3 reads
+ * them directly and the Adaptive Image Servlet can resolve the {@code .coreimg.}
+ * URLs against them.
+ * <p>
+ * The model is deliberately not bound to a resource type - any component whose
+ * node has these two children can render it, which is what lets Hero Banner (and
+ * anything else) reuse the component as-is.
  */
-public interface ResponsiveImage {
+@Model(adaptables = SlingHttpServletRequest.class, defaultInjectionStrategy = DefaultInjectionStrategy.OPTIONAL)
+public class ResponsiveImage {
 
-    /** Property holding the DAM path of the desktop image. */
-    String PN_DESKTOP_IMAGE_PATH = "desktopImagePath";
-    /** Property holding the desktop alternative text. */
-    String PN_DESKTOP_ALT_TEXT = "desktopAltText";
-    /** Property holding the desktop "inherit alt from DAM" flag. */
-    String PN_DESKTOP_ALT_FROM_DAM = "desktopAltValueFromDAM";
-    /** Property holding the DAM path of the mobile image. */
-    String PN_MOBILE_IMAGE_PATH = "mobileImagePath";
-    /** Property holding the mobile alternative text. */
-    String PN_MOBILE_ALT_TEXT = "mobileAltText";
-    /** Property holding the mobile "inherit alt from DAM" flag. */
-    String PN_MOBILE_ALT_FROM_DAM = "mobileAltValueFromDAM";
+    private static final Logger LOG = LoggerFactory.getLogger(ResponsiveImage.class);
 
-    /** Mirrored child node used by the Adaptive Image Servlet for the desktop image. */
-    String NN_DESKTOP_IMAGE = "desktopImage";
-    /** Mirrored child node used by the Adaptive Image Servlet for the mobile image. */
-    String NN_MOBILE_IMAGE = "mobileImage";
+    /** Child node holding the desktop variant. */
+    public static final String NN_DESKTOP_IMAGE = "desktopImage";
+    /** Child node holding the mobile variant. */
+    public static final String NN_MOBILE_IMAGE = "mobileImage";
 
-    /**
-     * @return a resource renderable by Image v3 for the desktop image, or {@code null}
-     *         if no valid desktop image is authored
-     */
-    Resource getDesktopImageResource();
+    private static final String PN_FILE_REFERENCE = "fileReference";
+    private static final String PN_MOBILE_BREAKPOINT = "mobileBreakpoint";
+    private static final String DEFAULT_MOBILE_BREAKPOINT = "767px";
+
+    @Self
+    private SlingHttpServletRequest request;
+
+    @OSGiService(injectionStrategy = InjectionStrategy.REQUIRED)
+    private ModelFactory modelFactory;
 
     /**
-     * @return a resource renderable by Image v3 for the mobile image, or {@code null}
-     *         if no valid mobile image is authored
+     * Content policy of this component - the place the design dialog writes to.
+     * Note that the Image v3 settings (allowedRenditionWidths, sizes, jpegQuality,
+     * ...) are NOT read from here: both the Image model and the AdaptiveImageServlet
+     * read them from the policy of the child node they render. Only settings this
+     * class reads itself, such as the mobile breakpoint, come from this style.
      */
-    Resource getMobileImageResource();
+    @ScriptVariable(injectionStrategy = InjectionStrategy.OPTIONAL)
+    private Style currentStyle;
+
+    private Image desktop;
+    private Image mobile;
+
+    @PostConstruct
+    private void init() {
+        desktop = coreImage(NN_DESKTOP_IMAGE);
+        mobile = coreImage(NN_MOBILE_IMAGE);
+    }
+
+    private Image coreImage(String childName) {
+        Resource child = request.getResource().getChild(childName);
+        if (child == null || StringUtils.isBlank(child.getValueMap().get(PN_FILE_REFERENCE, String.class))) {
+            return null;
+        }
+        // getModelFromWrappedRequest returns null when the child cannot be adapted,
+        // typically because it is missing the sling:resourceType that puts it in the
+        // image chain. A model without a src means the fileReference points at an
+        // asset that is gone. Either way the variant is unusable, and reporting it as
+        // absent lets the other variant take over instead of rendering a broken img.
+        Image image = modelFactory.getModelFromWrappedRequest(request, child, Image.class);
+        if (image == null || StringUtils.isBlank(image.getSrc())) {
+            LOG.warn("No renderable image at {}", child.getPath());
+            return null;
+        }
+        return image;
+    }
+
+    /** @return the desktop variant, or {@code null} when it is not authored. */
+    public Image getDesktop() {
+        return desktop;
+    }
+
+    /** @return the mobile variant, or {@code null} when it is not authored. */
+    public Image getMobile() {
+        return mobile;
+    }
 
     /**
-     * @return {@code true} if at least one image variant is authored and valid
+     * @return the variant rendered by the {@code <img>} fallback inside the
+     *         {@code <picture>}: the desktop image when authored, otherwise the
+     *         mobile one, so a single authored variant still renders everywhere.
      */
-    boolean isHasContent();
+    public Image getPrimary() {
+        return desktop != null ? desktop : mobile;
+    }
+
+    /** @return {@code true} when the mobile variant should override on small screens. */
+    public boolean isArtDirected() {
+        return desktop != null && mobile != null;
+    }
 
     /**
-     * @return {@code true} when both variants are authored, i.e. media-query based
-     *         art direction should be applied
+     * @return the media condition under which the mobile variant replaces the desktop
+     *         one, built from the {@code mobileBreakpoint} design property.
      */
-    boolean isArtDirected();
+    public String getMobileMediaQuery() {
+        String breakpoint = currentStyle == null
+                ? DEFAULT_MOBILE_BREAKPOINT
+                : currentStyle.get(PN_MOBILE_BREAKPOINT, DEFAULT_MOBILE_BREAKPOINT);
+        if (StringUtils.isBlank(breakpoint)) {
+            breakpoint = DEFAULT_MOBILE_BREAKPOINT;
+        }
+        return "(max-width: " + breakpoint + ")";
+    }
+
+    /**
+     * Diagnostic string rendered as a data attribute outside publish mode: which
+     * resource type each child actually has, which content policy resolves for it,
+     * and which rendition widths the Image model ended up advertising. Use it to see
+     * whether the design dialog's policy is reaching the variants; remove this and
+     * its markup once that is confirmed.
+     *
+     * @return a human readable summary of the resolved policies
+     */
+    public String getDiagnostics() {
+        return "desktop[" + describe(NN_DESKTOP_IMAGE, desktop) + "] "
+                + "mobile[" + describe(NN_MOBILE_IMAGE, mobile) + "] "
+                + "componentStyle=" + (currentStyle == null ? "NONE" : currentStyle.getPath());
+    }
+
+    private String describe(String childName, Image image) {
+        Resource child = request.getResource().getChild(childName);
+        if (child == null) {
+            return "no child node";
+        }
+        ContentPolicyManager policyManager = request.getResourceResolver().adaptTo(ContentPolicyManager.class);
+        ContentPolicy policy = policyManager == null ? null : policyManager.getPolicy(child, request);
+        return "type=" + child.getResourceType()
+                + ", policy=" + (policy == null ? "NONE" : policy.getPath())
+                + ", widths=" + (image == null ? "n/a" : Arrays.toString(image.getWidths()));
+    }
+
+    /** @return {@code true} when no variant is authored. */
+    public boolean isEmpty() {
+        return desktop == null && mobile == null;
+    }
 }

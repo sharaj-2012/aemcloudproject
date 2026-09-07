@@ -1,9 +1,9 @@
 <!--/*
     Hero Banner
-    Reuses the Responsive Image component the same way Core Teaser reuses Core Image:
-    the image is authored in THIS component's dialog (inherited desktop/mobile tabs,
-    same custom property names on this node) but rendered by the responsiveimage HTL,
-    which in turn delegates to Core Image v3.
+    The image is authored in THIS component's dialog - the Desktop/Mobile Image tabs
+    are inherited from responsiveimage via the Sling Resource Merger, so they write
+    the desktopImage / mobileImage child nodes onto the hero banner's own node - and
+    rendered by the responsiveimage HTL, which builds the <picture>.
 */-->
 <div class="cmp-herobanner">
     <div class="cmp-herobanner__image"

@@ -7,12 +7,12 @@
         <items jcr:primaryType="nt:unstructured">
             <tabs jcr:primaryType="nt:unstructured">
                 <items jcr:primaryType="nt:unstructured">
-                    <!-- Desktop/Mobile image tabs are inherited from
+                    <!-- Image tab (desktop + mobile) is inherited from
                          aemcloudproject/components/responsiveimage via the Sling Resource Merger -->
                     <text
                         jcr:primaryType="nt:unstructured"
                         jcr:title="Text"
-                        sling:orderBefore="desktop"
+                        sling:orderBefore="images"
                         sling:resourceType="granite/ui/components/coral/foundation/container"
                         margin="{Boolean}true">
                         <items jcr:primaryType="nt:unstructured">

@@ -1,22 +1,54 @@
 <!--/*
     Responsive Image
-    Delegates the actual image rendering to Core Components Image v3 through the
-    wrapped resources exposed by the ResponsiveImage Sling Model. Two delegated
-    renderings with media-query-based visibility are used; lazy loading keeps the
-    hidden variant from being downloaded.
-*/-->
-<sly data-sly-use.model="com.aemcloudproject.core.models.ResponsiveImage"/>
 
-<div class="cmp-responsiveimage${model.artDirected ? ' cmp-responsiveimage--art-directed' : ''}"
-     data-sly-test="${model.hasContent}">
-    <div class="cmp-responsiveimage__desktop cq-dd-desktopimage"
-         data-sly-test="${model.desktopImageResource}"
-         data-sly-resource="${model.desktopImageResource @ decorationTagName='div'}"></div>
-    <div class="cmp-responsiveimage__mobile cq-dd-mobileimage"
-         data-sly-test="${model.mobileImageResource}"
-         data-sly-resource="${model.mobileImageResource @ decorationTagName='div'}"></div>
+    One <picture> assembled from two Core Components Image v3 models:
+      - <source media="(max-width: <mobileBreakpoint>)"> from the mobileImage child node
+      - <img> fallback from the desktopImage child node (or the mobile one when
+        it is the only variant authored)
+
+    The browser downloads exactly one of the two, and each variant keeps the
+    Image v3 srcset, so responsive rendition selection still applies inside the
+    chosen art direction.
+
+    Note: a <picture> carries a single accessible name, so only the alternative
+    text of the variant rendered by the <img> is used.
+*/-->
+<sly data-sly-use.model="com.aemcloudproject.core.models.ResponsiveImage"
+     data-sly-use.templates="core/wcm/components/commons/v1/templates.html"/>
+
+<div data-sly-test.image="${model.primary}"
+     class="cmp-responsiveimage${!wcmmode.disabled ? ' cq-dd-desktopImage' : ''}">
+    <picture>
+        <source data-sly-test="${model.artDirected}"
+                media="${model.mobileMediaQuery}"
+                srcset="${model.mobile.srcset || model.mobile.src}"
+                sizes="${model.mobile.sizes}"/>
+        <img class="cmp-responsiveimage__image"
+             src="${image.src}"
+             srcset="${image.srcset}"
+             sizes="${image.sizes}"
+             width="${image.width}"
+             height="${image.height}"
+             loading="${image.lazyEnabled ? 'lazy' : ''}"
+             alt="${image.alt || true}"/>
+    </picture>
 </div>
 
-<div data-sly-test="${!model.hasContent && (wcmmode.edit || wcmmode.preview)}"
-     class="cq-placeholder cq-dd-desktopimage cq-dd-mobileimage"
-     data-emptytext="Responsive Image – configure or drop a desktop/mobile image"></div>
+<!--/*
+    A <picture> renders a single box, so the desktop drop target is the wrapper
+    above and the mobile variant needs a zone of its own in the editor. The class
+    names must match the cq:DropTargetConfig node names in _cq_editConfig.xml.
+*/-->
+<div data-sly-test="${wcmmode.edit}"
+     class="cmp-responsiveimage__dropzone cq-dd-mobileImage">Mobile image – drop an asset here</div>
+
+<!--/*
+    Temporary diagnostic, author/preview only: reports the resource type, resolved
+    content policy and rendition widths of each variant. Read it with view-source or
+    dev tools. Delete this block and ResponsiveImage#getDiagnostics once the policy
+    wiring is confirmed.
+*/-->
+<div data-sly-test="${!wcmmode.disabled}" hidden
+     data-cmp-responsiveimage-debug="${model.diagnostics}"></div>
+
+<sly data-sly-call="${templates.placeholder @ isEmpty=!model.primary, classAppend='cmp-responsiveimage cq-dd-desktopImage'}"/>

@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
     jcr:primaryType="cq:Component"
     jcr:title="Responsive Image"
-    jcr:description="Desktop/mobile image component delegating rendering to Core Components Image v3"
-    sling:resourceSuperType="aemcloudproject/components/image"
-    componentGroup="Aem Cloud Project - Content"
-    imageDelegate="aemcloudproject/components/image"/>
+    jcr:description="Desktop and mobile image, rendered as a picture element by Core Components Image v3"
+    componentGroup="Aem Cloud Project - Content">
+    <!--
+        Both variants are pre-created as real image resources so that a freshly
+        dropped component (and any asset dropped straight onto it) already has a
+        node the Adaptive Image Servlet can serve. The dialog writes the same
+        sling:resourceType, so components that reuse only the dialog get them too.
+    -->
+    <cq:template
+        jcr:primaryType="nt:unstructured"
+        jcr:title="Responsive Image"
+        sling:resourceType="aemcloudproject/components/responsiveimage">
+        <desktopImage
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="aemcloudproject/components/image"/>
+        <mobileImage
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="aemcloudproject/components/image"/>
+    </cq:template>
+</jcr:root>

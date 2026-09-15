@@ -6,5 +6,7 @@
     <filter root="/apps/dam/gui/content/assets/jcr:content/actions/selection/create/items/activateworkflow"/>
     <filter root="/apps/wcm/core/content/sites/jcr:content/actions/selection/create/items/activateworkflow"/>
     <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/activateworkflow"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/activateworkflow"/>
+    <filter root="/apps/cq/experience-fragments/content/experience-fragments/jcr:content/actions/selection/create/items/activateworkflow"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>
 </workspaceFilter>

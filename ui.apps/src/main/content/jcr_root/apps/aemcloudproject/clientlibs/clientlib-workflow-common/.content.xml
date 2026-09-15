@@ -2,5 +2,5 @@
 <jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0"
           xmlns:jcr="http://www.jcp.org/jcr/1.0"
           jcr:primaryType="cq:ClientLibraryFolder"
-          categories="[dam.gui.admin.coral]"
-          dependencies="[aemcloudproject.workflow.common]"/>
+          categories="[aemcloudproject.workflow.common]"
+          dependencies="[granite.ui.coral.foundation]"/>

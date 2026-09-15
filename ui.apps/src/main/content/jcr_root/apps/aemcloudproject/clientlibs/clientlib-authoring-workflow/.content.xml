@@ -3,4 +3,4 @@
           xmlns:jcr="http://www.jcp.org/jcr/1.0"
           jcr:primaryType="cq:ClientLibraryFolder"
           categories="[cq.authoring.editor.sites.page.hook]"
-          dependencies="[cq.authoring.editor.sites.page]"/>
+          dependencies="[cq.authoring.editor.sites.page,aemcloudproject.workflow.common]"/>

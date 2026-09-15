@@ -14,8 +14,7 @@
     <granite:data
         jcr:primaryType="nt:unstructured"
         trackingElement="sites-create-activate-workflow"
-        workflow-model-title="Practice Workflow"
-        workflow-model-title-alias="PracticeWorkflowModel"/>
+        workflow-model="/var/workflow/models/PracticeWorkflowModel"/>
     <granite:rendercondition
         jcr:primaryType="nt:unstructured"
         sling:resourceType="cq/gui/components/renderconditions/canreadworkflowmodels"/>

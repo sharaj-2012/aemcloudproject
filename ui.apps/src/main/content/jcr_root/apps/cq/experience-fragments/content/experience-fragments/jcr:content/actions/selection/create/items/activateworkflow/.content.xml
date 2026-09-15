@@ -5,20 +5,16 @@
           jcr:primaryType="sling:Folder"
           sling:orderBefore="createworkflow"
           sling:resourceType="granite/ui/components/coral/foundation/collection/actionlink"
-          action="foundation.dialog"
+          action="aemcloudproject.activateworkflow"
           activeSelectionCount="multiple"
-          granite:class="aemcloudproject-assets-activate-workflow cq-damadmin-admin-actions-createworkflow"
-          granite:rel="cq-damadmin-admin-actions-createworkflow"
+          granite:class="aemcloudproject-sites-activate-workflow"
+          granite:rel="aemcloudproject-sites-activate-workflow"
           icon="workflow"
+          target=".cq-experience-fragments-admin-childpages"
           text="Activate Workflow">
-    <data
-        jcr:primaryType="nt:unstructured"
-        nesting="hide"
-        src.uritemplate="/mnt/overlay/dam/gui/content/commons/createworkflowdialog.html{+args}"/>
     <granite:data
         jcr:primaryType="nt:unstructured"
-        multipleWorkflowLimit="{Long}15"
-        trackingElement="assets-create-activate-workflow"
+        trackingElement="xf-create-activate-workflow"
         workflow-model="/var/workflow/models/PracticeWorkflowModel"/>
     <granite:rendercondition
         jcr:primaryType="nt:unstructured"

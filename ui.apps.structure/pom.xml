@@ -41,6 +41,8 @@
                         <filter><root>/apps/cq</root></filter>
                         <filter><root>/apps/dam</root></filter>
                         <filter><root>/apps/wcm</root></filter>
+                        <filter><root>/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items</root></filter>
+                        <filter><root>/apps/wcm/core/content/editor/jcr:content/content/items/content/content/items</root></filter>
                         <filter><root>/apps/msm</root></filter>
 
                         <!-- Immutable context-aware configurations -->

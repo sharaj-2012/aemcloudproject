@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SCB Workflows pulldown for the Sites console selection bar, placed after Create.
+    Each item opens the SCB Workflow wizard (aemcloudproject/content/scbstartbulkworkflows) with its
+    model preselected, the same way the OOTB Create > Workflow item opens startbulkworkflows.
+    relScope="none": the console only shows a selection action when the selected card lists
+    its granite:rel, and Sites cards list only OOTB rels, so our custom rels must not be checked.
+-->
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    sling:resourceType="granite/ui/components/coral/foundation/pulldown"
+    sling:orderBefore="open"
+    granite:class="foundation-collection-action scb-workflows"
+    granite:rel="scb-siteadmin-admin-actions-scbworkflows-activator"
+    icon="workflow"
+    text="SCB Workflows"
+    variant="actionBar">
+    <granite:data
+        jcr:primaryType="nt:unstructured"
+        foundation-collection-action="\{&quot;target&quot;: &quot;.cq-siteadmin-admin-childpages&quot;, &quot;activeSelectionCount&quot;: &quot;multiple&quot;, &quot;relScope&quot;: &quot;none&quot;}"/>
+    <items jcr:primaryType="nt:unstructured">
+        <requestactivation
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/collection/actionlink"
+            action="foundation.link"
+            activeSelectionCount="multiple"
+            relScope="none"
+            granite:rel="scb-siteadmin-admin-requestactivation"
+            target=".cq-siteadmin-admin-childpages"
+            text="Request for Activation">
+            <data
+                jcr:primaryType="nt:unstructured"
+                href.uritemplate="/mnt/override/apps/aemcloudproject/content/scbstartbulkworkflows.html?model=/var/workflow/models/request_for_activation{&amp;item*}"/>
+            <granite:rendercondition
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="cq/gui/components/renderconditions/canreadworkflowmodels"/>
+        </requestactivation>
+        <requestdeactivation
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/collection/actionlink"
+            action="foundation.link"
+            activeSelectionCount="multiple"
+            relScope="none"
+            granite:rel="scb-siteadmin-admin-requestdeactivation"
+            target=".cq-siteadmin-admin-childpages"
+            text="Request for Deactivation">
+            <data
+                jcr:primaryType="nt:unstructured"
+                href.uritemplate="/mnt/override/apps/aemcloudproject/content/scbstartbulkworkflows.html?model=/var/workflow/models/request_for_deactivation{&amp;item*}"/>
+            <granite:rendercondition
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="cq/gui/components/renderconditions/canreadworkflowmodels"/>
+        </requestdeactivation>
+    </items>
+</jcr:root>

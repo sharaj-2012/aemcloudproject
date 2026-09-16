@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SCB Workflow wizard for the Sites console.
+
+    Same pattern as the OOTB /libs/wcm/core/content/common/startbulkworkflows: a page that
+    inherits the whole Create Workflow wizard from cq/gui/content/common/startbulkworkflows via
+    sling:resourceSuperType, opened through /mnt/override so the two are merged. Only the
+    differences are defined here:
+      - "SCB Workflow" titles instead of "Create Workflow"
+      - the model select lists just the ?model= model, preselected (scbworkflowmodels)
+      - an extra clientlib that applies that preselected model's multi-resource setting
+-->
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="cq:Page">
+    <jcr:content
+        jcr:primaryType="nt:unstructured"
+        jcr:title="AEM Sites | SCB Workflow"
+        sling:resourceSuperType="cq/gui/content/common/startbulkworkflows">
+        <head jcr:primaryType="nt:unstructured">
+            <clientlibs
+                jcr:primaryType="nt:unstructured"
+                categories="[coralui3,granite.ui.coral.foundation,cq.common.startbulkworkflows,aemcloudproject.scb.startbulkworkflows]"/>
+        </head>
+        <body jcr:primaryType="nt:unstructured">
+            <items jcr:primaryType="nt:unstructured">
+                <form jcr:primaryType="nt:unstructured">
+                    <items jcr:primaryType="nt:unstructured">
+                        <wizard
+                            jcr:primaryType="nt:unstructured"
+                            jcr:title="SCB Workflow">
+                            <items jcr:primaryType="nt:unstructured">
+                                <properties jcr:primaryType="nt:unstructured">
+                                    <items jcr:primaryType="nt:unstructured">
+                                        <fixedColumnContainer jcr:primaryType="nt:unstructured">
+                                            <items jcr:primaryType="nt:unstructured">
+                                                <fixedColumn jcr:primaryType="nt:unstructured">
+                                                    <items jcr:primaryType="nt:unstructured">
+                                                        <model jcr:primaryType="nt:unstructured">
+                                                            <datasource
+                                                                jcr:primaryType="nt:unstructured"
+                                                                sling:resourceType="aemcloudproject/components/authoring/scbworkflowmodels"
+                                                                models="[/var/workflow/models/request_for_activation,/var/workflow/models/request_for_deactivation]"/>
+                                                        </model>
+                                                    </items>
+                                                </fixedColumn>
+                                            </items>
+                                        </fixedColumnContainer>
+                                    </items>
+                                </properties>
+                            </items>
+                        </wizard>
+                    </items>
+                </form>
+            </items>
+        </body>
+    </jcr:content>
+</jcr:root>

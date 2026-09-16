@@ -5,6 +5,8 @@
     <filter root="/apps/aemcloudproject/i18n"/>
     <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/scbworkflows"/>
     <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/content/items/scbstartworkflowmodal"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/scbworkflows"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/content/items/scbstartworkflowmodal"/>
     <filter root="/apps/aemcloudproject/content"/>
     <filter root="/apps/dam/gui/content/assets/jcr:content/actions/selection/scbworkflows"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>

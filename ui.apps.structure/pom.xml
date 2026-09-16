@@ -47,6 +47,7 @@
                         <filter><root>/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/content/items</root></filter>
                         <filter><root>/apps/dam/gui/content/assets/jcr:content/actions/selection</root></filter>
                         <filter><root>/apps/wcm/core/content/sites/jcr:content/actions/selection</root></filter>
+                        <filter><root>/apps/cq/experience-fragments/content/experience-fragments/jcr:content/actions/selection</root></filter>
                         <filter><root>/apps/msm</root></filter>
 
                         <!-- Immutable context-aware configurations -->

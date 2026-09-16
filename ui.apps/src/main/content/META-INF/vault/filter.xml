@@ -10,5 +10,6 @@
     <filter root="/apps/aemcloudproject/content"/>
     <filter root="/apps/dam/gui/content/assets/jcr:content/actions/selection/scbworkflows"/>
     <filter root="/apps/wcm/core/content/sites/jcr:content/actions/selection/scbworkflows"/>
+    <filter root="/apps/cq/experience-fragments/content/experience-fragments/jcr:content/actions/selection/scbworkflows"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>
 </workspaceFilter>

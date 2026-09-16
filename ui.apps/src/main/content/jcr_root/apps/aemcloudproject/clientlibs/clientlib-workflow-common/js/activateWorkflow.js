@@ -3,7 +3,10 @@
 
     var LOCKED_CLASS = "aemcloudproject-activate-workflow-locked";
     var SELECT_SELECTOR = "coral-select, select";
-    var MODEL_SELECTOR = "coral-select[name='model'], select[name='model']";
+    var MODEL_SELECTOR = "coral-select[name='model'], select[name='model']," +
+        "coral-select[name='workflowModel'], select[name='workflowModel']";
+    var TITLE_SELECTOR = "coral-dialog-header, .coral-Dialog-header, .coral-Dialog-title," +
+        " .foundation-layout-wizard2-title";
     var EVENT_NAMESPACE = ".aemcloudprojectWorkflow";
 
     function normalize(value) {
@@ -20,13 +23,17 @@
         };
     }
 
-    function notifyError(message) {
+    function notify(title, message, type) {
         var ui = $(window).adaptTo("foundation-ui");
         if (ui && typeof ui.notify === "function") {
-            ui.notify(Granite.I18n.get("Activate Workflow"), Granite.I18n.get(message), "error");
-        } else {
+            ui.notify(Granite.I18n.get(title), Granite.I18n.get(message), type);
+        } else if (type === "error") {
             window.console.error(message);
         }
+    }
+
+    function notifyError(message) {
+        notify("Activate Workflow", message, "error");
     }
 
     function findNativeAction(container, selector, label) {
@@ -55,6 +62,8 @@
         var container;
         var lockedField;
         var originalAttributes;
+        var lockedTitle;
+        var originalTitle;
         var channel = $(document);
 
         function stopWaiting() {
@@ -71,6 +80,11 @@
         }
 
         function unlock() {
+            if (lockedTitle) {
+                // Restore the dialog's own heading; it is a singleton AEM reuses for native opens too.
+                lockedTitle.textContent = originalTitle;
+                lockedTitle = null;
+            }
             if (!lockedField) {
                 return;
             }
@@ -110,6 +124,14 @@
                         event.stopImmediatePropagation();
                     }
                 });
+            if (options.dialogTitle && container) {
+                var titleEl = $(container).find(TITLE_SELECTOR).filter(":visible").get(0);
+                if (titleEl) {
+                    lockedTitle = titleEl;
+                    originalTitle = titleEl.textContent;
+                    titleEl.textContent = Granite.I18n.get(options.dialogTitle);
+                }
+            }
         }
 
         function configure() {
@@ -195,9 +217,77 @@
         return { start: start, cancel: cancel };
     }
 
+    // Bulk activate: wired once here rather than per surface, because the Sites, Assets and
+    // Experience Fragments console actions all point at the same dialog markup/classes via
+    // the shared aemcloudproject/components/authoring/activateworkflowbulk component.
+    var BULK_DIALOG_SELECTOR = ".aemcloudproject-activate-workflow-bulk-dialog";
+    var BULK_RESULT_SELECTOR = ".aemcloudproject-activate-workflow-result";
+    var BULK_RESULTS_LIST_SELECTOR = ".aemcloudproject-activate-workflow-results";
+    var BULK_TITLE_SELECTOR = ".aemcloudproject-activate-workflow-title";
+    var BULK_SUBMIT_SELECTOR = ".aemcloudproject-activate-workflow-submit";
+    var BULK_CANCEL_SELECTOR = ".aemcloudproject-activate-workflow-cancel";
+
+    function startInstance(model, path, title) {
+        return $.post("/var/workflow/instances", {
+            _charset_: "utf-8",
+            payloadType: "JCR_PATH",
+            payload: path,
+            model: model,
+            workflowTitle: title
+        });
+    }
+
+    function runBulk(dialog) {
+        var form = dialog.querySelector("form");
+        var model = form.getAttribute("data-aemcloudproject-workflow-model");
+        var title = form.querySelector(BULK_TITLE_SELECTOR).value;
+        var rows = dialog.querySelectorAll(BULK_RESULT_SELECTOR);
+        var submit = dialog.querySelector(BULK_SUBMIT_SELECTOR);
+        var cancelButton = dialog.querySelector(BULK_CANCEL_SELECTOR);
+        var succeeded = 0;
+        var failed = 0;
+
+        submit.setAttribute("disabled", "disabled");
+        cancelButton.setAttribute("disabled", "disabled");
+        dialog.querySelector(BULK_RESULTS_LIST_SELECTOR).hidden = false;
+
+        // One instance per item, sequentially: the configured model is not flagged
+        // multi-resource-safe, and sequential posting keeps each row's status legible.
+        function next(index) {
+            if (index >= rows.length) {
+                cancelButton.removeAttribute("disabled");
+                cancelButton.textContent = Granite.I18n.get("Close");
+                notify("Activate Workflow",
+                    succeeded + " started, " + failed + " failed.",
+                    failed ? "warning" : "success");
+                return;
+            }
+            var row = rows[index];
+            var status = row.querySelector(".aemcloudproject-activate-workflow-result-status");
+            status.textContent = Granite.I18n.get("Starting…");
+            startInstance(model, row.getAttribute("data-path"), title).done(function () {
+                succeeded++;
+                status.textContent = Granite.I18n.get("Started");
+                row.classList.add("aemcloudproject-activate-workflow-result-success");
+            }).fail(function () {
+                failed++;
+                status.textContent = Granite.I18n.get("Failed");
+                row.classList.add("aemcloudproject-activate-workflow-result-error");
+            }).always(function () {
+                next(index + 1);
+            });
+        }
+        next(0);
+    }
+
+    $(document).on("click", BULK_DIALOG_SELECTOR + " " + BULK_SUBMIT_SELECTOR, function () {
+        runBulk($(this).closest(BULK_DIALOG_SELECTOR).get(0));
+    });
+
     window.AemCloudProjectWorkflow = {
         create: create,
         readConfig: readConfig,
+        notify: notify,
         notifyError: notifyError,
         findNativeAction: findNativeAction
     };

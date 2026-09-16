@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          jcr:primaryType="cq:Page">
+    <!-- Overlay of the OOTB bulk workflow launcher page (/libs/wcm/core/content/common/startbulkworkflows).
+         Only jcr:title is overridden here; everything else (consoleId, sling:resourceSuperType, the
+         wizard's actual form) continues to come from /libs unmodified. -->
+    <jcr:content
+        jcr:primaryType="nt:unstructured"
+        jcr:title="AEM Sites | Activate Workflow"/>
+</jcr:root>

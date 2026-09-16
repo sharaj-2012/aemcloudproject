@@ -8,5 +8,10 @@
     <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/activateworkflow"/>
     <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/activateworkflow"/>
     <filter root="/apps/cq/experience-fragments/content/experience-fragments/jcr:content/actions/selection/create/items/activateworkflow"/>
+    <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/content/items/activateworkflowmodal"/>
+    <filter root="/apps/aemcloudproject/content"/>
+    <filter root="/apps/wcm/core/content/common/startbulkworkflows"/>
+    <filter root="/apps/cq/gui/content/common/startbulkworkflows"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/content/items/activateworkflowmodal"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>
 </workspaceFilter>

@@ -3,3 +3,43 @@
     opacity: 0.6;
     pointer-events: none;
 }
+
+.aemcloudproject-activate-workflow-count {
+    margin-top: 0;
+}
+
+.aemcloudproject-activate-workflow-results {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.aemcloudproject-activate-workflow-result {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+}
+
+.aemcloudproject-activate-workflow-result-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aemcloudproject-activate-workflow-result-status {
+    flex: none;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.aemcloudproject-activate-workflow-result-success .aemcloudproject-activate-workflow-result-status {
+    color: #2a8c4a;
+}
+
+.aemcloudproject-activate-workflow-result-error .aemcloudproject-activate-workflow-result-status {
+    color: #d7373f;
+}

@@ -3,9 +3,11 @@
     <filter root="/apps/aemcloudproject/clientlibs"/>
     <filter root="/apps/aemcloudproject/components"/>
     <filter root="/apps/aemcloudproject/i18n"/>
-    <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/scbworkflows"/>
+    <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/requestactivation"/>
+    <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/requestdeactivation"/>
     <filter root="/apps/wcm/core/content/editor/jcr:content/content/items/content/content/items/scbstartworkflowmodal"/>
-    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/scbworkflows"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/requestactivation"/>
+    <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items/requestdeactivation"/>
     <filter root="/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/content/items/scbstartworkflowmodal"/>
     <filter root="/apps/aemcloudproject/content"/>
     <filter root="/apps/dam/gui/content/assets/jcr:content/actions/selection/scbworkflows"/>

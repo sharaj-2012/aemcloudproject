@@ -42,8 +42,10 @@
                         <filter><root>/apps/dam</root></filter>
                         <filter><root>/apps/wcm</root></filter>
                         <filter><root>/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items</root></filter>
+                        <filter><root>/apps/wcm/core/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items</root></filter>
                         <filter><root>/apps/wcm/core/content/editor/jcr:content/content/items/content/content/items</root></filter>
                         <filter><root>/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items</root></filter>
+                        <filter><root>/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/header/items/headerbar/items/pageinfopopover/items/list/items</root></filter>
                         <filter><root>/apps/cq/experience-fragments/content/editor/jcr:content/content/items/content/content/items</root></filter>
                         <filter><root>/apps/dam/gui/content/assets/jcr:content/actions/selection</root></filter>
                         <filter><root>/apps/wcm/core/content/sites/jcr:content/actions/selection</root></filter>

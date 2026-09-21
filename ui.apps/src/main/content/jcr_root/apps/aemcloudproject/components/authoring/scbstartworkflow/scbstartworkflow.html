@@ -1,0 +1,40 @@
+<!--/*
+    SCB Start Workflow dialogs.
+
+    Mirrors the OOTB page editor dialog (/libs/cq/gui/components/authoring/workflow/startworkflow),
+    but renders one dialog per model listed in the `models` property, each with only that model
+    preselected. The SCB Workflows actions in the Page Information popover open the dialog whose
+    data-scb-workflow-model matches their data-workflow-model (clientlib-authoring-workflow).
+
+    Mounted next to the native startworkflowmodal rather than overlaying it, so the native
+    Start Workflow action keeps its stock behaviour.
+*/-->
+<sly data-sly-use.workflow="com.aemcloudproject.core.models.ScbStartWorkflowModel"
+     data-sly-test="${workflow.ready}"
+     data-sly-list.model="${workflow.workflowModels}">
+    <coral-dialog class="scb-WorkflowStart" closable="on" data-scb-workflow-model="${model.id}">
+        <form action="${workflow.formAction}" method="post" class="coral-Form coral-Form--vertical">
+            <coral-dialog-header>${'Start Workflow' @ i18n}</coral-dialog-header>
+            <coral-dialog-content>
+                <input type="hidden" name="_charset_" value="utf-8"/>
+                <input type="hidden" name=":status" value="browser"/>
+                <input type="hidden" name="payloadType" value="JCR_PATH"/>
+                <input type="hidden" name="payload" value="${workflow.payloadPath}"/>
+                <coral-select name="model"
+                              class="scb-WorkflowStart-select coral-Form-field"
+                              placeholder="${'Select a Workflow Model' @ i18n}">
+                    <coral-select-item value="${model.id}" selected>${model.title @ i18n}</coral-select-item>
+                </coral-select>
+                <input is="coral-textfield"
+                       type="text"
+                       name="workflowTitle"
+                       class="scb-WorkflowStart-title coral-Form-field"
+                       placeholder="${'Enter title of workflow' @ i18n}"/>
+            </coral-dialog-content>
+            <coral-dialog-footer>
+                <button is="coral-button" type="reset" class="scb-WorkflowStart-reset" coral-close>${'Close' @ i18n}</button>
+                <button is="coral-button" type="button" variant="primary" class="scb-WorkflowStart-submit">${'Start Workflow' @ i18n}</button>
+            </coral-dialog-footer>
+        </form>
+    </coral-dialog>
+</sly>

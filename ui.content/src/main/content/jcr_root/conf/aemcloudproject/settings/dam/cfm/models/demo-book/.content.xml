@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+    jcr:primaryType="cq:Template"
+    allowedPaths="[/content/entities(/.*)?]"
+    ranking="{Long}100">
+    <jcr:content
+        cq:lastModified="{Date}2025-06-13T18:40:40.716+05:30"
+        cq:lastModifiedBy="admin"
+        cq:scaffolding="/conf/aemcloudproject/settings/dam/cfm/models/demo-book/jcr:content/model"
+        cq:templateType="/libs/settings/dam/cfm/model-types/fragment"
+        jcr:primaryType="cq:PageContent"
+        jcr:title="Demo Book"
+        sling:resourceSuperType="dam/cfm/models/console/components/data/entity"
+        sling:resourceType="dam/cfm/models/console/components/data/entity/default"
+        status="enabled">
+        <metadata jcr:primaryType="nt:unstructured"/>
+        <model
+            cq:targetPath="/content/entities"
+            jcr:primaryType="cq:PageContent"
+            sling:resourceType="wcm/scaffolding/components/scaffolding"
+            dataTypesConfig="/mnt/overlay/settings/dam/cfm/models/formbuilderconfig/datatypes"
+            maxGeneratedOrder="20">
+            <cq:dialog
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="cq/gui/components/authoring/dialog">
+                <content
+                    jcr:lastModified="{Date}2025-06-13T18:40:40.716+05:30"
+                    jcr:lastModifiedBy="admin"
+                    jcr:primaryType="nt:unstructured"
+                    sling:resourceType="granite/ui/components/coral/foundation/fixedcolumns">
+                    <items
+                        jcr:primaryType="nt:unstructured"
+                        maxGeneratedOrder="20">
+                        <_x0031_749810018536
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/tabplaceholder"
+                            fieldLabel="Demo Book Tab"
+                            listOrder="14"
+                            metaType="tab-placeholder"
+                            name="placeholder"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string/tab"/>
+                        <_x0031_749805512042
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            emptyText="First name"
+                            fieldLabel="First Name"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="firstName"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_749805512042>
+                        <_x0031_749806801313
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Last Name"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="lastName"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_749806801313>
+                        <_x0031_749806750227
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Email Id"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="emailId"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            unique="true"
+                            validation="cfm.validation.email"
+                            valueType="string">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                customErrorMsg="Please enter the correct email"/>
+                        </_x0031_749806750227>
+                        <_x0031_749806881596
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/multifield"
+                            fieldLabel="Hobbies"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="hobbies"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string[]">
+                            <field
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                maxlength="255"
+                                name="hobbies"
+                                renderReadOnly="false">
+                                <granite:data
+                                    jcr:primaryType="nt:unstructured"
+                                    mvmaxitems="4"
+                                    mvminitems="1"/>
+                            </field>
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                mvmaxitems="4"
+                                mvminitems="1"/>
+                        </_x0031_749806881596>
+                        <_x0031_749807886822
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/datatypes/datepicker"
+                            displayedFormat="YYYY-MM-DD"
+                            emptyText="YYYY-MM-DD"
+                            fieldLabel="Date Of Birth"
+                            listOrder="5"
+                            metaType="date"
+                            name="dateOfBirth"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            type="date"
+                            valueFormat="YYYY-MM-DD"
+                            valueType="calendar/date">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                typeHint="Date"/>
+                        </_x0031_749807886822>
+                        <_x0031_749806921272
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/admin/components/authoring/contenteditor/multieditor"
+                            cfm-element="Tell me about yourself"
+                            checked="true"
+                            default-mime-type="text/html"
+                            fragmentmodelreference="/conf/aemcloudproject/settings/dam/cfm/models/project-cf-model"
+                            listOrder="2"
+                            metaType="text-multi"
+                            name="tellMeAboutYourself"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string/multiline">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_749806921272>
+                        <_x0031_749807853387
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                            listOrder="4"
+                            metaType="boolean"
+                            name="isEmployed"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            text="Is Employed"
+                            valueType="boolean">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_749807853387>
+                        <_x0031_749807962402
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/select"
+                            emptyOption="{Boolean}true"
+                            fieldLabel="Job Type"
+                            listOrder="6"
+                            metaType="enumeration"
+                            name="jobType"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string/enum">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                            <optionsmultifield jcr:primaryType="nt:unstructured">
+                                <item0
+                                    jcr:primaryType="nt:unstructured"
+                                    fieldLabel="Private Sector"
+                                    fieldValue="privateSector"/>
+                                <item1
+                                    jcr:primaryType="nt:unstructured"
+                                    fieldLabel="Public Sector"
+                                    fieldValue="publicSector"/>
+                                <item2
+                                    jcr:primaryType="nt:unstructured"
+                                    fieldLabel="Business"
+                                    fieldValue="busicess"/>
+                            </optionsmultifield>
+                            <datasource
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="dam/cfm/admin/components/datasources/optionrendererenumeration"
+                                variant="default"/>
+                        </_x0031_749807962402>
+                        <_x0031_749807099781
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                            fieldLabel="Salary"
+                            listOrder="3"
+                            metaType="number"
+                            name="salary"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            step="1"
+                            typeHint="long"
+                            validation="cfm.validation.number.min"
+                            valueType="long">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                customErrorMsg="Salary should be greater than 100 Rs"
+                                number-min="100"/>
+                        </_x0031_749807099781>
+                        <_x0031_749809942680
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/contentreference"
+                            fieldLabel="Upload Photo"
+                            filter="hierarchy"
+                            listOrder="10"
+                            metaType="reference"
+                            name="uploadPhoto"
+                            nameSuffix="contentReference"
+                            renderReadOnly="false"
+                            rootPath="/content/dam/aemcloudproject"
+                            showEmptyInReadOnly="true"
+                            showThumbnail="false"
+                            validation="cfm.validation.contenttype.image"
+                            valueType="string/reference">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                thumbnail-validation="cfm.validation.thumbnail.show"/>
+                        </_x0031_749809942680>
+                        <_x0031_749810166479
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/fragmentreference/multifield"
+                            allowNew="{Boolean}true"
+                            fieldLabel="Projects Completed"
+                            filter="hierarchy"
+                            fragmentmodelreference="/conf/aemcloudproject/settings/dam/cfm/models/project-cf-model"
+                            listOrder="8"
+                            metaType="fragment-reference"
+                            name="projectsCompleted"
+                            nameSuffix="contentReference"
+                            renderReadOnly="false"
+                            rootPath="/content/dam/aemcloudproject/content-fragments"
+                            showEmptyInReadOnly="true"
+                            valueType="string/content-fragment[]">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                            <field
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="dam/cfm/models/editor/components/fragmentreference"
+                                fragmentmodelreference="/conf/aemcloudproject/settings/dam/cfm/models/project-cf-model"
+                                name="projectsCompleted"
+                                renderReadOnly="false">
+                                <granite:data jcr:primaryType="nt:unstructured"/>
+                            </field>
+                        </_x0031_749810166479>
+                    </items>
+                </content>
+            </cq:dialog>
+        </model>
+    </jcr:content>
+</jcr:root>

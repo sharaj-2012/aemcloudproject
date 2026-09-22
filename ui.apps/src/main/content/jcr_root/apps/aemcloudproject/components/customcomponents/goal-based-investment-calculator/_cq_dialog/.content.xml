@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    jcr:title="Goal Based Investment Calculator"
+    sling:resourceType="cq/gui/components/authoring/dialog">
+    <content
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="granite/ui/components/coral/foundation/container">
+        <items jcr:primaryType="nt:unstructured">
+            <tabs
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/tabs"
+                maximized="{Boolean}true">
+                <items jcr:primaryType="nt:unstructured">
+                    <goal
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Goal"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <cq_panelTitle
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Goal name"
+                                        fieldDescription="Shown on the goal chip, e.g. Vacation"
+                                        required="{Boolean}true"
+                                        name="./cq:panelTitle"/>
+                                    <calculatorName
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Calculator name (analytics)"
+                                        name="./calculatorName"/>
+                                    <currencySymbol
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Currency symbol"
+                                        fieldDescription="Defaults to ₹"
+                                        name="./currencySymbol"/>
+                                </items>
+                            </column>
+                        </items>
+                    </goal>
+                    <labels
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Labels"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <howToPlanLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Plan question"
+                                        fieldDescription="Defaults to 'How do you want to plan?'"
+                                        name="./howToPlanLabel"/>
+                                    <sipAmountLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="SIP option label"
+                                        name="./sipAmountLabel"/>
+                                    <sipAmountDescription
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="SIP option description"
+                                        name="./sipAmountDescription"/>
+                                    <durationLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Duration option label"
+                                        name="./durationLabel"/>
+                                    <durationDescription
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Duration option description"
+                                        name="./durationDescription"/>
+                                    <timeRequiredLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Result: time required"
+                                        name="./timeRequiredLabel"/>
+                                    <totalInvestedLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Result: total invested"
+                                        name="./totalInvestedLabel"/>
+                                    <monthlySipAmountLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Result: monthly SIP"
+                                        name="./monthlySipAmountLabel"/>
+                                    <totalInvestmentRequiredLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Result: total investment required"
+                                        name="./totalInvestmentRequiredLabel"/>
+                                    <surplusResultLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Result: surplus"
+                                        name="./surplusResultLabel"/>
+                                    <yearsLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Years label"
+                                        name="./yearsLabel"/>
+                                    <monthsLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Months label"
+                                        name="./monthsLabel"/>
+                                </items>
+                            </column>
+                        </items>
+                    </labels>
+                    <monthly
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Monthly investment"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <monthlyInvestmentLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Label"
+                                        fieldDescription="Defaults to 'Monthly investment'"
+                                        name="./monthlyInvestmentLabel"/>
+                                    <monthlyInvestdefaultValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Default value"
+                                        step="any"
+                                        name="./monthlyInvestdefaultValue"/>
+                                    <monthlyInvestminValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Minimum"
+                                        step="any"
+                                        name="./monthlyInvestminValue"/>
+                                    <monthlyInvestmaxValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Maximum"
+                                        step="any"
+                                        name="./monthlyInvestmaxValue"/>
+                                    <monthlyInveststep
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Slider step"
+                                        step="any"
+                                        name="./monthlyInveststep"/>
+                                    <monthlyInvestmentErrorMessage
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Error message"
+                                        name="./monthlyInvestmentErrorMessage"/>
+                                </items>
+                            </column>
+                        </items>
+                    </monthly>
+                    <duration
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Duration"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <investmentDurationLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Label"
+                                        fieldDescription="Defaults to 'Investment duration'"
+                                        name="./investmentDurationLabel"/>
+                                    <investDurationdefaultValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Default value"
+                                        step="any"
+                                        name="./investDurationdefaultValue"/>
+                                    <investDurationminValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Minimum"
+                                        step="any"
+                                        name="./investDurationminValue"/>
+                                    <investDurationmaxValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Maximum"
+                                        step="any"
+                                        name="./investDurationmaxValue"/>
+                                    <investDurationstep
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Slider step"
+                                        step="any"
+                                        name="./investDurationstep"/>
+                                    <investmentDurationErrorMessage
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Error message"
+                                        name="./investmentDurationErrorMessage"/>
+                                </items>
+                            </column>
+                        </items>
+                    </duration>
+                    <initial
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Initial investment"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <initialInvestmentLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Label"
+                                        fieldDescription="Defaults to 'Initial investment'"
+                                        name="./initialInvestmentLabel"/>
+                                    <initialInvestdefaultValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Default value"
+                                        step="any"
+                                        name="./initialInvestdefaultValue"/>
+                                    <initialInvestminValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Minimum"
+                                        step="any"
+                                        name="./initialInvestminValue"/>
+                                    <initialInvestmaxValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Maximum"
+                                        step="any"
+                                        name="./initialInvestmaxValue"/>
+                                    <initialInveststep
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Slider step"
+                                        step="any"
+                                        name="./initialInveststep"/>
+                                    <initialInvestmentErrorMessage
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Error message"
+                                        name="./initialInvestmentErrorMessage"/>
+                                </items>
+                            </column>
+                        </items>
+                    </initial>
+                    <goalamount
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Goal amount"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <goalAmountLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Label"
+                                        fieldDescription="Defaults to 'Goal amount'"
+                                        name="./goalAmountLabel"/>
+                                    <goalAmountdefaultValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Default value"
+                                        step="any"
+                                        name="./goalAmountdefaultValue"/>
+                                    <goalAmountminValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Minimum"
+                                        step="any"
+                                        name="./goalAmountminValue"/>
+                                    <goalAmountmaxValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Maximum"
+                                        step="any"
+                                        name="./goalAmountmaxValue"/>
+                                    <goalAmountstep
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Slider step"
+                                        step="any"
+                                        name="./goalAmountstep"/>
+                                    <goalAmountErrorMessage
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Error message"
+                                        name="./goalAmountErrorMessage"/>
+                                </items>
+                            </column>
+                        </items>
+                    </goalamount>
+                    <rate
+                        jcr:primaryType="nt:unstructured"
+                        jcr:title="Rate of return"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        margin="{Boolean}true">
+                        <items jcr:primaryType="nt:unstructured">
+                            <column
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/container">
+                                <items jcr:primaryType="nt:unstructured">
+                                    <rateOfReturnLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Label"
+                                        fieldDescription="Defaults to 'Expected rate of return (% p.a.)'"
+                                        name="./rateOfReturnLabel"/>
+                                    <rordefaultValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Default value"
+                                        step="any"
+                                        name="./rordefaultValue"/>
+                                    <rorminValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Minimum"
+                                        step="any"
+                                        name="./rorminValue"/>
+                                    <rormaxValue
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Maximum"
+                                        step="any"
+                                        name="./rormaxValue"/>
+                                    <rorstep
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                                        fieldLabel="Slider step"
+                                        step="any"
+                                        name="./rorstep"/>
+                                    <rateOfReturnErrorMessage
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Error message"
+                                        name="./rateOfReturnErrorMessage"/>
+                                </items>
+                            </column>
+                        </items>
+                    </rate>
+                </items>
+            </tabs>
+        </items>
+    </content>
+</jcr:root>

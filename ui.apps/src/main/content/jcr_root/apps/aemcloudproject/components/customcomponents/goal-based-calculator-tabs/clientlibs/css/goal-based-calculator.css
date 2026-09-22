@@ -1,0 +1,153 @@
+/*
+ * Goal Based Calculator (tabs wrapper + investment calculator panels).
+ * Plain CSS, so it can be dropped into the component's .less file unchanged.
+ */
+.sc-goal-based-calculator {
+    --gbc-blue: #0473ea;
+    --gbc-green: #38d200;
+    --gbc-green-bg: #f3fcef;
+    --gbc-text: #1a1a1a;
+    --gbc-muted: #525355;
+    --gbc-border: #d9d9d9;
+    --gbc-track: #e6e8ea;
+    --gbc-card: #ffffff;
+
+    position: relative;
+    overflow: hidden;
+    padding: 48px 16px;
+    color: var(--gbc-text);
+    background:
+        radial-gradient(120% 90% at 0% 0%, rgba(214, 228, 240, .9) 0 22%, transparent 22.2%),
+        radial-gradient(60% 70% at 100% 100%, rgba(120, 208, 170, .55), transparent 70%),
+        #eef0f0;
+}
+.sc-goal-based-calculator [hidden],
+.sc-goal-based-calculator .hide { display: none !important; }
+
+/* Background image from the dialog */
+.sc-goal-based-calculator .sc-module-bg__img-wrapper { position: absolute; inset: 0; z-index: 0; }
+.sc-goal-based-calculator .sc-module-bg__img { width: 100%; height: 100%; object-fit: cover; }
+.sc-goal-based-calculator .sc-content-wrapper { position: relative; z-index: 1; max-width: 1340px; margin: 0 auto; }
+
+/* Heading */
+.sc-goal-based-calculator .sc-heading-inner { text-align: center; max-width: 880px; margin: 0 auto 32px; }
+.sc-goal-based-calculator .sc-title { margin: 0 0 16px; font-size: 32px; font-weight: 400; line-height: 1.2; }
+.sc-goal-based-calculator .sc-description p { margin: 0; font-size: 18px; line-height: 1.5; color: #3b3c3e; }
+
+/* Card */
+.sc-goal-based-calculator__wrapper { background: var(--gbc-card); border-radius: 12px; padding: 32px; }
+.sc-goal-based-calculator__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+    gap: 32px;
+    align-items: start;
+}
+.sc-goal-based-calculator__title { font-size: 16px; color: var(--gbc-text); margin-bottom: 16px; }
+
+/* Goal chips = the core tablist */
+.sc-goal-based-calculator__radios {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin: 0 0 28px; padding: 0; list-style: none;
+}
+.sc-goal-based-calculator__radio {
+    min-width: 100px; padding: 10px 16px;
+    border: 1px solid var(--gbc-border); border-radius: 4px; background: #fff;
+    font-size: 14px; text-align: center; cursor: pointer; user-select: none;
+}
+.sc-goal-based-calculator__radio:hover { border-color: #9a9a9a; }
+.sc-goal-based-calculator__radio.cmp-tabs__tab--active { border-color: var(--gbc-green); background: var(--gbc-green-bg); }
+.sc-goal-based-calculator__radio:focus-visible { outline: 2px solid var(--gbc-blue); outline-offset: 2px; }
+
+/* Panels (core tabs toggles the --active class) */
+.sc-goal-based-calculator .cmp-tabs__tabpanel { display: none; }
+.sc-goal-based-calculator .cmp-tabs__tabpanel--active { display: block; }
+.sc-goal-based-calculator .cmp-tabs__tabpanel:focus { outline: none; }
+
+/* Plan cards */
+.sc-goal-based-calculator__choose { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+.sc-goal-based-calculator__plan-card {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px; border: 1px solid var(--gbc-border); border-radius: 4px; cursor: pointer;
+}
+.sc-goal-based-calculator__plan-card.sc-radio-box--checked { border-color: var(--gbc-green); background: var(--gbc-green-bg); }
+.sc-goal-based-calculator__plan-card .sc-radio-box__input { width: 22px; height: 22px; margin: 0; accent-color: var(--gbc-blue); flex: none; }
+.sc-goal-based-calculator__plan-text { display: flex; flex-direction: column; gap: 4px; }
+.sc-goal-based-calculator__plan-card .sc-radio-box__input-label { font-size: 14px; }
+.sc-goal-based-calculator__plan-note { font-size: 12px; color: var(--gbc-muted); }
+
+/* Inputs */
+.sc-goal-based-calculator__inputs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.sc-goal-based-calculator__input-box + .sc-goal-based-calculator__input-box { margin-top: 20px; }
+.sc-goal-based-calculator__input-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sc-goal-based-calculator__input-wrapper .sc-goal-based-calculator__title { margin: 0; line-height: 1.4; }
+.sc-goal-based-calculator .sc-input {
+    display: flex; align-items: center; gap: 8px; flex: 0 0 160px;
+    height: 50px; padding: 0 16px; border: 1px solid var(--gbc-border); border-radius: 2px; background: #fff;
+}
+.sc-goal-based-calculator .sc-input:focus-within { border-color: var(--gbc-blue); }
+.sc-goal-based-calculator .sc-input__input { width: 100%; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 16px; background: none; }
+.sc-goal-based-calculator .sc-input__text { font-size: 16px; }
+.sc-goal-based-calculator__error { margin-top: 6px; font-size: 12px; color: #d0021b; }
+.sc-goal-based-calculator__input-box.is-invalid .sc-input { border-color: #d0021b; }
+
+/* Slider: native range styled like the noUi slider on the live page */
+.sc-goal-based-calculator__range {
+    --fill: 0%;
+    -webkit-appearance: none; appearance: none;
+    display: block; width: 100%; height: 30px; margin: 4px 0 0; background: transparent; cursor: pointer;
+}
+.sc-goal-based-calculator__range::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--gbc-blue) var(--fill), var(--gbc-track) var(--fill));
+}
+.sc-goal-based-calculator__range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--gbc-track); }
+.sc-goal-based-calculator__range::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--gbc-blue); }
+.sc-goal-based-calculator__range::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 30px; height: 30px; margin-top: -13px;
+    border: 1px solid var(--gbc-blue); border-radius: 50%; background: #fff;
+}
+.sc-goal-based-calculator__range::-moz-range-thumb {
+    width: 28px; height: 28px; border: 1px solid var(--gbc-blue); border-radius: 50%; background: #fff;
+}
+.sc-goal-based-calculator__range:focus-visible { outline: 2px solid var(--gbc-blue); outline-offset: 2px; }
+
+/* Result card */
+.sc-goal-based-calculator__result-card {
+    display: flex; flex-direction: column; justify-content: center; min-height: 230px;
+    padding: 28px 24px; border-radius: 12px; text-align: center;
+    background: linear-gradient(110deg, #c9e6f8 0%, #e3f3f4 55%, #eefbdf 100%);
+}
+.sc-goal-based-calculator__container + .sc-goal-based-calculator__container { margin-top: 32px; }
+.sc-goal-based-calculator__right-title { font-size: 18px; margin-bottom: 8px; }
+.sc-goal-based-calculator__investment { font-size: 32px; font-weight: 500; color: var(--gbc-blue); line-height: 1.2; }
+.sc-goal-based-calculator__no-years span { font-size: 24px; }
+
+/* CTAs */
+.sc-goal-based-calculator__actions {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+    margin: 32px 0 0; padding: 0; list-style: none;
+}
+.sc-goal-based-calculator .sc-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 180px; height: 50px; padding: 0 32px; border: 2px solid var(--gbc-blue); border-radius: 30px;
+    background: var(--gbc-blue); color: #fff; font-size: 16px; font-weight: 500; text-decoration: none;
+}
+.sc-goal-based-calculator .sc-btn--secondary-blue { background: #fff; color: var(--gbc-blue); }
+
+/* Tablet / mobile */
+@media (max-width: 1023px) {
+    .sc-goal-based-calculator__inner { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+    .sc-goal-based-calculator { padding: 32px 16px; }
+    .sc-goal-based-calculator .sc-title { font-size: 26px; }
+    .sc-goal-based-calculator .sc-description p { font-size: 16px; }
+    .sc-goal-based-calculator__wrapper { padding: 20px 16px; }
+    .sc-goal-based-calculator__radios { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding: 0 16px 4px; }
+    .sc-goal-based-calculator__radio { flex: none; min-width: 0; }
+    .sc-goal-based-calculator__inputs-row { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .sc-goal-based-calculator .sc-input { flex-basis: 140px; }
+    .sc-goal-based-calculator__investment { font-size: 26px; }
+    .sc-goal-based-calculator .sc-btn { min-width: 0; flex: 1 1 140px; }
+    .sc-goal-based-calculator__actions li { display: flex; flex: 1 1 140px; }
+}

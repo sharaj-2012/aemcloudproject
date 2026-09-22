@@ -1,0 +1,49 @@
+<!--/*
+    Goal Based Investment Calculator: RESULT card.
+    Rendered by goal-based-calculator-tabs with selectors='gbic-result'.
+*/-->
+<sly data-sly-use.component="com.adobe.cq.wcm.core.components.models.Component"/>
+<sly data-sly-set.currency="${properties.currencySymbol || '₹'}"/>
+<sly data-sly-set.yearsLabel="${properties.yearsLabel || 'years'}"/>
+<sly data-sly-set.monthsLabel="${properties.monthsLabel || 'months'}"/>
+<div class="sc-goal-based-calculator__result-card"
+     data-gbic-result="${component.id}"
+     data-years-label="${yearsLabel}"
+     data-months-label="${monthsLabel}">
+
+    <div class="sc-goal-based-calculator__right-wrapper sc-goal-based-calculator__right-wrapper-sip">
+        <div class="sc-goal-based-calculator__container">
+            <div class="sc-goal-based-calculator__right-title">${properties.timeRequiredLabel || 'Time required to achieve goal'}</div>
+            <div class="sc-goal-based-calculator__investment">
+                <span class="sc-goal-based-calculator__no-years">0 <span>${yearsLabel}</span> 0 <span>${monthsLabel}</span></span>
+            </div>
+        </div>
+        <div class="sc-goal-based-calculator__container">
+            <div class="sc-goal-based-calculator__right-title">${properties.totalInvestedLabel || 'Total amount invested'}</div>
+            <div class="sc-goal-based-calculator__investment">
+                <span class="sc-goal-based-calculator__currency">${currency}</span><span class="sc-goal-based-calculator__total-invest" data-total-sip>0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sc-goal-based-calculator__right-wrapper sc-goal-based-calculator__right-wrapper-duration hide">
+        <div class="sc-goal-based-calculator__container">
+            <div class="sc-goal-based-calculator__right-title">${properties.monthlySipAmountLabel || 'Monthly SIP amount'}</div>
+            <div class="sc-goal-based-calculator__investment">
+                <span class="sc-goal-based-calculator__currency">${currency}</span><span class="sc-goal-based-calculator__result-amount">0</span>
+            </div>
+        </div>
+        <div class="sc-goal-based-calculator__container sc-goal-based-calculator__positive-result">
+            <div class="sc-goal-based-calculator__right-title">${properties.totalInvestmentRequiredLabel || 'Total investment required to achieve goal'}</div>
+            <div class="sc-goal-based-calculator__investment">
+                <span class="sc-goal-based-calculator__currency">${currency}</span><span class="sc-goal-based-calculator__total-invest" data-total-duration>0</span>
+            </div>
+        </div>
+        <div class="sc-goal-based-calculator__container sc-goal-based-calculator__negative-result hide">
+            <div class="sc-goal-based-calculator__right-title">${properties.surplusResultLabel || 'Your initial investment will meet your goal and will exceed it by'}</div>
+            <div class="sc-goal-based-calculator__investment">
+                <span class="sc-goal-based-calculator__currency">${currency}</span><span class="sc-goal-based-calculator__surplus">0</span>
+            </div>
+        </div>
+    </div>
+</div>

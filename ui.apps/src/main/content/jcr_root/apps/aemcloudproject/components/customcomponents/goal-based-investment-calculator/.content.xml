@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    jcr:primaryType="cq:Component"
+    jcr:title="Goal Based Investment Calculator"
+    jcr:description="One goal of the Goal Based Calculator Tabs. Add it inside Goal Based Calculator Tabs."
+    componentGroup="Aem Cloud Project - Content"/>

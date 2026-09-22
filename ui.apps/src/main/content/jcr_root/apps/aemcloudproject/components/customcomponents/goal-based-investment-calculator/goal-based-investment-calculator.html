@@ -1,0 +1,158 @@
+<!--/*
+    Goal Based Investment Calculator: FORM part (plan choice + inputs).
+    Placed inside goal-based-calculator-tabs, one per goal.
+
+    The result card lives in gbic-result.html; the parent tabs render it with
+    selectors='gbic-result' (Sling resolves "<selector>.html").
+
+    The root must NOT carry the .sc-goal-based-calculator block class; that
+    belongs to the tabs wrapper.
+
+    data-gbic-form ties this form to its result card (data-gbic-result).
+*/-->
+<sly data-sly-use.component="com.adobe.cq.wcm.core.components.models.Component"/>
+<sly data-sly-set.currency="${properties.currencySymbol || '₹'}"/>
+<sly data-sly-set.mDefault="${properties.monthlyInvestdefaultValue || 1000}"/>
+<sly data-sly-set.mMin="${properties.monthlyInvestminValue || 100}"/>
+<sly data-sly-set.mMax="${properties.monthlyInvestmaxValue || 500000}"/>
+<sly data-sly-set.mStep="${properties.monthlyInveststep || 1000}"/>
+<sly data-sly-set.dDefault="${properties.investDurationdefaultValue || 5}"/>
+<sly data-sly-set.dMin="${properties.investDurationminValue || 1}"/>
+<sly data-sly-set.dMax="${properties.investDurationmaxValue || 20}"/>
+<sly data-sly-set.dStep="${properties.investDurationstep || 1}"/>
+<sly data-sly-set.iDefault="${properties.initialInvestdefaultValue || 0}"/>
+<sly data-sly-set.iMin="${properties.initialInvestminValue || 0}"/>
+<sly data-sly-set.iMax="${properties.initialInvestmaxValue || 5000000}"/>
+<sly data-sly-set.iStep="${properties.initialInveststep || 1000}"/>
+<sly data-sly-set.gDefault="${properties.goalAmountdefaultValue || 500000}"/>
+<sly data-sly-set.gMin="${properties.goalAmountminValue || 100000}"/>
+<sly data-sly-set.gMax="${properties.goalAmountmaxValue || 5000000}"/>
+<sly data-sly-set.gStep="${properties.goalAmountstep || 50000}"/>
+<sly data-sly-set.rDefault="${properties.rordefaultValue || 12}"/>
+<sly data-sly-set.rMin="${properties.rorminValue || 1}"/>
+<sly data-sly-set.rMax="${properties.rormaxValue || 40}"/>
+<sly data-sly-set.rStep="${properties.rorstep || 1}"/>
+<div class="sc-goal-based-calculator__panel"
+     id="${component.id}"
+     data-gbic-form="${component.id}"
+     data-calc-name="${properties.calculatorName || properties['cq:panelTitle'] || 'Goal Based Investment Calculator'}">
+
+    <div class="sc-goal-based-calculator__choose-wrapper">
+        <div class="sc-goal-based-calculator__title">${properties.howToPlanLabel || 'How do you want to plan?'}</div>
+        <div class="sc-goal-based-calculator__choose" role="radiogroup">
+            <label class="sc-radio-box sc-goal-based-calculator__plan-card sc-radio-box--checked" for="${component.id}-plan-sip">
+                <input type="radio" class="sc-radio-box__input" id="${component.id}-plan-sip"
+                       name="${component.id}-plan" value="sip" checked data-plan="sip">
+                <span class="sc-goal-based-calculator__plan-text">
+                    <span class="sc-radio-box__input-label">${properties.sipAmountLabel || 'SIP Amount'}</span>
+                    <span class="sc-goal-based-calculator__plan-note">${properties.sipAmountDescription || 'I know how much I can invest monthly'}</span>
+                </span>
+            </label>
+            <label class="sc-radio-box sc-goal-based-calculator__plan-card" for="${component.id}-plan-duration">
+                <input type="radio" class="sc-radio-box__input" id="${component.id}-plan-duration"
+                       name="${component.id}-plan" value="duration" data-plan="duration">
+                <span class="sc-goal-based-calculator__plan-text">
+                    <span class="sc-radio-box__input-label">${properties.durationLabel || 'Duration'}</span>
+                    <span class="sc-goal-based-calculator__plan-note">${properties.durationDescription || 'I know how long I want to invest'}</span>
+                </span>
+            </label>
+        </div>
+    </div>
+
+    <div class="sc-goal-based-calculator__inputs-row">
+        <div class="sc-goal-based-calculator__inputs-column">
+
+            <div class="sc-goal-based-calculator__input-box" data-field-wrap="monthly">
+                <div class="sc-goal-based-calculator__input-wrapper">
+                    <label class="sc-goal-based-calculator__title" for="${component.id}-monthly-investment">${properties.monthlyInvestmentLabel || 'Monthly investment'}</label>
+                    <div class="sc-input">
+                        <span class="sc-input__text sc-goal-based-calculator__currency">${currency}</span>
+                        <input class="sc-input__input" type="text" id="${component.id}-monthly-investment" data-field="monthly"
+                               data-min="${mMin}" data-max="${mMax}" value="${mDefault}"
+                               placeholder="Enter Amount" inputmode="numeric" autocomplete="off">
+                    </div>
+                </div>
+                <input type="range" class="sc-goal-based-calculator__range" data-range="monthly"
+                       aria-labelledby="${component.id}-monthly-investment"
+                       min="${mMin}" max="${mMax}" step="${mStep}" value="${mDefault}">
+                <div class="sc-goal-based-calculator__error" data-error-for="monthly" hidden>
+                    ${properties.monthlyInvestmentErrorMessage || 'Please enter a valid monthly investment amount.'}
+                </div>
+            </div>
+
+            <div class="sc-goal-based-calculator__input-box hide" data-field-wrap="duration">
+                <div class="sc-goal-based-calculator__input-wrapper">
+                    <label class="sc-goal-based-calculator__title" for="${component.id}-investment-duration">${properties.investmentDurationLabel || 'Investment duration'}</label>
+                    <div class="sc-input">
+                        <input class="sc-input__input" type="text" id="${component.id}-investment-duration" data-field="duration"
+                               data-min="${dMin}" data-max="${dMax}" value="${dDefault}"
+                               placeholder="Enter Duration" inputmode="numeric" autocomplete="off">
+                        <span class="sc-input__text sc-input__text--suffix">Yrs</span>
+                    </div>
+                </div>
+                <input type="range" class="sc-goal-based-calculator__range" data-range="duration"
+                       aria-labelledby="${component.id}-investment-duration"
+                       min="${dMin}" max="${dMax}" step="${dStep}" value="${dDefault}">
+                <div class="sc-goal-based-calculator__error" data-error-for="duration" hidden>
+                    ${properties.investmentDurationErrorMessage || 'Please enter a valid investment duration.'}
+                </div>
+            </div>
+
+            <div class="sc-goal-based-calculator__input-box" data-field-wrap="initial">
+                <div class="sc-goal-based-calculator__input-wrapper">
+                    <label class="sc-goal-based-calculator__title" for="${component.id}-initial-investment">${properties.initialInvestmentLabel || 'Initial investment'}</label>
+                    <div class="sc-input">
+                        <span class="sc-input__text sc-goal-based-calculator__currency">${currency}</span>
+                        <input class="sc-input__input" type="text" id="${component.id}-initial-investment" data-field="initial"
+                               data-min="${iMin}" data-max="${iMax}" value="${iDefault}"
+                               placeholder="Enter Amount" inputmode="numeric" autocomplete="off">
+                    </div>
+                </div>
+                <input type="range" class="sc-goal-based-calculator__range" data-range="initial"
+                       aria-labelledby="${component.id}-initial-investment"
+                       min="${iMin}" max="${iMax}" step="${iStep}" value="${iDefault}">
+                <div class="sc-goal-based-calculator__error" data-error-for="initial" hidden>
+                    ${properties.initialInvestmentErrorMessage || 'Please enter a valid initial investment amount.'}
+                </div>
+            </div>
+        </div>
+
+        <div class="sc-goal-based-calculator__inputs-column">
+
+            <div class="sc-goal-based-calculator__input-box" data-field-wrap="goalAmount">
+                <div class="sc-goal-based-calculator__input-wrapper">
+                    <label class="sc-goal-based-calculator__title" for="${component.id}-goal-amount">${properties.goalAmountLabel || 'Goal amount'}</label>
+                    <div class="sc-input">
+                        <span class="sc-input__text sc-goal-based-calculator__currency">${currency}</span>
+                        <input class="sc-input__input" type="text" id="${component.id}-goal-amount" data-field="goalAmount"
+                               data-min="${gMin}" data-max="${gMax}" value="${gDefault}"
+                               placeholder="Enter Amount" inputmode="numeric" autocomplete="off">
+                    </div>
+                </div>
+                <input type="range" class="sc-goal-based-calculator__range" data-range="goalAmount"
+                       aria-labelledby="${component.id}-goal-amount"
+                       min="${gMin}" max="${gMax}" step="${gStep}" value="${gDefault}">
+                <div class="sc-goal-based-calculator__error" data-error-for="goalAmount" hidden>
+                    ${properties.goalAmountErrorMessage || 'Please enter a valid goal amount.'}
+                </div>
+            </div>
+
+            <div class="sc-goal-based-calculator__input-box" data-field-wrap="rate">
+                <div class="sc-goal-based-calculator__input-wrapper">
+                    <label class="sc-goal-based-calculator__title" for="${component.id}-rate-of-return">${properties.rateOfReturnLabel || 'Expected rate of return (% p.a.)'}</label>
+                    <div class="sc-input">
+                        <input class="sc-input__input" type="text" id="${component.id}-rate-of-return" data-field="rate"
+                               data-min="${rMin}" data-max="${rMax}" value="${rDefault}"
+                               placeholder="Enter rate" inputmode="decimal" autocomplete="off">
+                    </div>
+                </div>
+                <input type="range" class="sc-goal-based-calculator__range" data-range="rate"
+                       aria-labelledby="${component.id}-rate-of-return"
+                       min="${rMin}" max="${rMax}" step="${rStep}" value="${rDefault}">
+                <div class="sc-goal-based-calculator__error" data-error-for="rate" hidden>
+                    ${properties.rateOfReturnErrorMessage || 'Please enter a valid rate of return.'}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

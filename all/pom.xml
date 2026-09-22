@@ -82,6 +82,13 @@
                             <artifactId>org.apache.sling.dynamic-include</artifactId>
                             <target>/apps/aemcloudproject-packages/application/install</target>
                         </embedded>
+                        <embedded>
+                            <groupId>com.adobe.acs</groupId>
+                            <artifactId>acs-aem-commons-all</artifactId>
+                            <target>/apps/aem-demo-vendor-packages/container/install</target>
+                            <filter>true</filter>
+                            <isAllVersionsFilter>true</isAllVersionsFilter>
+                        </embedded>
                     </embeddeds>
                 </configuration>
             </plugin>
@@ -206,6 +213,12 @@
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.dynamic-include</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.adobe.acs</groupId>
+            <artifactId>acs-aem-commons-all</artifactId>
+            <classifier>cloud</classifier>
+            <version>6.16.0</version>
+            <type>zip</type>
+        </dependency>
     </dependencies>
 </project>

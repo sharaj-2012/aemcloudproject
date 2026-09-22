@@ -41,23 +41,57 @@
                             renderReadOnly="false"
                             required="on"
                             showEmptyInReadOnly="true"
-                            step="any"
-                            valueType="double">
+                            step="1"
+                            typeHint="long"
+                            valueType="long">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607744474>
                         <_x0031_787607723540
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                            fieldLabel="Merhant Name"
+                            fieldLabel="Merchant Name"
                             listOrder="1"
                             maxlength="255"
                             metaType="text-single"
-                            name="merhantName"
+                            name="merchantName"
                             renderReadOnly="false"
                             showEmptyInReadOnly="true"
                             valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607723540>
+                        <_x0031_790041700016
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Merchant Slug"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="merchantSlug"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700016>
+                        <_x0031_790041700017
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/contentreference"
+                            fieldLabel="Merchant Logo"
+                            filter="hierarchy"
+                            listOrder="10"
+                            metaType="reference"
+                            name="merchantLogo"
+                            nameSuffix="contentReference"
+                            renderReadOnly="false"
+                            rootPath="/content/dam"
+                            showEmptyInReadOnly="true"
+                            showThumbnail="false"
+                            validation="cfm.validation.contenttype.image"
+                            valueType="string/reference">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                thumbnail-validation="cfm.validation.thumbnail.show"/>
+                        </_x0031_790041700017>
                         <_x0031_787607811324
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="dam/cfm/models/editor/components/fragmentreference/multifield"

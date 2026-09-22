@@ -44,6 +44,20 @@
                             valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607888106>
+                        <_x0031_790041700018
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Merchant Venue Slug"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="merchantVenueSlug"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700018>
                         <_x0031_787607933822
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="dam/cfm/admin/components/authoring/contenteditor/multieditor"
@@ -58,6 +72,45 @@
                             valueType="string/multiline">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607933822>
+                        <_x0031_790041700019
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                            fieldLabel="Latitude"
+                            listOrder="3"
+                            metaType="number"
+                            name="latitude"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            step="any"
+                            valueType="double">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700019>
+                        <_x0031_790041700020
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                            fieldLabel="Longitude"
+                            listOrder="3"
+                            metaType="number"
+                            name="longitude"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            step="any"
+                            valueType="double">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700020>
+                        <_x0031_790041700021
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Telephone"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="telephone"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700021>
                     </items>
                 </content>
             </cq:dialog>

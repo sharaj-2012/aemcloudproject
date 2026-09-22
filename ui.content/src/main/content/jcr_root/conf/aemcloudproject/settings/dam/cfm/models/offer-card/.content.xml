@@ -58,6 +58,20 @@
                             valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607606924>
+                        <_x0031_790041700022
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Card Slug"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerCardSlug"
+                            renderReadOnly="false"
+                            required="on"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700022>
                         <_x0031_787607633825
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="dam/cfm/models/editor/components/contentreference"
@@ -68,7 +82,7 @@
                             name="logo"
                             nameSuffix="contentReference"
                             renderReadOnly="false"
-                            rootPath="/content/aemcloudproject"
+                            rootPath="/content/dam"
                             showEmptyInReadOnly="true"
                             showThumbnail="false"
                             valueType="string/reference">
@@ -76,6 +90,23 @@
                                 jcr:primaryType="nt:unstructured"
                                 thumbnail-validation="cfm.validation.thumbnail.show"/>
                         </_x0031_787607633825>
+                        <_x0031_790041700023
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="dam/cfm/models/editor/components/fragmentreference"
+                            allowNew="{Boolean}true"
+                            fieldLabel="Parent"
+                            filter="hierarchy"
+                            fragmentmodelreference="/conf/aemcloudproject/settings/dam/cfm/models/offer-card"
+                            listOrder="8"
+                            metaType="fragment-reference"
+                            name="parent"
+                            nameSuffix="contentReference"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string/content-fragment">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                            <field jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700023>
                     </items>
                 </content>
             </cq:dialog>

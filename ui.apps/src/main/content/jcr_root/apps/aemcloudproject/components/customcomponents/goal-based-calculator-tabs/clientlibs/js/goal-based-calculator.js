@@ -1,9 +1,10 @@
 /*
  * Goal Based Calculator
- *  - initCalculator: one per [data-gbic-form] (one per tab). Its result card is
- *    found by [data-gbic-result="<same id>"], which sits outside the form.
- *  - initResultSync: shows the result card of the active core tabpanel.
- *    Core tabs.js owns tab switching; this only watches the panels' class.
+ *  - initCalculator: one per [data-gbic-form] (one calculator per tab). Each
+ *    calculator renders its own form and result card, so everything it needs is
+ *    looked up inside its own root.
+ *  - Tab switching is left entirely to core tabs.js: it shows/hides whole tab
+ *    panels, which switches a calculator's form and result card together.
  */
 (function () {
     'use strict';
@@ -32,7 +33,7 @@
         form.setAttribute('data-gbic-ready', 'true');
 
         var id = form.getAttribute('data-gbic-form');
-        var result = document.querySelector('[data-gbic-result="' + id + '"]');
+        var result = form.querySelector('[data-gbic-result="' + id + '"]');
         var fields = {};
 
         form.querySelectorAll('[data-field]').forEach(function (input) {
@@ -191,32 +192,8 @@
         calculate();
     }
 
-    function initResultSync(root) {
-        if (root.getAttribute('data-gbic-sync')) {
-            return;
-        }
-        root.setAttribute('data-gbic-sync', 'true');
-
-        var panels = root.querySelectorAll('[data-cmp-hook-tabs="tabpanel"]');
-        var results = root.querySelectorAll('[data-gbic-panel]');
-
-        function sync() {
-            var active = root.querySelector('.cmp-tabs__tabpanel--active') || panels[0];
-            results.forEach(function (card) {
-                card.hidden = !active || card.getAttribute('data-gbic-panel') !== active.id;
-            });
-        }
-
-        var observer = new MutationObserver(sync);
-        panels.forEach(function (panel) {
-            observer.observe(panel, { attributes: true, attributeFilter: ['class'] });
-        });
-        sync();
-    }
-
     function init(scope) {
         scope.querySelectorAll('[data-gbic-form]').forEach(initCalculator);
-        scope.querySelectorAll('.sc-goal-based-calculator[data-cmp-is="tabs"]').forEach(initResultSync);
     }
 
     function onReady() {

@@ -1,0 +1,133 @@
+<!--
+    Goal Based Calculator Tabs (extends core Tabs: core/wcm/components/tabs/v1/tabs)
+
+    Owns only:
+      - the background image and heading
+      - the tab list ("Your Goal": Vacation / Car / Marriage / ...)
+      - one tab panel per tab item, each rendering that item's resource as-is
+      - the Invest Now / Learn More CTAs
+
+    Each tab item (tabs.children) is one goal-based-investment-calculator. The
+    calculator renders its whole UI itself - form AND result - so this component
+    never reaches into it, renders it with a selector, or renders it twice.
+-->
+<div data-sly-use.tabs="com.adobe.cq.wcm.core.components.models.Tabs"
+    data-sly-use.model="com.scbglobal.core.models.GoalBasedCalculatorTabsModel"
+    data-sly-use.cta="/apps/scbglobal/components/cta/cta.html"
+    data-sly-use.templates="core/wcm/components/commons/v1/templates.html"
+    data-panelcontainer="${wcmmode.edit && 'tabs'}" id="${tabs.id}"
+    class="cmp-tabs sc-goal-based-calculator sc-goal-based-calculator-tabs${wcmmode.edit ? ' sc-goal-based-calculator-tabs--authoring' : ''}" data-cmp-is="tabs"
+    data-author-edit-mode="${wcmmode.edit ? 'true' : 'false'}"
+    data-cmp-data-layer="${tabs.data.json}"
+    data-placeholder-text="${wcmmode.edit && 'Please drag Tab components here' @ i18n, locale=request.locale}">
+<sly data-sly-set.items="${tabs.children || tabs.items}" />
+<sly data-sly-set.desktopImagePath="${properties.desktopImagePath || model.desktopImagePath}" />
+<sly data-sly-set.mobileImagePath="${properties.mobileImagePath || model.mobileImagePath}" />
+<sly data-sly-set.fallbackImagePath="${desktopImagePath || mobileImagePath}" />
+<div class="cmp-tabs__header" data-sly-test="${fallbackImagePath}">
+    <div class="sc-module-bg__img-wrapper">
+        <picture class="sc-module-bg__picture">
+            <source data-sly-test="${mobileImagePath}" srcset="${mobileImagePath @ context='uri'}"
+                media="(max-width: 767px)">
+            <source data-sly-test="${desktopImagePath}" srcset="${desktopImagePath @ context='uri'}"
+                media="(min-width: 768px)">
+            <img src="${fallbackImagePath @ context='uri'}" class="cmp-tabs__image sc-module-bg__img"
+                loading="eager" fetchpriority="high" decoding="async"
+                alt="${properties.desktopImageAltText || properties.mobileImageAltText || ''}" />
+        </picture>
+    </div>
+</div>
+<div class="sc-content-wrapper">
+    <div class="sc-heading-inner sc-title--center">
+        <div class="sc-heading-inner__wrapper">
+            <h2 class="sc-title sc-title--inner">${properties.headingTitle || model.headingTitle || 'Goal Based
+                Investment Calculator'}</h2>
+            <div class="sc-description"
+                data-sly-test="${properties.headingDescription || model.headingDescription}">
+                <p>${properties.headingDescription || model.headingDescription}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="sc-goal-based-calculator__wrapper">
+        <div class="sc-goal-based-calculator__inner">
+
+            <!--
+                Tab list: rendered ONCE, outside the tab panel loop.
+
+                FIX: previously this <ol data-sly-list.tab="${items}"> sat INSIDE the
+                data-sly-repeat.item="${items}" that builds the tab panels. HTL
+                evaluated the inner list again on every pass of the outer repeat, so
+                with 5 tab items the page got 5 tab panels but 5 x 5 = 25
+                <li data-cmp-hook-tabs="tab"> elements, plus duplicate ids
+                (${tabs.id}-goal-title, ${tabs.id}-goal-radios).
+
+                Core tabs.js (cacheElements) collects every [data-cmp-hook-tabs="tab"]
+                and every [data-cmp-hook-tabs="tabpanel"] into two arrays and pairs them
+                by index: tab[i] activates tabpanel[i]. With 25 tabs and 5 tab panels,
+                any tab at index 5 or above called navigate() for a tab panel that
+                does not exist, so switching broke as soon as a tab list other than
+                the first panel's copy was on screen.
+            -->
+            <div class="sc-goal-based-calculator__goals">
+                <div class="sc-goal-based-calculator__title" id="${tabs.id}-goal-title">Your Goal</div>
+                <div class="sc-goal-based-calculator__radios" id="${tabs.id}-goal-radios"
+                    aria-labelledby="${tabs.id}-goal-title">
+                    <ol data-sly-list.tab="${items}" role="tablist" class="cmp-tabs__tablist"
+                        aria-label="${tabs.accessibilityLabel}" aria-multiselectable="false">
+                        <sly data-sly-test.isActive="${tab.name == tabs.activeItem}" />
+                        <li role="tab" id="${tab.id}-tab"
+                            class="tab cmp-tabs__tab${isActive ? ' cmp-tabs__tab--active' : ''}"
+                            data-goal="${tab.name}" data-goal-label="${tab.title}"
+                            aria-controls="${tab.id}-tabpanel" aria-selected="${isActive ? 'true' : 'false'}"
+                            tabindex="${isActive ? '0' : '-1'}" data-cmp-hook-tabs="tab">${tab.title}</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!--
+                Tab panels: one per tab item, holding ONLY that item's resource.
+                item.resource is the goal-based-investment-calculator authored into the
+                tab; it renders its own form and result (see that component's HTL).
+                Core tabs.js shows/hides these panels with cmp-tabs__tabpanel--active,
+                which shows/hides the whole calculator, result included - no extra JS.
+
+                FIX: this repeat used to also wrap the tab list above and a whole
+                right column (result + CTAs) per panel. It also rendered the result
+                a second time with selectors='gbic-result' from
+                item.resource.listChildren - which was always empty, because the
+                calculator IS the tab item and has no children.
+            -->
+            <div data-sly-repeat.item="${items}" id="${item.id}-tabpanel" role="tabpanel"
+                aria-labelledby="${item.id}-tab" tabindex="0"
+                class="cmp-tabs__tabpanel${item.name == tabs.activeItem ? ' cmp-tabs__tabpanel--active' : ''}"
+                data-cmp-hook-tabs="tabpanel" data-cmp-data-layer="${item.data.json}"
+                data-sly-resource="${item.resource @ decorationTagName='div'}"></div>
+
+            <!--
+                CTAs: authored on the tabs component (model.primaryCta /
+                model.secondaryCta), shared by every goal, rendered ONCE.
+
+                FIX: previously repeated inside every tab panel.
+            -->
+            <ul class="sc-inline-buttons sc-goal-based-calculator__actions"
+                data-sly-test="${model.primaryCta || model.secondaryCta}">
+                <li class="sc-inline-buttons__item"
+                    data-sly-test="${model.primaryCta && model.primaryCta.linkLabel}">
+                    <sly data-sly-call="${cta.primary @ cta=model.primaryCta, classname='sc-btn'}"></sly>
+                </li>
+                <li class="sc-inline-buttons__item sc-goal-based-calculator__learn-more-item"
+                    data-sly-test="${model.secondaryCta && model.secondaryCta.linkLabel}">
+                    <sly
+                        data-sly-call="${cta.primary @ cta=model.secondaryCta, classname='sc-btn sc-btn--secondary-blue sc-goal-based-calculator__learn-more-btn'}">
+                    </sly>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+
+    <sly data-sly-resource="${resource.path @ resourceType='wcm/foundation/components/parsys/newpar', decorationTagName='div', cssClassName='new section aem-Grid-newComponent', appendPath='/*'}"
+        data-sly-test="${(wcmmode.edit || wcmmode.preview) && (!items || items.size < 1)}"></sly>
+</div>
+</div>

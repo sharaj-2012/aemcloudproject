@@ -1,0 +1,86 @@
+/*
+ * Goal Based Calculator - layout (add to the goal-based-calculator-tabs clientlib;
+ * plain CSS, valid inside a .less file).
+ *
+ * Design: the tab list ("Your Goal") and the calculator form stack on the LEFT;
+ * the calculator's result card and the CTAs stack on the RIGHT, with the result
+ * card level with the tab list.
+ *
+ * DOM (only the active tab panel is displayed):
+ *   .sc-goal-based-calculator__inner
+ *     .sc-goal-based-calculator__goals                 (tabs component)
+ *     .cmp-tabs__tabpanel--active                      (tabs component)
+ *       > div                                          (AEM decoration div of the calculator)
+ *         .sc-goal-based-calculator--content           (calculator root)
+ *           .sc-goal-based-calculator__left            -> form
+ *           .sc-goal-based-calculator__right           -> result card
+ *     .sc-goal-based-calculator__actions               (tabs component)
+ *
+ * The form and result card are 3 levels below the grid. display: contents on the
+ * tab panel, the decoration div and the calculator root makes those wrappers
+ * generate no box, so .__left and .__right become grid items of .__inner.
+ *
+ * Author mode (data-author-edit-mode="true") is left out on purpose: the AEM editor
+ * draws each component's overlay from its decoration div's box, and a
+ * display: contents element has no box, so the calculator could not be selected.
+ * In the editor the calculator lays out its two halves itself (last block below).
+ */
+
+.cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+    /* The last row is flexible, so a tall form grows row 3 instead of pushing the
+       CTAs away from the bottom of the result card. */
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+        "goals result"
+        "form  result"
+        "form  actions";
+    column-gap: 32px;
+}
+
+.cmp-tabs[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active,
+.cmp-tabs[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active > div,
+.cmp-tabs[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active .sc-goal-based-calculator--content {
+    display: contents;
+}
+
+.cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator__goals {
+    grid-area: goals;
+}
+
+.cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator--content > .sc-goal-based-calculator__left {
+    grid-area: form;
+}
+
+.cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator--content > .sc-goal-based-calculator__right {
+    grid-area: result;
+    align-self: start;
+}
+
+.cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator__actions {
+    grid-area: actions;
+    align-self: start;
+}
+
+/* Tablet / mobile: one column - tab list, form, result, CTAs. */
+@media (max-width: 1023px) {
+    .cmp-tabs[data-author-edit-mode="false"] .sc-goal-based-calculator__inner {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+        grid-template-areas:
+            "goals"
+            "form"
+            "result"
+            "actions";
+    }
+}
+
+/* Author mode: tab list on top, then the calculator with form and result side by
+   side inside its own box (so the editor overlay can find it), then the CTAs. */
+.cmp-tabs[data-author-edit-mode="true"] .sc-goal-based-calculator--content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+    column-gap: 32px;
+    align-items: start;
+}

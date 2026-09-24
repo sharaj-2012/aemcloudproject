@@ -38,7 +38,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Currency symbol"
-                                        fieldDescription="Defaults to ₹"
                                         name="./currencySymbol"/>
                                 </items>
                             </column>
@@ -58,7 +57,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Plan question"
-                                        fieldDescription="Defaults to 'How do you want to plan?'"
                                         name="./howToPlanLabel"/>
                                     <sipAmountLabel
                                         jcr:primaryType="nt:unstructured"
@@ -133,7 +131,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Label"
-                                        fieldDescription="Defaults to 'Monthly investment'"
                                         name="./monthlyInvestmentLabel"/>
                                     <monthlyInvestdefaultValue
                                         jcr:primaryType="nt:unstructured"
@@ -182,8 +179,13 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Label"
-                                        fieldDescription="Defaults to 'Investment duration'"
                                         name="./investmentDurationLabel"/>
+                                    <durationUnitLabel
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                                        fieldLabel="Unit label"
+                                        fieldDescription="Shown next to the duration input, e.g. Yrs. Left blank, no unit is shown."
+                                        name="./durationUnitLabel"/>
                                     <investDurationdefaultValue
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
@@ -231,7 +233,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Label"
-                                        fieldDescription="Defaults to 'Initial investment'"
                                         name="./initialInvestmentLabel"/>
                                     <initialInvestdefaultValue
                                         jcr:primaryType="nt:unstructured"
@@ -280,7 +281,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Label"
-                                        fieldDescription="Defaults to 'Goal amount'"
                                         name="./goalAmountLabel"/>
                                     <goalAmountdefaultValue
                                         jcr:primaryType="nt:unstructured"
@@ -329,7 +329,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Label"
-                                        fieldDescription="Defaults to 'Expected rate of return (% p.a.)'"
                                         name="./rateOfReturnLabel"/>
                                     <rordefaultValue
                                         jcr:primaryType="nt:unstructured"

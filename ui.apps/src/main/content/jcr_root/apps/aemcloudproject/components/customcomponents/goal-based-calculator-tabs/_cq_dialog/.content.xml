@@ -32,7 +32,6 @@
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                                         fieldLabel="Goal chips label"
-                                        fieldDescription="Defaults to 'Your Goal'"
                                         name="./yourGoalLabel"/>
                                     <desktopImagePath
                                         jcr:primaryType="nt:unstructured"

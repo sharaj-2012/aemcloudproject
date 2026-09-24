@@ -1,33 +1,46 @@
 <!--/*
     Goal Based Calculator Tabs (super type: aemcloudproject/components/tabs -> core tabs v1)
-    Each tab item is one goal-based-investment-calculator (Vacation, Car, ...).
 
-      1. The tablist (<ol>) is rendered ONCE, outside the panel repeat. Core tabs.js
-         pairs the Nth [data-cmp-hook-tabs="tab"] with the Nth tabpanel.
-      2. Each tabpanel holds only the calculator form (the editable in author).
-      3. Each calculator's result card is rendered in the right column with the
-         'gbic-result' selector and wcmmode disabled, so the editor does not see a
-         second editable for the same resource. JS shows the card whose
-         data-gbic-panel matches the active tabpanel.
+    Renders: background image, heading, the tab list ("Your Goal"), one tab panel
+    per tab item, and the CTAs. Each tab item is a goal-based-investment-calculator
+    (Vacation, Car, ...) that renders its own form AND result card; this component
+    only includes it inside its tab panel and never renders any part of it itself.
+
+    Rules that keep core tabs.js working:
+      - The tab list (<ol>) is rendered ONCE, outside the tab panel repeat. Core
+        tabs.js collects all [data-cmp-hook-tabs="tab"] and
+        [data-cmp-hook-tabs="tabpanel"] elements and pairs them by index, so the
+        tab list must produce exactly one tab per tab panel, in the same order.
+      - Core tabs.js shows/hides whole tab panels, so a calculator's form and result
+        switch together with no extra JS.
+
+    Layout (goal list + form left, result + CTAs right) is done in CSS: see
+    clientlibs/css/goal-based-calculator.css.
 */-->
 <sly data-sly-use.clientlib="/libs/granite/sightly/templates/clientlib.html"
      data-sly-call="${clientlib.css @ categories='aemcloudproject.goal-based-calculator'}"/>
+<!--/*
+    Editor contract (core panel container, "cmp-tabs" type):
+      - data-panelcontainer="tabs" must sit on the component's top-level element; the
+        editor uses it to recognise this component as a tab container.
+      - class="cmp-tabs" marks the element the editor treats as the tabs, and it
+        looks for the tab panels as that element's DIRECT children
+        (".cmp-tabs > [data-cmp-hook-tabs='tabpanel']"). So cmp-tabs, id,
+        data-cmp-is and data-cmp-data-layer live on .sc-goal-based-calculator__inner
+        below, whose direct children are the tab panels - not on this root, where the
+        panels are nested three levels deep.
+*/-->
 <div data-sly-use.tabs="com.adobe.cq.wcm.core.components.models.Tabs"
      data-panelcontainer="${wcmmode.edit && 'tabs'}"
-     id="${tabs.id}"
-     class="cmp-tabs sc-goal-based-calculator sc-module-bg"
-     data-cmp-is="tabs"
-     data-cmp-data-layer="${tabs.data.json}"
+     class="sc-goal-based-calculator sc-module-bg"
+     data-author-edit-mode="${wcmmode.edit ? 'true' : 'false'}"
      data-placeholder-text="${wcmmode.edit && 'Please drag Tab components here' @ i18n, locale=request.locale}">
     <sly data-sly-set.items="${tabs.children || tabs.items}"/>
-    <sly data-sly-set.calculatorType="aemcloudproject/components/customcomponents/goal-based-investment-calculator"/>
     <sly data-sly-set.desktopImagePath="${properties.desktopImagePath}"/>
     <sly data-sly-set.mobileImagePath="${properties.mobileImagePath}"/>
     <sly data-sly-set.fallbackImagePath="${desktopImagePath || mobileImagePath}"/>
-    <sly data-sly-set.primaryHref="${properties.primaryCtaLink || '#'}"/>
-    <sly data-sly-set.secondaryHref="${properties.secondaryCtaLink || '#'}"/>
-    <sly data-sly-set.primaryIsPage="${'/content/' in primaryHref}"/>
-    <sly data-sly-set.secondaryIsPage="${'/content/' in secondaryHref}"/>
+    <sly data-sly-set.primaryIsPage="${'/content/' in properties.primaryCtaLink}"/>
+    <sly data-sly-set.secondaryIsPage="${'/content/' in properties.secondaryCtaLink}"/>
 
     <div class="sc-module-bg__img-wrapper" data-sly-test="${fallbackImagePath}">
         <picture class="sc-module-bg__picture">
@@ -35,14 +48,14 @@
             <source data-sly-test="${desktopImagePath}" srcset="${desktopImagePath @ context='uri'}" media="(min-width: 768px)">
             <img src="${fallbackImagePath @ context='uri'}" class="sc-module-bg__img"
                  loading="eager" fetchpriority="high" decoding="async"
-                 alt="${properties.desktopImageAltText || ''}"/>
+                 alt="${properties.desktopImageAltText}"/>
         </picture>
     </div>
 
     <div class="sc-content-wrapper">
         <div class="sc-heading-inner sc-title--center">
             <div class="sc-heading-inner__wrapper">
-                <h2 class="sc-title sc-title--inner">${properties.headingTitle || 'Goal Based Investment Calculator'}</h2>
+                <h2 class="sc-title sc-title--inner">${properties.headingTitle}</h2>
                 <div class="sc-description" data-sly-test="${properties.headingDescription}">
                     <p>${properties.headingDescription}</p>
                 </div>
@@ -50,10 +63,14 @@
         </div>
 
         <div class="sc-goal-based-calculator__wrapper" data-sly-test="${items.size > 0}">
-            <div class="sc-goal-based-calculator__inner">
+            <div class="sc-goal-based-calculator__inner cmp-tabs"
+                 id="${tabs.id}"
+                 data-cmp-is="tabs"
+                 data-cmp-data-layer="${tabs.data.json}">
 
-                <div class="sc-goal-based-calculator__left">
-                    <div class="sc-goal-based-calculator__title" id="${tabs.id}-goal-title">${properties.yourGoalLabel || 'Your Goal'}</div>
+                <!-- Tab list: once, outside the tab panel repeat (see header comment). -->
+                <div class="sc-goal-based-calculator__goals">
+                    <div class="sc-goal-based-calculator__title" id="${tabs.id}-goal-title">${properties.yourGoalLabel}</div>
                     <ol data-sly-list.tab="${items}"
                         role="tablist"
                         class="cmp-tabs__tablist sc-goal-based-calculator__radios"
@@ -69,42 +86,33 @@
                             data-goal="${tab.name}"
                             data-cmp-hook-tabs="tab">${tab.title}</li>
                     </ol>
-
-                    <div class="sc-goal-based-calculator__panels">
-                        <div data-sly-repeat.item="${items}"
-                             id="${item.id}-tabpanel"
-                             role="tabpanel"
-                             aria-labelledby="${item.id}-tab"
-                             tabindex="0"
-                             class="cmp-tabs__tabpanel${item.name == tabs.activeItem ? ' cmp-tabs__tabpanel--active' : ''}"
-                             data-cmp-hook-tabs="tabpanel"
-                             data-cmp-data-layer="${item.data.json}"
-                             data-sly-resource="${item.resource @ decorationTagName='div'}"></div>
-                    </div>
                 </div>
 
-                <div class="sc-goal-based-calculator__right">
-                    <sly data-sly-repeat.item="${items}">
-                        <div data-sly-test="${item.resource.resourceType == calculatorType}"
-                             class="sc-goal-based-calculator__result"
-                             data-gbic-panel="${item.id}-tabpanel"
-                             hidden="${item.name != tabs.activeItem}"
-                             data-sly-resource="${item.resource @ selectors='gbic-result', wcmmode='disabled'}"></div>
-                    </sly>
+                <!-- Tab panels: one per tab item, holding only that item's resource
+                     (the calculator renders its own form and result card). -->
+                <div data-sly-repeat.item="${items}"
+                     id="${item.id}-tabpanel"
+                     role="tabpanel"
+                     aria-labelledby="${item.id}-tab"
+                     tabindex="0"
+                     class="cmp-tabs__tabpanel${item.name == tabs.activeItem ? ' cmp-tabs__tabpanel--active' : ''}"
+                     data-cmp-hook-tabs="tabpanel"
+                     data-cmp-data-layer="${item.data.json}"
+                     data-sly-resource="${item.resource @ decorationTagName='div'}"></div>
 
-                    <ul class="sc-inline-buttons sc-goal-based-calculator__actions"
-                        data-sly-test="${properties.primaryCtaLabel || properties.secondaryCtaLabel}">
-                        <li class="sc-inline-buttons__item" data-sly-test="${properties.primaryCtaLabel}">
-                            <a class="sc-btn" href="${primaryHref}${primaryIsPage ? '.html' : ''}"
-                               title="${properties.primaryCtaLabel}">${properties.primaryCtaLabel}</a>
-                        </li>
-                        <li class="sc-inline-buttons__item sc-goal-based-calculator__learn-more-item" data-sly-test="${properties.secondaryCtaLabel}">
-                            <a class="sc-btn sc-btn--secondary-blue sc-goal-based-calculator__learn-more-btn"
-                               href="${secondaryHref}${secondaryIsPage ? '.html' : ''}"
-                               title="${properties.secondaryCtaLabel}">${properties.secondaryCtaLabel}</a>
-                        </li>
-                    </ul>
-                </div>
+                <!-- CTAs: authored on this component and shared by every goal, rendered once. -->
+                <ul class="sc-inline-buttons sc-goal-based-calculator__actions"
+                    data-sly-test="${properties.primaryCtaLabel || properties.secondaryCtaLabel}">
+                    <li class="sc-inline-buttons__item" data-sly-test="${properties.primaryCtaLabel && properties.primaryCtaLink}">
+                        <a class="sc-btn" href="${properties.primaryCtaLink}${primaryIsPage ? '.html' : ''}"
+                           title="${properties.primaryCtaLabel}">${properties.primaryCtaLabel}</a>
+                    </li>
+                    <li class="sc-inline-buttons__item sc-goal-based-calculator__learn-more-item" data-sly-test="${properties.secondaryCtaLabel && properties.secondaryCtaLink}">
+                        <a class="sc-btn sc-btn--secondary-blue sc-goal-based-calculator__learn-more-btn"
+                           href="${properties.secondaryCtaLink}${secondaryIsPage ? '.html' : ''}"
+                           title="${properties.secondaryCtaLabel}">${properties.secondaryCtaLabel}</a>
+                    </li>
+                </ul>
 
             </div>
         </div>

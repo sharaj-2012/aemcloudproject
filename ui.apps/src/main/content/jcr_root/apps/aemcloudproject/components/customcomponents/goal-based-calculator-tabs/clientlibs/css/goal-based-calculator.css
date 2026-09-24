@@ -36,13 +36,63 @@
 
 /* Card */
 .sc-goal-based-calculator__wrapper { background: var(--gbc-card); border-radius: 12px; padding: 32px; }
-.sc-goal-based-calculator__inner {
+.sc-goal-based-calculator__title { font-size: 16px; color: var(--gbc-text); margin-bottom: 16px; }
+
+/*
+ * Layout: tab list + form on the LEFT, result card + CTAs on the RIGHT, with the
+ * result card level with the tab list.
+ *
+ *   .__inner.cmp-tabs                 grid container (tabs component)
+ *     .__goals                        tab list                        -> "goals"
+ *     .cmp-tabs__tabpanel--active     tab panel             \
+ *       ...                           any wrappers, e.g. AEM  > display: contents
+ *                                     decoration div, or a   |
+ *                                     Container tab item     |
+ *         .__panel                    calculator            /
+ *           .__left                   form                            -> "form"
+ *           .__right                  result card                     -> "result"
+ *     .__actions                      CTAs                            -> "actions"
+ *
+ * The form and result card live inside the calculator, several levels below the
+ * grid. display: contents on every element in between (matched with :has(), so it
+ * works whether the tab item is the calculator itself or a Container holding it)
+ * gives them no box of their own, so .__left and .__right are placed on .__inner's
+ * grid directly.
+ *
+ * Not applied in author mode: the editor draws a component's overlay from its
+ * decoration div's box, and a display: contents element has none, so the
+ * calculator could not be selected. See the author-mode block below.
+ */
+.sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__inner {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
-    gap: 32px;
+    /* Flexible last row: a tall form grows row 3 instead of pushing the CTAs away
+       from the bottom of the result card. */
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+        "goals result"
+        "form  result"
+        "form  actions";
+    column-gap: 32px;
+}
+.sc-goal-based-calculator[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active,
+.sc-goal-based-calculator[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active :has(.sc-goal-based-calculator__panel),
+.sc-goal-based-calculator[data-author-edit-mode="false"] .cmp-tabs__tabpanel--active .sc-goal-based-calculator__panel {
+    display: contents;
+}
+.sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__goals { grid-area: goals; }
+.sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__panel > .sc-goal-based-calculator__left { grid-area: form; }
+.sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__panel > .sc-goal-based-calculator__right { grid-area: result; align-self: start; }
+.sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__actions { grid-area: actions; align-self: start; }
+
+/* Author mode: tab list, then the calculator with form and result side by side in
+   its own box (so its editor overlay works), then the CTAs. */
+.sc-goal-based-calculator[data-author-edit-mode="true"] .sc-goal-based-calculator__panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+    column-gap: 32px;
     align-items: start;
 }
-.sc-goal-based-calculator__title { font-size: 16px; color: var(--gbc-text); margin-bottom: 16px; }
 
 /* Goal chips = the core tablist */
 .sc-goal-based-calculator__radios {
@@ -128,6 +178,7 @@
     margin: 32px 0 0; padding: 0; list-style: none;
 }
 .sc-goal-based-calculator .sc-btn {
+    box-sizing: border-box;
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 180px; height: 50px; padding: 0 32px; border: 2px solid var(--gbc-blue); border-radius: 30px;
     background: var(--gbc-blue); color: #fff; font-size: 16px; font-weight: 500; text-decoration: none;
@@ -136,7 +187,14 @@
 
 /* Tablet / mobile */
 @media (max-width: 1023px) {
-    .sc-goal-based-calculator__inner { grid-template-columns: minmax(0, 1fr); }
+    /* One column: tab list, form, result card, CTAs. */
+    .sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__inner {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+        grid-template-areas: "goals" "form" "result" "actions";
+    }
+    .sc-goal-based-calculator[data-author-edit-mode="false"] .sc-goal-based-calculator__panel > .sc-goal-based-calculator__right { margin-top: 24px; }
+    .sc-goal-based-calculator[data-author-edit-mode="true"] .sc-goal-based-calculator__panel { grid-template-columns: minmax(0, 1fr); row-gap: 24px; }
 }
 @media (max-width: 767px) {
     .sc-goal-based-calculator { padding: 32px 16px; }

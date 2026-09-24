@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The result card is rendered by the parent tabs, so refresh the page after an edit. -->
+<!-- The goal name (cq:panelTitle) is shown in the parent tabs' tab list, so refresh
+     the parent after an edit. Inserting, deleting and moving items is handled by the
+     parent tabs' own panel container listeners (inherited from core Tabs). -->
 <jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
     cq:actions="[edit,-,copymove,delete,-,insert]"
     cq:dialogMode="floating"
     jcr:primaryType="cq:EditConfig">
     <cq:listeners
         jcr:primaryType="cq:EditListenersConfig"
-        afteredit="REFRESH_PAGE"
-        afterinsert="REFRESH_PAGE"
-        afterdelete="REFRESH_PAGE"
-        aftermove="REFRESH_PAGE"/>
+        afteredit="REFRESH_PARENT"/>
 </jcr:root>

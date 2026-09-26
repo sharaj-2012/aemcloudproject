@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
-    <filter root="/conf/aemcloudproject" mode="merge"/>
+    <!-- CF models are managed in code: "update" applies changed properties to existing models,
+         which "merge" never does. FileVault takes the mode from the first filter covering a path,
+         so this must stay above the /conf/aemcloudproject filter. -->
+    <filter root="/conf/aemcloudproject/settings/dam/cfm/models" mode="update"/>
+    <filter root="/conf/aemcloudproject" mode="merge">
+        <exclude pattern="/conf/aemcloudproject/settings/dam/cfm/models(/.*)?"/>
+    </filter>
     <filter root="/content/aemcloudproject" mode="merge"/>
     <filter root="/content/cq:graphql/aemcloudproject"/>
     <filter root="/content/dam/aemcloudproject" mode="merge">

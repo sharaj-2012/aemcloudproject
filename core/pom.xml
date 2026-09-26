@@ -67,6 +67,14 @@ Import-Package: javax.annotation;version=0.0.0,*
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- xercesImpl 2.6.2 arrives transitively and registers itself as the JAXP parser,
+                         but it predates the setFeature calls POI makes. Use the JDK's parser in tests. -->
+                    <systemPropertyVariables>
+                        <javax.xml.parsers.DocumentBuilderFactory>com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl</javax.xml.parsers.DocumentBuilderFactory>
+                        <javax.xml.parsers.SAXParserFactory>com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl</javax.xml.parsers.SAXParserFactory>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -84,6 +92,15 @@ Import-Package: javax.annotation;version=0.0.0,*
         <dependency>
             <groupId>uk.org.lidalia</groupId>
             <artifactId>slf4j-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Full POI for unit tests only: aem-sdk-api carries POI's API classes but not the
+             internals XSSFWorkbook loads. AEM provides POI 5.x at runtime (com.adobe.granite.poi).
+             Declared before aem-sdk-api so one consistent POI version is loaded in tests. -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>

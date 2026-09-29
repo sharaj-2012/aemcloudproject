@@ -53,6 +53,7 @@
     <aem.sdk.api>2025.5.21005.20250522T173058Z-250500</aem.sdk.api>
     <aemanalyser.version>1.6.6</aemanalyser.version>
     <componentGroupName>Aem Cloud Project</componentGroupName>
+    <acs-aem-commons.version>6.16.0</acs-aem-commons.version>
   </properties>
   <build>
     <plugins>
@@ -605,6 +606,29 @@ Bundle-DocURL:
         <groupId>org.apache.sling</groupId>
         <artifactId>org.apache.sling.dynamic-include</artifactId>
         <version>3.3.0</version>
+      </dependency>
+      <!-- ACS AEM Commons -->
+      <dependency>
+        <groupId>com.adobe.acs</groupId>
+        <artifactId>acs-aem-commons-bundle</artifactId>
+        <version>${acs-aem-commons.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.adobe.acs</groupId>
+        <artifactId>acs-aem-commons-all</artifactId>
+        <version>${acs-aem-commons.version}</version>
+        <type>zip</type>
+        <!-- The unclassified zip is the on-premise build, which the AEMaaCS analyser rejects -->
+        <classifier>cloud</classifier>
+      </dependency>
+      <!-- POI OOXML for unit tests only. Main code compiles against the POI API in aem-sdk-api,
+           so the bundle imports the POI package versions AEM exports, not Apache's 5.x ones. -->
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.4</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

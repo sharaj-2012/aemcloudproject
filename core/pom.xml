@@ -90,6 +90,17 @@ Import-Package: javax.annotation;version=0.0.0,*
             <groupId>com.adobe.aem</groupId>
             <artifactId>aem-sdk-api</artifactId>
         </dependency>
+        <!-- ACS AEM Commons: MCP process framework APIs used by the CF importer -->
+        <dependency>
+            <groupId>com.adobe.acs</groupId>
+            <artifactId>acs-aem-commons-bundle</artifactId>
+        </dependency>
+        <!-- POI OOXML: lets unit tests open real .xlsx files. Main code uses the POI API in aem-sdk-api. -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.adobe.cq</groupId>
             <artifactId>core.wcm.components.core</artifactId>
@@ -117,6 +128,18 @@ Import-Package: javax.annotation;version=0.0.0,*
             <groupId>junit-addons</groupId>
             <artifactId>junit-addons</artifactId>
             <scope>test</scope>
+            <!-- Xerces 2.6.2 replaces the JDK's XML parser in tests and lacks secure processing,
+                 which breaks creating DAM assets with AEM Mocks. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xmlParserAPIs</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.wcm</groupId>

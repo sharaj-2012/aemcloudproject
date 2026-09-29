@@ -1,0 +1,5 @@
+{
+  "components": [
+    "com.adobe.acs.commons.mcp.impl.processes.cfi.ContentFragmentImportFactory"
+  ]
+}

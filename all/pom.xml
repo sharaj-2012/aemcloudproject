@@ -82,6 +82,14 @@
                             <artifactId>org.apache.sling.dynamic-include</artifactId>
                             <target>/apps/aemcloudproject-packages/application/install</target>
                         </embedded>
+                        <!-- ACS AEM Commons: required by the CF importer MCP process -->
+                        <embedded>
+                            <groupId>com.adobe.acs</groupId>
+                            <artifactId>acs-aem-commons-all</artifactId>
+                            <type>zip</type>
+                            <classifier>cloud</classifier>
+                            <target>/apps/aemcloudproject-packages/application/install</target>
+                        </embedded>
                     </embeddeds>
                 </configuration>
             </plugin>
@@ -205,6 +213,13 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.dynamic-include</artifactId>
+        </dependency>
+        <!-- ACS AEM Commons content package - embedded in the all package for deployment -->
+        <dependency>
+            <groupId>com.adobe.acs</groupId>
+            <artifactId>acs-aem-commons-all</artifactId>
+            <type>zip</type>
+            <classifier>cloud</classifier>
         </dependency>
 
     </dependencies>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
+    <filter root="/apps/aemcloudproject/cfbulkupload"/>
     <filter root="/apps/aemcloudproject/clientlibs"/>
     <filter root="/apps/aemcloudproject/components"/>
     <filter root="/apps/aemcloudproject/i18n"/>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    jcr:title="CF Bulk Upload"
+    sling:resourceType="granite/ui/components/shell/page"
+    consoleId="cf-bulk-upload">
+    <head jcr:primaryType="nt:unstructured">
+        <clientlibs
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/includeclientlibs"
+            categories="[coralui3,granite.ui.coral.foundation,granite.ui.shell,granite.csrf.standalone,aemcloudproject.cfbulkupload]"/>
+    </head>
+    <content
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="granite/ui/components/coral/foundation/container"
+        granite:class="scb-cf-bulk-upload__page">
+        <items jcr:primaryType="nt:unstructured">
+            <form
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/form"
+                action="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload/upload.json"
+                method="post"
+                style="vertical"
+                granite:class="scb-cf-bulk-upload">
+                <items jcr:primaryType="nt:unstructured">
+                    <filePath
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/form/pathfield"
+                        fieldLabel="Workbook (.xlsx)"
+                        fieldDescription="Pick the .xlsx you uploaded to DAM."
+                        emptyText="/content/dam/aemcloudproject/imports/..."
+                        name="filePath"
+                        rootPath="/content/dam/aemcloudproject/imports"
+                        required="{Boolean}true"/>
+                    <submit
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/button"
+                        type="submit"
+                        text="Submit"
+                        variant="primary"
+                        granite:class="scb-cf-bulk-upload__submit"/>
+                    <result
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/container"
+                        granite:class="scb-cf-bulk-upload__result"/>
+                </items>
+            </form>
+        </items>
+    </content>
+    <upload
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="aemcloudproject/cfbulkupload/upload"/>
+</jcr:root>

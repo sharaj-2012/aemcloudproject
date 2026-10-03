@@ -1,0 +1,18 @@
+.scb-cf-bulk-upload__page {
+    max-width: 720px;
+    padding: 24px;
+}
+
+.scb-cf-bulk-upload__result {
+    margin-top: 16px;
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.scb-cf-bulk-upload__result:empty {
+    display: none;
+}
+
+.scb-cf-bulk-upload__result--error {
+    color: #c9252d;
+}

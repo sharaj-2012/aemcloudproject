@@ -1,18 +1,23 @@
+/* Page content area (granite:class on the "content" node): keep the form narrow and padded. */
 .scb-cf-bulk-upload__page {
     max-width: 720px;
     padding: 24px;
 }
 
+/* Box under the Submit button where cf-bulk-upload.js writes the servlet's reply.
+   pre-wrap keeps the line breaks and indentation of the pretty-printed JSON. */
 .scb-cf-bulk-upload__result {
     margin-top: 16px;
     white-space: pre-wrap;
     font-family: monospace;
 }
 
+/* Hide the box until there is something to show. */
 .scb-cf-bulk-upload__result:empty {
     display: none;
 }
 
+/* Added by scbShowResult(..., true) for errors such as "Select a workbook first." */
 .scb-cf-bulk-upload__result--error {
     color: #c9252d;
 }

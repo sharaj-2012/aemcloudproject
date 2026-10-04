@@ -1,20 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    CF Bulk Upload page, built from Granite UI components (no HTL of our own).
+    Opens at: /apps/aemcloudproject/cfbulkupload/content/cfbulkupload.html
+
+    Renders:
+      [ Workbook (.xlsx) * ][📁]      <- path browser, starts in /content/dam/aemcloudproject/imports
+      [ Submit ]
+      { JSON reply ... }              <- result box, filled by cf-bulk-upload.js
+-->
 <jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
     jcr:primaryType="nt:unstructured"
     jcr:title="CF Bulk Upload"
     sling:resourceType="granite/ui/components/shell/page"
     consoleId="cf-bulk-upload">
+    <!-- Scripts and styles for the page:
+         coralui3 / granite.ui.coral.foundation / granite.ui.shell = AEM's UI widgets (path browser, button, header)
+         granite.csrf.standalone = adds the CSRF token to our POST
+         aemcloudproject.cfbulkupload = our cf-bulk-upload.js + cf-bulk-upload.css -->
     <head jcr:primaryType="nt:unstructured">
         <clientlibs
             jcr:primaryType="nt:unstructured"
             sling:resourceType="granite/ui/components/coral/foundation/includeclientlibs"
             categories="[coralui3,granite.ui.coral.foundation,granite.ui.shell,granite.csrf.standalone,aemcloudproject.cfbulkupload]"/>
     </head>
+    <!-- Page body. granite:class adds a CSS class to the rendered <div>. -->
     <content
         jcr:primaryType="nt:unstructured"
         sling:resourceType="granite/ui/components/coral/foundation/container"
         granite:class="scb-cf-bulk-upload__page">
         <items jcr:primaryType="nt:unstructured">
+            <!-- <form class="scb-cf-bulk-upload" action=".../upload.json" method="post">.
+                 cf-bulk-upload.js catches its submit and sends it with ajax instead. -->
             <form
                 jcr:primaryType="nt:unstructured"
                 sling:resourceType="granite/ui/components/coral/foundation/form"
@@ -23,6 +39,8 @@
                 style="vertical"
                 granite:class="scb-cf-bulk-upload">
                 <items jcr:primaryType="nt:unstructured">
+                    <!-- Path browser. name="filePath" is the parameter the servlet reads.
+                         Value after picking, e.g. /content/dam/aemcloudproject/imports/cf-import-combined.xlsx -->
                     <filePath
                         jcr:primaryType="nt:unstructured"
                         sling:resourceType="granite/ui/components/coral/foundation/form/pathfield"
@@ -32,6 +50,7 @@
                         name="filePath"
                         rootPath="/content/dam/aemcloudproject/imports"
                         required="{Boolean}true"/>
+                    <!-- type="submit": clicking it submits the form -> scbSubmitCfBulkUpload() -->
                     <submit
                         jcr:primaryType="nt:unstructured"
                         sling:resourceType="granite/ui/components/coral/foundation/button"
@@ -39,6 +58,7 @@
                         text="Submit"
                         variant="primary"
                         granite:class="scb-cf-bulk-upload__submit"/>
+                    <!-- Empty <div class="scb-cf-bulk-upload__result">; scbShowResult() writes into it. -->
                     <result
                         jcr:primaryType="nt:unstructured"
                         sling:resourceType="granite/ui/components/coral/foundation/container"
@@ -47,6 +67,8 @@
             </form>
         </items>
     </content>
+    <!-- Not rendered on the page. Gives the servlet a URL: Sling sees resource type
+         aemcloudproject/cfbulkupload/upload on POST .../upload.json and calls ScbCfBulkUploadServlet. -->
     <upload
         jcr:primaryType="nt:unstructured"
         sling:resourceType="aemcloudproject/cfbulkupload/upload"/>

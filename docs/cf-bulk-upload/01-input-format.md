@@ -28,10 +28,27 @@ workbook. Its layout is the format; this doc spells out the rules behind it.
 - **Row 1 is the header.** Data starts on row 2. Completely blank rows are skipped.
 - Every header is a **field Property Name from the model** (the name, not the editor label —
   `offerStartDate`, not `Offer Start Date`). Case-sensitive. Column order doesn't matter.
+- **A header is a single word** — no spaces — because it must match a CF property name.
+  `Offer Title` is an error. All bad headers in the workbook are reported together.
+- Blank header cells are skipped.
+- `action` is a reserved header (see [Action column](#action-column)); it is not a model field.
 - A header that isn't a field of the sheet's model is an error for the whole sheet
   (almost always a typo, and silently ignoring it would drop data).
 - Every message in the report points at `Sheet › Excel row › column`, using the row number
   the author sees in Excel.
+
+## Action column
+
+Every sheet has an `action` column (any position) that says what each row does.
+
+| `action` | The fragment must… | Otherwise |
+|----------|--------------------|-----------|
+| `CREATE` | **not exist** yet. Required fields must be filled. | Error: already exists — nothing is overwritten. |
+| `UPDATE` | **already exist**. Only non-empty cells change. | Error: not found — catches typos in the slug. |
+
+- Matched case-insensitively: `create`, `Create`, `CREATE` are the same.
+- A blank `action`, or any other value (e.g. `DELETE`), is an error for that row.
+- **The uploader never deletes fragments.** Deleting is done manually in AEM, by design.
 
 ## Model profiles
 
@@ -60,9 +77,10 @@ Profiles for this project:
 - **Name** = the `nameField` value. It must already be a valid name — lowercase letters,
   digits, `-`, `_` — otherwise the row is an error. It is never auto-slugified, so what the
   author types is exactly the path they get.
-- **Upsert key** = target folder + profile `folder` + name. Exists → update, otherwise create.
-- **Title** = the `titleField` value; if that cell is empty on create, the name is used.
-  On update, an empty title cell keeps the current title.
+- **Fragment path** = target folder + profile `folder` + name. `CREATE` requires that path to
+  be free, `UPDATE` requires a fragment there.
+- **Title** = the `titleField` value; if that cell is empty on `CREATE`, the name is used.
+  On `UPDATE`, an empty title cell keeps the current title.
 - The same name twice in one sheet is an error (both rows reported) — otherwise which one
   wins would depend on order.
 
@@ -81,36 +99,34 @@ The type of each field is read from the model, so headers carry no type hints.
 | Enumeration        | Option **value** (not its label). |
 | Tags               | Tag IDs, e.g. `aemcloudproject:offers/dining`. |
 | Content reference  | Absolute repository path (`/content/dam/…`, `/content/aemcloudproject/…`) **or** an external `http(s)://` URL, stored as-is. |
-| Fragment reference | Absolute path **or** bare name — see below. |
+| Fragment reference | Absolute path, e.g. `/content/dam/aemcloudproject/cfs/offer-listing/cards/gold-card` — see below. |
 | JSON object        | Raw JSON text. Must parse. |
 
 ### Multi-value fields
 
-For fields set to *Render as multiple field* and multi-fragment references:
-**one value per line** inside the cell (Alt+Enter in Excel, Option+Return on Mac).
-Each line is trimmed; blank lines are ignored.
+Multi-value fields (all of them are fragment references in this project): **one path per
+line** inside the cell (Alt+Enter in Excel, Option+Return on Mac).
 
 ```
 /content/dam/aemcloudproject/cfs/offer-listing/cards/platinum-card
 /content/dam/aemcloudproject/cfs/offer-listing/cards/gold-card
 ```
 
+**How the uploader recognises them:** a cell whose text **starts with `/content`** is split on
+line breaks; each line is trimmed and blank lines are dropped. Two or more lines become a list
+of values, one line stays a single value. Every other cell is kept as-is — so multi-line HTML
+such as `address` or `offerDescription` (which starts with `<p>`) is never split.
+
+> Pending: a future model with a multi-value field whose values don't start with `/content`
+> (e.g. multi-value text or tags) would not be split. Revisit when headers are checked
+> against the model.
+
 ### Fragment references
 
-Each value in a fragment-reference cell is either:
-
-- **an absolute path** — `/content/dam/aemcloudproject/cfs/offer-listing/cards/gold-card`, or
-- **a bare name** — `gold-card`. Resolved through the profile of the model the field allows:
-  `offerCards` allows `offer-card` → `<target folder>/offer-listing/cards/gold-card`.
-  No search is involved, so a name can never be ambiguous.
-
-Either way the target must exist in DAM **or be created by a row in the same workbook**, and
-must use the model the field allows. Names and paths can be mixed in one cell.
-
-```
-gold-card
-/content/dam/aemcloudproject/cfs/offer-listing/cards/infinite-card
-```
+Each value in a fragment-reference cell is an **absolute path**, e.g.
+`/content/dam/aemcloudproject/cfs/offer-listing/cards/gold-card`. Bare names (`gold-card`)
+are not supported. The target must exist in DAM **or be created by a row in the same
+workbook**, and must use the model the field allows.
 
 Self-references (`category.parent`, `offer-card.parent`) work the same way — a row may point
 at a row below it.
@@ -128,9 +144,9 @@ at a row below it.
 
 ### Empty cells vs. clearing a field
 
-Upsert makes "empty" ambiguous, so there's an explicit marker:
+On `UPDATE` an empty cell means "leave unchanged", so clearing a field needs an explicit marker:
 
-| Cell             | On create                 | On update |
+| Cell             | `CREATE`                  | `UPDATE`  |
 |------------------|---------------------------|-----------|
 | empty            | field keeps model default | field **left unchanged** |
 | `#CLEAR` (exact) | field empty               | field **emptied** |
@@ -138,14 +154,15 @@ Upsert makes "empty" ambiguous, so there's an explicit marker:
 
 ### Required fields
 
-Fields marked *Required* in the model must have a value when a fragment is **created**.
-On update an empty cell is fine (field unchanged), but `#CLEAR` on a required field is an error.
+Fields marked *Required* in the model must have a value on `CREATE`.
+On `UPDATE` an empty cell is fine (field unchanged), but `#CLEAR` on a required field is an error.
 The `nameField` column must be present in the sheet and filled on every row.
 
 ## Behaviour summary
 
-- **Upsert**, keyed on folder + name. Updating a fragment whose existing model differs from
-  the sheet's model is an error (never silently re-modelled).
+- **Explicit actions:** each row is `CREATE` or `UPDATE` (see [Action column](#action-column)).
+  Updating a fragment whose existing model differs from the sheet's model is an error
+  (never silently re-modelled). Nothing is ever deleted.
 - Rows are independent: one bad row is reported and skipped; it doesn't fail the file.
 - **Dry run** runs full validation and reports what *would* be created/updated/failed,
   without writing anything.
@@ -153,8 +170,9 @@ The `nameField` column must be present in the sheet and filled on every row.
 
 ## Out of scope for v1
 
-Variations, per-cell content-type override, asset upload from the file, deleting fragments,
-publishing, auto-creating stub fragments for unknown references. All can be added later
+Variations, per-cell content-type override, asset upload from the file, publishing,
+auto-creating stub fragments for unknown references. (Deleting fragments is not "later" —
+it stays manual by design.) All can be added later
 without breaking this format.
 
 ---

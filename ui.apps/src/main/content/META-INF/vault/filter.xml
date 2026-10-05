@@ -4,4 +4,8 @@
     <filter root="/apps/aemcloudproject/components"/>
     <filter root="/apps/aemcloudproject/i18n"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>
+    <!-- Overlays: show the console Delete actions only to administrators -->
+    <filter root="/apps/wcm/core/content/sites"/>
+    <filter root="/apps/dam/gui/content/assets"/>
+    <filter root="/apps/cq/experience-fragments/content/experience-fragments"/>
 </workspaceFilter>

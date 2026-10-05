@@ -42,6 +42,10 @@
                         <filter><root>/apps/dam</root></filter>
                         <filter><root>/apps/wcm</root></filter>
                         <filter><root>/apps/msm</root></filter>
+                        <!-- Parents of console overlays (Delete action render conditions) -->
+                        <filter><root>/apps/wcm/core/content</root></filter>
+                        <filter><root>/apps/dam/gui/content</root></filter>
+                        <filter><root>/apps/cq/experience-fragments/content</root></filter>
 
                         <!-- Immutable context-aware configurations -->
                         <filter><root>/apps/settings</root></filter>

@@ -65,6 +65,16 @@
                         granite:class="scb-cf-bulk-upload__result"/>
                 </items>
             </form>
+            <!-- "Generate report": a plain link (no JS). Clicking it GETs .../report.xlsx; ScbCfReportServlet
+                 answers with Content-Disposition: attachment, so the browser downloads
+                 offer-listing-report-<date>.xlsx instead of leaving the page. -->
+            <reportButton
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/anchorbutton"
+                href="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.xlsx"
+                text="Generate report"
+                variant="secondary"
+                granite:class="scb-cf-bulk-upload__report"/>
         </items>
     </content>
     <!-- Not rendered on the page. Gives the servlet a URL: Sling sees resource type
@@ -72,4 +82,9 @@
     <upload
         jcr:primaryType="nt:unstructured"
         sling:resourceType="aemcloudproject/cfbulkupload/upload"/>
+    <!-- Not rendered on the page. Gives the report servlet a URL: GET .../report.xlsx on resource type
+         aemcloudproject/cfbulkupload/report calls ScbCfReportServlet. -->
+    <report
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="aemcloudproject/cfbulkupload/report"/>
 </jcr:root>

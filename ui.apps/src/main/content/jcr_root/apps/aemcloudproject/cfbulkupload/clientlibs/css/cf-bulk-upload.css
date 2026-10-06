@@ -17,6 +17,11 @@
     display: none;
 }
 
+/* "Generate report" button: a little space between it and the upload form above. */
+.scb-cf-bulk-upload__report {
+    margin-top: 24px;
+}
+
 /* Added by scbShowResult(..., true) for errors such as "Select a workbook first." */
 .scb-cf-bulk-upload__result--error {
     color: #c9252d;

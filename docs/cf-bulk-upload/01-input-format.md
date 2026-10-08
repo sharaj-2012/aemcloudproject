@@ -68,7 +68,7 @@ Profiles for this project:
 | `offer-detail`     | `offer-listing/offers`     | `offerSlug`         | `offerTitle`   |
 | `category`         | `offer-listing/categories` | `offerCategorySlug` | `name`         |
 | `merchant-details` | `offer-listing/merchants`  | `merchantSlug`      | `merchantName` |
-| `merchant-venue`   | `offer-listing/venues`     | `merchantVenueSlug` | `name`         |
+| `merchant-venue`   | `offer-listing/merchants/venues` | `merchantVenueSlug` | `name`         |
 | `offer-card`       | `offer-listing/cards`      | `offerCardSlug`     | `name`         |
 | `offer-cta`        | `offer-listing/ctas`       | `offerCtaSlug`      | `label`        |
 

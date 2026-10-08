@@ -1,0 +1,5 @@
+{
+  "fragmentRootPath": "/content/dam/aemcloudproject/cfs",
+  "modelsPath": "/conf/aemcloudproject/settings/dam/cfm/models",
+  "reportPath": "/content/dam/aemcloudproject/cfs/offer-listing"
+}

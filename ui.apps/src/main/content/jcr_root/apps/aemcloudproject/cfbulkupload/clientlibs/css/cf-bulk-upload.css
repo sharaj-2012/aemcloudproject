@@ -1,28 +1,204 @@
-/* Page content area (granite:class on the "content" node): keep the form narrow and padded. */
+/* Page content area (granite:class on the "content" node): uses the full browser width,
+   with a margin on each side, so the cards and results table span the whole page. */
 .scb-cf-bulk-upload__page {
-    max-width: 720px;
-    padding: 24px;
+    padding: 24px 32px;
 }
 
-/* Box under the Submit button where cf-bulk-upload.js writes the servlet's reply.
-   pre-wrap keeps the line breaks and indentation of the pretty-printed JSON. */
+/* Page heading "SCB CF bulk upload". */
+.scb-cf-bulk-upload__title {
+    margin: 0 0 16px;
+}
+
+/* The two cards side by side across the full width: Upload (wider) | Report (narrower).
+   Both cards stretch to the same height (grid default). Stacked below 900px. */
+.scb-cf-bulk-upload__cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .scb-cf-bulk-upload__cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* One card: white box, light border, rounded corners. */
+.scb-cf-bulk-upload__card {
+    background: #ffffff;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+
+.scb-cf-bulk-upload__card-heading {
+    margin: 0 0 4px;
+}
+
+/* One-line description under each card heading. */
+.scb-cf-bulk-upload__card-text {
+    display: block;
+    color: #6e6e6e;
+    margin-bottom: 12px;
+}
+
+/* "How it works" accordion: a little space around it, each rule on its own line. */
+.scb-cf-bulk-upload__help {
+    margin: 4px 0 12px;
+}
+
+.scb-cf-bulk-upload__help-item {
+    display: block;
+    margin-bottom: 6px;
+}
+
+/* "Run" button: right-aligned at the bottom of the card. */
+.scb-cf-bulk-upload__submit {
+    float: right;
+}
+
+/* Clearfix: the form (and so the card) grows to contain the floated button. */
+.scb-cf-bulk-upload::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+/* Line under "Generate report" (scbReportStatus): [spinner] Building the Excel… 12 s / ✔ Downloaded … / ⚠ error. */
+.scb-cf-bulk-upload__report-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+.scb-cf-bulk-upload__report-status:empty {
+    display: none;
+}
+
+.scb-cf-bulk-upload__report-status--busy {
+    color: #6e6e6e;
+}
+
+.scb-cf-bulk-upload__report-status--done {
+    color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__report-status--error {
+    color: #b42318;
+}
+
+/* Area under the cards: spinner, alerts, or banner + counts + table (filled by cf-bulk-upload.js). */
 .scb-cf-bulk-upload__result {
-    margin-top: 16px;
-    white-space: pre-wrap;
-    font-family: monospace;
+    margin-top: 24px;
 }
 
-/* Hide the box until there is something to show. */
 .scb-cf-bulk-upload__result:empty {
     display: none;
 }
 
-/* "Generate report" button: a little space between it and the upload form above. */
-.scb-cf-bulk-upload__report {
-    margin-top: 24px;
+/* Spinner line: [spinner] Checking /content/dam/... */
+.scb-cf-bulk-upload__wait {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-/* Added by scbShowResult(..., true) for errors such as "Select a workbook first." */
-.scb-cf-bulk-upload__result--error {
-    color: #c9252d;
+/* Coral alerts (errors, dry-run banner): full width. */
+.scb-cf-bulk-upload__alert {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+/* Line above the table: [12 fail] [138 pass] 150 rows .......... [Download CSV] */
+.scb-cf-bulk-upload__summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.scb-cf-bulk-upload__chip {
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-weight: bold;
+}
+
+.scb-cf-bulk-upload__chip--fail {
+    background: #fdecea;
+    color: #b42318;
+}
+
+.scb-cf-bulk-upload__chip--pass {
+    background: #e8f5e9;
+    color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__total {
+    color: #6e6e6e;
+}
+
+/* Download CSV pushed to the right end of the line. */
+.scb-cf-bulk-upload__download {
+    margin-left: auto;
+}
+
+/* Fixed-height box around the table: about 15 rows visible, the rest scroll inside it,
+   so 150 or 5,000 rows never stretch the page. */
+.scb-cf-bulk-upload__table-box {
+    max-height: 520px;
+    overflow-y: auto;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    background: #ffffff;
+}
+
+/* Results table: Sheet | Row | Name | Action | Result | Details. */
+.scb-cf-bulk-upload__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.scb-cf-bulk-upload__table th,
+.scb-cf-bulk-upload__table td {
+    border-bottom: 1px solid #ececec;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+/* Header row stays visible while the box scrolls. */
+.scb-cf-bulk-upload__table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f5f5f5;
+    border-bottom: 1px solid #d0d0d0;
+}
+
+/* Long paths / messages in Details wrap instead of stretching the table. */
+.scb-cf-bulk-upload__table td:last-child {
+    word-break: break-word;
+}
+
+/* Result column badges: green Pass, red Fail. */
+.scb-cf-bulk-upload__badge {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.scb-cf-bulk-upload__badge--pass {
+    background: #e8f5e9;
+    color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__badge--fail {
+    background: #fdecea;
+    color: #b42318;
 }

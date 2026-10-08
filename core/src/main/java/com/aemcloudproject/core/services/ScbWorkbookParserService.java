@@ -14,6 +14,7 @@ public interface ScbWorkbookParserService {
 
     /**
      * Reads every sheet and checks its headers and action column.
+     * Rows with a blank action are skipped.
      *
      * @param file   the .xlsx content
      * @param errors receives every problem found

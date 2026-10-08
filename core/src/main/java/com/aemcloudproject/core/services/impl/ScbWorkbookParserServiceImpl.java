@@ -52,12 +52,10 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
 
                 for (int r = 1; r <= sheet.getLastRowNum(); r++) {
                     Map<String, Object> values = scbReadRow(sheet.getRow(r), headerByColumn, formatter);
-                    if (values.isEmpty()) {
+                    if (!values.containsKey(ACTION)) {
                         continue;
                     }
-                    if (hasActionColumn) {
-                        scbCheckAction(sheet.getSheetName(), r + 1, values, errors);
-                    }
+                    scbCheckAction(sheet.getSheetName(), r + 1, values, errors);
                     data.getRows().add(values);
                     data.getRowNumbers().add(r + 1);
                 }
@@ -148,14 +146,10 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
      * @param sheetName the sheet name, for the error message
      * @param rowNumber the Excel row number, for the error message
      * @param values    the row values; the action is replaced by its upper-case form
-     * @param errors    receives an error if the action is missing or invalid
+     * @param errors    receives an error if the action is invalid
      */
     private void scbCheckAction(String sheetName, int rowNumber, Map<String, Object> values, List<String> errors) {
         String action = (String) values.get(ACTION);
-        if (action == null) {
-            errors.add("Sheet \"" + sheetName + "\", row " + rowNumber + ": action is missing.");
-            return;
-        }
         String upper = action.toUpperCase();
         if (!CREATE.equals(upper) && !UPDATE.equals(upper)) {
             errors.add("Sheet \"" + sheetName + "\", row " + rowNumber + ": action \"" + action

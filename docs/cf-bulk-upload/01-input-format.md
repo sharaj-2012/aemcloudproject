@@ -47,7 +47,8 @@ Every sheet has an `action` column (any position) that says what each row does.
 | `UPDATE` | **already exist**. Only non-empty cells change. | Error: not found — catches typos in the slug. |
 
 - Matched case-insensitively: `create`, `Create`, `CREATE` are the same.
-- A blank `action`, or any other value (e.g. `DELETE`), is an error for that row.
+- A row with a blank `action` is skipped: it is not checked, written or listed in the results.
+- Any other value (e.g. `DELETE`) is an error for that row, and the whole workbook is rejected.
 - **The uploader never deletes fragments.** Deleting is done manually in AEM, by design.
 
 ## Model profiles

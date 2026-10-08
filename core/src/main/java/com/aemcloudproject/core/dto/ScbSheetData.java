@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Content of one workbook sheet: its headers, its non-blank rows and the Excel row number of each row.
+ * Content of one workbook sheet: its headers, its rows that have an action and the Excel row number of each row.
  */
 public class ScbSheetData {
 
@@ -23,7 +23,7 @@ public class ScbSheetData {
     }
 
     /**
-     * Returns the data rows, one map per non-blank row.
+     * Returns the data rows, one map per row that has an action.
      *
      * @return the mutable list of rows; each value is a {@code String} or a {@code List<String>}
      */

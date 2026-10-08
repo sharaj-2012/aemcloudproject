@@ -14,7 +14,7 @@ public @interface ScbCfBulkUploadConfiguration {
     String PID = "com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration";
 
     /**
-     * Root folder that the model folders (e.g. {@code offer-listing/ctas}) are created under.
+     * Root folder that the model folders (e.g. {@code offer-listing/offer-cta}) are created under.
      *
      * @return the fragment root path
      */

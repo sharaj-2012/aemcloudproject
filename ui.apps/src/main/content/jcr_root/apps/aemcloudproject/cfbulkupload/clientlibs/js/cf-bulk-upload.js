@@ -267,7 +267,7 @@
      * Input:  results
      * Output: nothing returned; the browser saves upload-results-2026-10-08.csv:
      *   Sheet,Row,Name,Action,Result,Details
-     *   "offer-cta","2","book-now","CREATE","FAIL","Fragment: already exists at /content/dam/.../ctas/book-now"
+     *   "offer-cta","2","book-now","CREATE","FAIL","Fragment: already exists at /content/dam/.../offer-cta/book-now"
      *   "venues","","","","FAIL","Sheet: ""venues"" is not a known CF model"
      * The file starts with a byte-order mark so Excel opens it as UTF-8.
      */

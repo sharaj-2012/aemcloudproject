@@ -76,7 +76,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
         profiles.put("merchant-details", new Profile("offer-listing/merchants", "merchantSlug", "merchantName"));
         profiles.put("merchant-venue", new Profile("offer-listing/merchants/venues", "merchantVenueSlug", "name"));
         profiles.put("offer-card", new Profile("offer-listing/cards", "offerCardSlug", "name"));
-        profiles.put("offer-cta", new Profile("offer-listing/ctas", "offerCtaSlug", "label"));
+        profiles.put("offer-cta", new Profile("offer-listing/offer-cta", "offerCtaSlug", "label"));
         PROFILES = Collections.unmodifiableMap(profiles);
     }
 

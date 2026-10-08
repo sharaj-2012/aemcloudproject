@@ -70,7 +70,7 @@ Profiles for this project:
 | `merchant-details` | `offer-listing/merchants`  | `merchantSlug`      | `merchantName` |
 | `merchant-venue`   | `offer-listing/merchants/venues` | `merchantVenueSlug` | `name`         |
 | `offer-card`       | `offer-listing/cards`      | `offerCardSlug`     | `name`         |
-| `offer-cta`        | `offer-listing/ctas`       | `offerCtaSlug`      | `label`        |
+| `offer-cta`        | `offer-listing/offer-cta`  | `offerCtaSlug`      | `label`        |
 
 ### Fragment name and title
 

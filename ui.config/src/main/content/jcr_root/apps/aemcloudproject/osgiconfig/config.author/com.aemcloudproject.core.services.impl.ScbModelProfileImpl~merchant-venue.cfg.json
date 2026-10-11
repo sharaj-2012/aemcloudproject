@@ -1,0 +1,7 @@
+{
+  "model": "merchant-venue",
+  "folder": "offer-listing/merchants/venues",
+  "nameField": "merchantVenueSlug",
+  "titleField": "name",
+  "order": 1
+}

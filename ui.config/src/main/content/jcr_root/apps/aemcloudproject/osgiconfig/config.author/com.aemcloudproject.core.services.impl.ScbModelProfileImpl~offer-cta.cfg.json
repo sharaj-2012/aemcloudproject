@@ -1,0 +1,7 @@
+{
+  "model": "offer-cta",
+  "folder": "offer-listing/offer-cta",
+  "nameField": "offerCtaSlug",
+  "titleField": "label",
+  "order": 5
+}

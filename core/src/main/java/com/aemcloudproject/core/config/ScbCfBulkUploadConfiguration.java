@@ -4,10 +4,10 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
- * OSGi configuration with the repository paths used by the CF bulk upload and the report.
- * Shared by the writer and report services through {@link #PID}.
+ * OSGi configuration with the repository paths and upload limits of the CF bulk upload and the report.
+ * Shared by the upload servlet and the writer and report services through {@link #PID}.
  */
-@ObjectClassDefinition(name = "SCB CF Bulk Upload", description = "Repository paths for the CF bulk upload and report")
+@ObjectClassDefinition(name = "SCB CF Bulk Upload", description = "Repository paths and limits for the CF bulk upload and report")
 public @interface ScbCfBulkUploadConfiguration {
 
     /** Configuration PID shared by both services; also the name of the cfg.json file. */
@@ -36,4 +36,20 @@ public @interface ScbCfBulkUploadConfiguration {
      */
     @AttributeDefinition(name = "Report path", description = "Folder exported by Generate report")
     String reportPath() default "/content/dam/aemcloudproject/cfs/offer-listing";
+
+    /**
+     * Largest workbook accepted; larger files are rejected before they are opened.
+     *
+     * @return the size limit in megabytes
+     */
+    @AttributeDefinition(name = "Max file size (MB)", description = "Largest workbook accepted, in MB")
+    int maxFileSizeMb() default 10;
+
+    /**
+     * Most rows with an action (CREATE or UPDATE) in one upload, across all sheets.
+     *
+     * @return the row limit
+     */
+    @AttributeDefinition(name = "Max rows", description = "Most rows with an action in one upload, across all sheets")
+    int maxRows() default 5000;
 }

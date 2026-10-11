@@ -6,6 +6,8 @@ import com.adobe.cq.dam.cfm.ElementTemplate;
 import com.adobe.cq.dam.cfm.FragmentTemplate;
 import com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration;
 import com.aemcloudproject.core.services.ScbContentFragmentReportService;
+import com.aemcloudproject.core.services.ScbModelProfile;
+import com.aemcloudproject.core.utils.ScbCfModelUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -19,6 +21,10 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,10 +32,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,21 +41,23 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Exports every Content Fragment under offer-listing to an .xlsx, one sheet per model,
- * reading the stored values with the Content Fragment API.
+ * Exports every Content Fragment under the report path to an .xlsx, one sheet per model in
+ * model-profile order, reading the stored values with the Content Fragment API.
  */
 @Component(service = ScbContentFragmentReportService.class, configurationPid = ScbCfBulkUploadConfiguration.PID)
 public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentReportService {
 
     private static final String ACTION = "action";
-    private static final List<String> SHEET_ORDER = Arrays.asList(
-            "merchant-venue", "merchant-details", "category", "offer-card", "offer-cta", "offer-detail");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final String FOLDER = "sling:Folder";
     private static final String ORDERED_FOLDER = "sling:OrderedFolder";
     private static final String ASSET = "dam:Asset";
 
     private String reportPath;
+
+    @Reference(service = ScbModelProfile.class, cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
+    private volatile List<ScbModelProfile> profiles;
 
     /**
      * Reads the report path from the configuration.
@@ -125,26 +131,34 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     }
 
     /**
-     * Orders model paths like the import workbook; unknown models follow in the order found.
+     * Orders model paths by their profile's order; models without a profile follow in the order found.
      *
      * @param modelPaths the model paths in the order found
      * @return the model paths in sheet order
      */
     private List<String> scbSheetOrder(Iterable<String> modelPaths) {
         List<String> ordered = new ArrayList<>();
-        for (String name : SHEET_ORDER) {
-            for (String modelPath : modelPaths) {
-                if (scbModelName(modelPath).equals(name)) {
-                    ordered.add(modelPath);
-                }
-            }
-        }
-        for (String modelPath : modelPaths) {
-            if (!ordered.contains(modelPath)) {
-                ordered.add(modelPath);
-            }
-        }
+        modelPaths.forEach(ordered::add);
+        ordered.sort(Comparator.comparingInt(modelPath -> {
+            ScbModelProfile profile = scbFindProfile(scbModelName(modelPath));
+            return profile == null ? Integer.MAX_VALUE : profile.getOrder();
+        }));
         return ordered;
+    }
+
+    /**
+     * Finds the profile of a model.
+     *
+     * @param model the model name
+     * @return the profile, or {@code null} if no profile is configured for the model
+     */
+    private ScbModelProfile scbFindProfile(String model) {
+        for (ScbModelProfile profile : profiles) {
+            if (profile.getModel().equals(model)) {
+                return profile;
+            }
+        }
+        return null;
     }
 
     /**
@@ -164,7 +178,7 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
                                CellStyle requiredHeaderStyle, CellStyle wrapStyle) {
         Sheet sheet = workbook.createSheet(scbModelName(modelPath));
         List<String> fields = scbFieldNames(resolver, modelPath, fragments.get(0));
-        Set<String> requiredFields = scbRequiredFields(resolver, modelPath);
+        Set<String> requiredFields = ScbCfModelUtil.scbRequiredFields(resolver, modelPath);
 
         Row header = sheet.createRow(0);
         scbHeaderCell(header, 0, ACTION, headerStyle);
@@ -174,7 +188,9 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
         }
 
         int rowIndex = 1;
-        for (ContentFragment fragment : scbSortById(fragments, fields)) {
+        ScbModelProfile profile = scbFindProfile(scbModelName(modelPath));
+        String idField = profile == null ? null : profile.getIdField();
+        for (ContentFragment fragment : scbSortById(fragments, idField)) {
             Row row = sheet.createRow(rowIndex++);
             for (int f = 0; f < fields.size(); f++) {
                 ContentElement element = fragment.getElement(fields.get(f));
@@ -186,27 +202,18 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     }
 
     /**
-     * Sorts fragments by their ID field (named "id" or ending in "ID"), smallest first;
-     * fragments without an ID go last.
+     * Sorts fragments by the profile's ID field, smallest first; fragments without an ID go last.
      *
      * @param fragments the fragments to sort
-     * @param fields    the model field names
-     * @return a sorted copy, or the same list when the model has no ID field
+     * @param idField   the ID field, or {@code null} when the model has none
+     * @return a sorted copy, or the same list when there is no ID field
      */
-    private List<ContentFragment> scbSortById(List<ContentFragment> fragments, List<String> fields) {
-        String idField = null;
-        for (String field : fields) {
-            if (field.equalsIgnoreCase("id") || field.endsWith("ID")) {
-                idField = field;
-                break;
-            }
-        }
+    private List<ContentFragment> scbSortById(List<ContentFragment> fragments, String idField) {
         if (idField == null) {
             return fragments;
         }
-        final String sortField = idField;
         List<ContentFragment> sorted = new ArrayList<>(fragments);
-        sorted.sort(Comparator.comparingLong(fragment -> scbIdValue(fragment, sortField)));
+        sorted.sort(Comparator.comparingLong(fragment -> scbIdValue(fragment, idField)));
         return sorted;
     }
 
@@ -289,30 +296,6 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             }
         }
         return fields;
-    }
-
-    /**
-     * Returns the fields marked Required in the model, read from the model's dialog definition
-     * because the Content Fragment API does not expose the flag.
-     *
-     * @param resolver  the author's resource resolver
-     * @param modelPath the model path
-     * @return the mandatory field names; empty if the model cannot be read
-     */
-    private Set<String> scbRequiredFields(ResourceResolver resolver, String modelPath) {
-        Set<String> required = new HashSet<>();
-        Resource items = resolver.getResource(modelPath + "/jcr:content/model/cq:dialog/content/items");
-        if (items == null) {
-            return required;
-        }
-        for (Resource item : items.getChildren()) {
-            String name = item.getValueMap().get("name", String.class);
-            String flag = item.getValueMap().get("required", String.class);
-            if (name != null && ("on".equals(flag) || "true".equals(flag))) {
-                required.add(name);
-            }
-        }
-        return required;
     }
 
     /**

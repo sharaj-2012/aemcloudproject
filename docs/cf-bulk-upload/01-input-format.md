@@ -9,7 +9,11 @@ workbook. Its layout is the format; this doc spells out the rules behind it.
 ## File
 
 - Excel workbook, `.xlsx` only (no `.xls`, no `.csv`).
-- Max file size and max row count are OSGi-configurable (defaults: 10 MB, 5,000 rows).
+- Limits, set in the OSGi config `ScbCfBulkUploadConfiguration` (defaults: 10 MB, 5,000 rows):
+  - a larger file is rejected before it is opened;
+  - more than 5,000 rows **with an action** (CREATE / UPDATE, all sheets together) is rejected.
+    Rows without an action don't count, so a full report with a few edited rows is fine.
+  - Nothing is written when a limit is hit.
 - Formulas are allowed — the cell's calculated value is used.
 
 ## Sheets — one per model
@@ -48,42 +52,63 @@ Every sheet has an `action` column (any position) that says what each row does.
 
 - Matched case-insensitively: `create`, `Create`, `CREATE` are the same.
 - A row with a blank `action` is skipped: it is not checked, written or listed in the results.
+  Its ID still counts when new IDs are generated (see [Generated IDs](#generated-ids)).
+- If **no row** in a sheet has an action, the sheet gets one `SKIP` line in the results
+  ("Sheet: no row has an action") and the other sheets carry on. `SKIP` is not a failure.
 - Any other value (e.g. `DELETE`) is an error for that row, and the whole workbook is rejected.
 - **The uploader never deletes fragments.** Deleting is done manually in AEM, by design.
 
 ## Model profiles
 
 The uploader is generic; what's specific to a model lives in OSGi config, not in the
-spreadsheet. A profile says, per model:
+spreadsheet: one **SCB CF Model Profile** factory configuration per model, in
+`ui.config/.../osgiconfig/config.author/com.aemcloudproject.core.services.impl.ScbModelProfileImpl~<model>.cfg.json`.
+A sheet whose name matches no profile's `model` fails with "not a known CF model". To support a new
+model, add one such file — no code change. A profile says, per model:
 
 | Setting      | Meaning |
 |--------------|---------|
-| `folder`     | Folder for this model's fragments, relative to the **target folder** chosen on the upload form (default `/content/dam/aemcloudproject/cfs`). Created as `sling:OrderedFolder` if missing. |
+| `model`      | Model node name under the models path — also the sheet name. |
+| `folder`     | Folder for this model's fragments, relative to the fragment root path (`fragmentRootPath` in `ScbCfBulkUploadConfiguration`, default `/content/dam/aemcloudproject/cfs`). Created as `sling:OrderedFolder` if missing. |
 | `nameField`  | Field whose value becomes the fragment's node name. |
 | `titleField` | Field whose value becomes the fragment's title. |
+| `idField`    | Numeric ID field filled automatically on `CREATE` and used to sort the report (optional). |
+| `startId`    | First ID used when the sheet has no IDs yet. |
+| `order`      | Position of the model's sheet in the report, lower first. |
 
 Profiles for this project:
 
-| Sheet / model      | `folder`                   | `nameField`         | `titleField`   |
-|--------------------|----------------------------|---------------------|----------------|
-| `offer-detail`     | `offer-listing/offers`     | `offerSlug`         | `offerTitle`   |
-| `category`         | `offer-listing/categories` | `offerCategorySlug` | `name`         |
-| `merchant-details` | `offer-listing/merchants`  | `merchantSlug`      | `merchantName` |
-| `merchant-venue`   | `offer-listing/merchants/venues` | `merchantVenueSlug` | `name`         |
-| `offer-card`       | `offer-listing/cards`      | `offerCardSlug`     | `name`         |
-| `offer-cta`        | `offer-listing/offer-cta`  | `offerCtaSlug`      | `label`        |
+| Sheet / model      | `folder`                         | `nameField`         | `titleField`   | `idField`    | `startId` | `order` |
+|--------------------|----------------------------------|---------------------|----------------|--------------|-----------|---------|
+| `merchant-venue`   | `offer-listing/merchants/venues` | `merchantVenueSlug` | `name`         | —            | —         | 1       |
+| `merchant-details` | `offer-listing/merchants`        | `merchantSlug`      | `merchantName` | `merchantID` | 100001    | 2       |
+| `category`         | `offer-listing/categories`       | `offerCategorySlug` | `name`         | `ID`         | 1001      | 3       |
+| `offer-card`       | `offer-listing/cards`            | `offerCardSlug`     | `name`         | `id`         | 1001      | 4       |
+| `offer-cta`        | `offer-listing/offer-cta`        | `offerCtaSlug`      | `label`        | —            | —         | 5       |
+| `offer-detail`     | `offer-listing/offers`           | `offerSlug`         | `offerTitle`   | `offerID`    | 100001    | 6       |
 
 ### Fragment name and title
 
 - **Name** = the `nameField` value. It must already be a valid name — lowercase letters,
   digits, `-`, `_` — otherwise the row is an error. It is never auto-slugified, so what the
   author types is exactly the path they get.
-- **Fragment path** = target folder + profile `folder` + name. `CREATE` requires that path to
+- **Fragment path** = fragment root path + profile `folder` + name. `CREATE` requires that path to
   be free, `UPDATE` requires a fragment there.
 - **Title** = the `titleField` value; if that cell is empty on `CREATE`, the name is used.
   On `UPDATE`, an empty title cell keeps the current title.
 - The same name twice in one sheet is an error (both rows reported) — otherwise which one
   wins would depend on order.
+
+### Generated IDs
+
+- A `CREATE` row whose `idField` cell is empty gets an ID; a typed ID is kept as is.
+  `UPDATE` rows never get a new ID (an empty ID cell keeps the stored one).
+- One counter per model. The first new ID is **the highest ID in that sheet + 1**, counting every
+  row with a numeric ID — including rows with a blank `action`. If the sheet has no IDs, `startId` is used.
+- Further new rows get +1 each, top to bottom. A row that fails does not use up an ID.
+- The ID is shown in the results, e.g. `…/offers/summer-sale (offerID 10004)`, in a dry run too.
+- IDs are taken from the sheet only, not from AEM: always start from **Generate report** so the
+  existing rows (and their IDs) are in the sheet, and add new rows below them.
 
 ## Cell values by field type
 
@@ -155,9 +180,16 @@ On `UPDATE` an empty cell means "leave unchanged", so clearing a field needs an 
 
 ### Required fields
 
-Fields marked *Required* in the model must have a value on `CREATE`.
-On `UPDATE` an empty cell is fine (field unchanged), but `#CLEAR` on a required field is an error.
-The `nameField` column must be present in the sheet and filled on every row.
+The CF model is the only source: a field is mandatory when *Required* is ticked for it in the
+model editor (read from the model's dialog definition). Nothing is configured in OSGi.
+
+- `CREATE`: every required field must have a value, otherwise the row fails with
+  `offerTitle: required` (all missing fields in one message). A missing column counts as empty.
+  An empty ID field that gets [generated](#generated-ids) counts as filled.
+- `UPDATE`: an empty cell is fine (field unchanged), but `#CLEAR` on a required field fails the
+  row with `offerTitle: required, can't be cleared`.
+- The `nameField` column must be present in the sheet and filled on every row with an action.
+- The report shows required fields as red bold headers, from the same model flags.
 
 ## Behaviour summary
 

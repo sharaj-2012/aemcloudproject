@@ -13,8 +13,8 @@ import java.util.Map;
 public interface ScbWorkbookParserService {
 
     /**
-     * Reads every sheet and checks its headers and action column.
-     * Rows with a blank action are skipped.
+     * Reads every sheet and checks its headers and action column. Blank rows are skipped;
+     * rows with a blank action are kept (their IDs count for ID generation) but not checked.
      *
      * @param file   the .xlsx content
      * @param errors receives every problem found

@@ -1,0 +1,9 @@
+{
+  "model": "category",
+  "folder": "offer-listing/categories",
+  "nameField": "offerCategorySlug",
+  "titleField": "name",
+  "idField": "ID",
+  "startId": 1001,
+  "order": 3
+}

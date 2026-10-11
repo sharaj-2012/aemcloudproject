@@ -136,6 +136,11 @@
     color: #1e6b2b;
 }
 
+.scb-cf-bulk-upload__chip--skip {
+    background: #eeeeee;
+    color: #4b4b4b;
+}
+
 .scb-cf-bulk-upload__total {
     color: #6e6e6e;
 }
@@ -184,7 +189,7 @@
     word-break: break-word;
 }
 
-/* Result column badges: green Pass, red Fail. */
+/* Result column badges: green Pass, red Fail, grey Skip. */
 .scb-cf-bulk-upload__badge {
     display: inline-block;
     border-radius: 4px;
@@ -201,4 +206,9 @@
 .scb-cf-bulk-upload__badge--fail {
     background: #fdecea;
     color: #b42318;
+}
+
+.scb-cf-bulk-upload__badge--skip {
+    background: #eeeeee;
+    color: #4b4b4b;
 }

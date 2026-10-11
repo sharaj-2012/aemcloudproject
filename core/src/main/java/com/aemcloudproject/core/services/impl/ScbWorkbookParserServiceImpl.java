@@ -52,10 +52,12 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
 
                 for (int r = 1; r <= sheet.getLastRowNum(); r++) {
                     Map<String, Object> values = scbReadRow(sheet.getRow(r), headerByColumn, formatter);
-                    if (!values.containsKey(ACTION)) {
+                    if (values.isEmpty()) {
                         continue;
                     }
-                    scbCheckAction(sheet.getSheetName(), r + 1, values, errors);
+                    if (values.containsKey(ACTION)) {
+                        scbCheckAction(sheet.getSheetName(), r + 1, values, errors);
+                    }
                     data.getRows().add(values);
                     data.getRowNumbers().add(r + 1);
                 }

@@ -1,0 +1,9 @@
+{
+  "model": "offer-detail",
+  "folder": "offer-listing/offers",
+  "nameField": "offerSlug",
+  "titleField": "offerTitle",
+  "idField": "offerID",
+  "startId": 100001,
+  "order": 6
+}

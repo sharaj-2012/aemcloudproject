@@ -160,30 +160,38 @@
     }
 
     /**
-     * Puts FAIL rows before PASS rows, keeping sheet / row order inside each group.
-     * Input:  [venue row 2 PASS, venue row 3 PASS, category row 14 FAIL, offer row 87 FAIL]
-     * Output: [category row 14 FAIL, offer row 87 FAIL, venue row 2 PASS, venue row 3 PASS]   (a new array)
+     * Puts FAIL rows first, then SKIP (sheets with no action), then PASS, keeping sheet / row order
+     * inside each group.
+     * Input:  [venue row 2 PASS, category SKIP, offer row 87 FAIL]
+     * Output: [offer row 87 FAIL, category SKIP, venue row 2 PASS]   (a new array)
      */
     function scbFailuresFirst(results) {
-        var failed = results.filter(function (r) { return r.result !== "PASS"; });
-        var passed = results.filter(function (r) { return r.result === "PASS"; });
-        return failed.concat(passed);
+        function only(result) {
+            return results.filter(function (r) { return r.result === result; });
+        }
+        return only("FAIL").concat(only("SKIP"), only("PASS"));
     }
 
     /**
-     * Builds the line above the table: fail / pass chips, total, Download CSV button.
+     * Builds the line above the table: fail / pass / skip chips, total, Download CSV button.
      * Input:  results
-     * Output: a <div>, e.g. [✖ 12 fail] [✔ 138 pass] 150 rows ............ [⬇ Download CSV]
+     * Output: a <div>, e.g. [12 fail] [138 pass] [5 skip] 155 rows ............ [⬇ Download CSV]
+     *         The skip chip only appears when a sheet was skipped.
      *         Clicking the button calls scbDownloadCsv(results) (all rows, original order).
      */
     function scbRenderSummary(results) {
-        var passCount = results.filter(function (r) { return r.result === "PASS"; }).length;
-        var failCount = results.length - passCount;
+        function count(result) {
+            return results.filter(function (r) { return r.result === result; }).length;
+        }
+        var skipCount = count("SKIP");
 
         var summary = document.createElement("div");
         summary.className = "scb-cf-bulk-upload__summary";
-        summary.appendChild(scbChip("scb-cf-bulk-upload__chip--fail", failCount + " fail"));
-        summary.appendChild(scbChip("scb-cf-bulk-upload__chip--pass", passCount + " pass"));
+        summary.appendChild(scbChip("scb-cf-bulk-upload__chip--fail", count("FAIL") + " fail"));
+        summary.appendChild(scbChip("scb-cf-bulk-upload__chip--pass", count("PASS") + " pass"));
+        if (skipCount > 0) {
+            summary.appendChild(scbChip("scb-cf-bulk-upload__chip--skip", skipCount + " skip"));
+        }
 
         var total = document.createElement("span");
         total.className = "scb-cf-bulk-upload__total";
@@ -225,6 +233,7 @@
      *   | category       | 14  | dining              | UPDATE | [Fail] | promoCode: not a field of model category   |
      *   | merchant-venue | 2   | central-mall-branch | CREATE | [Pass] | /content/dam/.../venues/central-mall-branch|
      *   | venues         | –   | –                   | –      | [Fail] | Sheet: "venues" is not a known CF model    |
+     *   | category       | –   | –                   | –      | [Skip] | Sheet: no row has an action (CREATE or UPDATE) |
      */
     function scbRenderTable(results) {
         var table = document.createElement("table");
@@ -245,11 +254,11 @@
                 var cell = row.insertCell();
                 var value = result[column.key];
                 if (column.key === "result") {
-                    // PASS -> green "Pass" badge, FAIL -> red "Fail" badge
-                    var pass = value === "PASS";
+                    // PASS -> green "Pass", SKIP -> grey "Skip", FAIL -> red "Fail"
+                    var kind = value === "PASS" ? "pass" : value === "SKIP" ? "skip" : "fail";
                     var badge = document.createElement("span");
-                    badge.className = "scb-cf-bulk-upload__badge scb-cf-bulk-upload__badge--" + (pass ? "pass" : "fail");
-                    badge.textContent = pass ? "Pass" : "Fail";
+                    badge.className = "scb-cf-bulk-upload__badge scb-cf-bulk-upload__badge--" + kind;
+                    badge.textContent = kind.charAt(0).toUpperCase() + kind.slice(1);
                     cell.appendChild(badge);
                 } else {
                     // null (e.g. no row number for a whole-sheet problem) is shown as "–".

@@ -1,0 +1,9 @@
+{
+  "model": "merchant-details",
+  "folder": "offer-listing/merchants",
+  "nameField": "merchantSlug",
+  "titleField": "merchantName",
+  "idField": "merchantID",
+  "startId": 100001,
+  "order": 2
+}

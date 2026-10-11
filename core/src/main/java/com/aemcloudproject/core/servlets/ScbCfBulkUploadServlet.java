@@ -1,5 +1,6 @@
 package com.aemcloudproject.core.servlets;
 
+import com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration;
 import com.aemcloudproject.core.dto.ScbSheetData;
 import com.aemcloudproject.core.services.ScbContentFragmentWriterService;
 import com.aemcloudproject.core.services.ScbWorkbookParserService;
@@ -13,7 +14,9 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.apache.sling.servlets.annotations.SlingServletResourceTypes;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +28,14 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Backend of the CF bulk upload page: reads a workbook from DAM, creates or updates
  * the Content Fragments (or only checks them in a dry run) and returns one result per row as JSON.
  */
-@Component(service = Servlet.class)
+@Component(service = Servlet.class, configurationPid = ScbCfBulkUploadConfiguration.PID)
 @SlingServletResourceTypes(
         resourceTypes = ScbCfBulkUploadServlet.RESOURCE_TYPE,
         methods = HttpConstants.METHOD_POST,
@@ -45,6 +49,8 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
     private static final String PARAM_FILE_PATH = "filePath";
     private static final String PARAM_DRY_RUN = "dryRun";
     private static final String XLSX_EXTENSION = ".xlsx";
+    private static final String ACTION = "action";
+    private static final long BYTES_PER_MB = 1024L * 1024L;
 
     @Reference
     private transient ScbWorkbookParserService workbookParserService;
@@ -52,10 +58,26 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
     @Reference
     private transient ScbContentFragmentWriterService fragmentWriterService;
 
+    private int maxFileSizeMb;
+    private int maxRows;
+
+    /**
+     * Reads the upload limits from the configuration.
+     *
+     * @param config the CF bulk upload configuration
+     */
+    @Activate
+    @Modified
+    protected void activate(ScbCfBulkUploadConfiguration config) {
+        maxFileSizeMb = config.maxFileSizeMb();
+        maxRows = config.maxRows();
+    }
+
     /**
      * Checks the selected file, parses the workbook and writes or checks the fragments.
      * Responds with HTTP 400 and an error message or error list when the file or workbook
-     * cannot be used, and with HTTP 200 and the per-row results otherwise.
+     * cannot be used or exceeds the configured size or row limit, and with HTTP 200 and the
+     * per-row results otherwise.
      * Any {@code dryRun} value other than {@code "false"} is treated as a dry run.
      *
      * @param request  the request with the {@code filePath} and {@code dryRun} parameters
@@ -93,6 +115,12 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
             return;
         }
 
+        if (original.getSize() > maxFileSizeMb * BYTES_PER_MB) {
+            scbWriteError(response, String.format(Locale.ROOT, "The workbook is %.1f MB; the limit is %d MB.",
+                    (double) original.getSize() / BYTES_PER_MB, maxFileSizeMb));
+            return;
+        }
+
         List<String> errors = new ArrayList<>();
         Map<String, ScbSheetData> sheets;
         try (InputStream file = original.getStream()) {
@@ -108,6 +136,17 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
             body.put("status", "error");
             body.put("errors", errors);
             scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, body);
+            return;
+        }
+
+        long actionRows = sheets.values().stream()
+                .flatMap(sheet -> sheet.getRows().stream())
+                .filter(row -> row.containsKey(ACTION))
+                .count();
+        if (actionRows > maxRows) {
+            scbWriteError(response, String.format(Locale.ROOT,
+                    "The workbook has %,d rows to process; the limit is %,d. Split it into smaller files.",
+                    actionRows, maxRows));
             return;
         }
         boolean dryRun = !"false".equalsIgnoreCase(request.getParameter(PARAM_DRY_RUN));

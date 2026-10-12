@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.Servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 
 /**
  * Backend of the "Generate report" button: returns an .xlsx of every Content Fragment
@@ -39,8 +38,8 @@ public class ScbCfReportServlet extends SlingSafeMethodsServlet {
     private transient ScbContentFragmentReportService reportService;
 
     /**
-     * Builds the report in memory and sends it as an attachment named
-     * {@code offer-listing-report-<date>.xlsx}, with the fragment count in {@link #FRAGMENT_COUNT_HEADER}.
+     * Builds the report in memory and sends it as an attachment named by
+     * {@link ScbContentFragmentReportService#scbReportFileName()}, with the fragment count in {@link #FRAGMENT_COUNT_HEADER}.
      * Responds with HTTP 500 and a plain-text message if the report cannot be built.
      *
      * @param request  the request
@@ -49,7 +48,7 @@ public class ScbCfReportServlet extends SlingSafeMethodsServlet {
      */
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        String fileName = "offer-listing-report-" + LocalDate.now() + ".xlsx";
+        String fileName = reportService.scbReportFileName();
         log.info("CF report requested by {}", request.getResourceResolver().getUserID());
 
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();

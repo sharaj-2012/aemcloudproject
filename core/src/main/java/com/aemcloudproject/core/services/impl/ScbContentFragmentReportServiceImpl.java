@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -52,15 +53,19 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     private static final String FOLDER = "sling:Folder";
     private static final String ORDERED_FOLDER = "sling:OrderedFolder";
     private static final String ASSET = "dam:Asset";
+    private static final String DEFAULT_FILE_NAME = "report";
 
     private String reportPath;
+    private String fileNamePrefix;
 
     @Reference(service = ScbModelProfile.class, cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
     private volatile List<ScbModelProfile> profiles;
 
     /**
-     * Reads the report path from the configuration.
+     * Reads the report path and file name from the configuration. In the file name, characters other
+     * than letters, digits, {@code .}, {@code _} and {@code -} are replaced by {@code -}; an empty name
+     * becomes {@code report}.
      *
      * @param config the CF bulk upload configuration
      */
@@ -68,6 +73,17 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     @Modified
     protected void activate(ScbCfBulkUploadConfiguration config) {
         reportPath = StringUtils.removeEnd(config.reportPath(), "/");
+        String name = StringUtils.strip(StringUtils.trimToEmpty(config.reportFileName())
+                .replaceAll("[^A-Za-z0-9._-]+", "-"), "-.");
+        fileNamePrefix = name.isEmpty() ? DEFAULT_FILE_NAME : name;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String scbReportFileName() {
+        return fileNamePrefix + "-" + LocalDate.now() + ".xlsx";
     }
 
     /**

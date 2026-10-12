@@ -38,6 +38,14 @@ public @interface ScbCfBulkUploadConfiguration {
     String reportPath() default "/content/dam/aemcloudproject/cfs/offer-listing";
 
     /**
+     * Start of the report's file name; the date and {@code .xlsx} are added to it.
+     *
+     * @return the file name prefix, e.g. {@code offer-listing-report} for {@code offer-listing-report-2026-10-13.xlsx}
+     */
+    @AttributeDefinition(name = "Report file name", description = "Start of the report file name; -<date>.xlsx is added")
+    String reportFileName() default "offer-listing-report";
+
+    /**
      * Largest workbook accepted; larger files are rejected before they are opened.
      *
      * @return the size limit in megabytes

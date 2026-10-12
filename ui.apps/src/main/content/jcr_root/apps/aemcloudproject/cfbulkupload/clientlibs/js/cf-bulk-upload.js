@@ -415,11 +415,11 @@
     /**
      * Reads the file name the servlet chose from its Content-Disposition header.
      * Input:  'attachment; filename="offer-listing-report-2026-10-08.xlsx"'
-     * Output: "offer-listing-report-2026-10-08.xlsx"   (fallback "offer-listing-report.xlsx" if missing)
+     * Output: "offer-listing-report-2026-10-08.xlsx"   (fallback "report.xlsx" if missing)
      */
     function scbFileName(contentDisposition) {
         var match = /filename="([^"]+)"/.exec(contentDisposition || "");
-        return match ? match[1] : "offer-listing-report.xlsx";
+        return match ? match[1] : "report.xlsx";
     }
 
     /**

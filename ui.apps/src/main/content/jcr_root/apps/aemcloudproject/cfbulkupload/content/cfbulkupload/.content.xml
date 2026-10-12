@@ -167,7 +167,7 @@
                                 granite:class="scb-cf-bulk-upload__card-text"/>
                             <!-- "Generate report": cf-bulk-upload.js (scbGenerateReport) fetches the URL in
                                  data-report-url in the background, shows a spinner + timer meanwhile, then saves
-                                 offer-listing-report-<date>.xlsx. type="button" so it never submits anything. -->
+                                 <reportFileName>-<date>.xlsx (name set in the OSGi config). type="button" so it never submits anything. -->
                             <reportButton
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/button"

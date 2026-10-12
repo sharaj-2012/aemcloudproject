@@ -20,4 +20,11 @@ public interface ScbContentFragmentReportService {
      * @throws IOException if writing to {@code out} fails
      */
     int scbWriteReport(ResourceResolver resolver, OutputStream out) throws IOException;
+
+    /**
+     * Returns the file name for a report built today: the configured report file name, the date and {@code .xlsx}.
+     *
+     * @return the file name, e.g. {@code offer-listing-report-2026-10-13.xlsx}
+     */
+    String scbReportFileName();
 }

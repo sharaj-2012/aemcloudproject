@@ -39,6 +39,8 @@
                         <!-- Common overlay roots -->
                                                 <filter><root>/apps/sling</root></filter>
                         <filter><root>/apps/cq</root></filter>
+                        <!-- Parent of the "SCB Tools" section (ui.apps) -->
+                        <filter><root>/apps/cq/core/content/nav/tools</root></filter>
                         <filter><root>/apps/dam</root></filter>
                         <filter><root>/apps/wcm</root></filter>
                         <filter><root>/apps/msm</root></filter>

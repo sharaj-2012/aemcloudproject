@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    "SCB Tools" section under AEM Tools (merged over /libs/cq/core/content/nav/tools by the Sling Resource Merger).
+    Each child node is one tile in the section.
+-->
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    jcr:title="SCB Tools"
+    id="scb-tools">
+    <cf-bulk-upload
+        jcr:primaryType="nt:unstructured"
+        jcr:title="Content Fragment Bulk Upload"
+        jcr:description="Create or update content fragments from Excel, and export them"
+        href="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload.html"
+        icon="upload"
+        id="scb-cf-bulk-upload"/>
+</jcr:root>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
     <filter root="/apps/aemcloudproject/cfbulkupload"/>
+    <!-- Only the "SCB Tools" section; other overlays under /apps/cq are left alone. -->
+    <filter root="/apps/cq/core/content/nav/tools/scb"/>
     <filter root="/apps/aemcloudproject/clientlibs"/>
     <filter root="/apps/aemcloudproject/components"/>
     <filter root="/apps/aemcloudproject/i18n"/>

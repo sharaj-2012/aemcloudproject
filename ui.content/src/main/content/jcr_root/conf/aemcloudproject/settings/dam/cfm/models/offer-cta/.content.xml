@@ -77,16 +77,20 @@
                         </_x0031_787606777810>
                         <_x0031_790041700025
                             jcr:primaryType="nt:unstructured"
-                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                            fieldLabel="Deeplink"
-                            listOrder="1"
-                            maxlength="255"
-                            metaType="text-single"
+                            sling:resourceType="dam/cfm/models/editor/components/contentreference"
+                            fieldLabel="Deep Link"
+                            filter="hierarchy"
+                            listOrder="10"
+                            metaType="reference"
                             name="deeplink"
+                            nameSuffix="contentReference"
                             renderReadOnly="false"
                             showEmptyInReadOnly="true"
-                            valueType="string">
-                            <granite:data jcr:primaryType="nt:unstructured"/>
+                            showThumbnail="false"
+                            valueType="string/reference">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                thumbnail-validation="cfm.validation.thumbnail.show"/>
                         </_x0031_790041700025>
                     </items>
                 </content>

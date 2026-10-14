@@ -3,7 +3,7 @@
   "folder": "offer-listing/cards",
   "nameField": "offerCardSlug",
   "titleField": "name",
-  "idField": "id",
+  "idField": "ID",
   "startId": 1001,
   "order": 4
 }

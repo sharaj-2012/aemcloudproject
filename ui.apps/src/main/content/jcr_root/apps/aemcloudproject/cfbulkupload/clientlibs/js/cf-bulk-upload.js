@@ -11,10 +11,11 @@
  *     -> HTTP 200: scbRenderResults() = dry-run banner (dry run only) + "12 fail · 138 pass" + Download CSV
  *                  + results table in a fixed-height scroll box, failures first
  *     -> HTTP 400 / other: scbShowAlert() = red Coral alert with the problem(s)
- *   author clicks "Generate report"
- *     -> scbGenerateReport(): button disabled ("Generating report…"), "[spinner] Building the Excel… 12 s"
- *        under it; fetches .../report.xlsx; then saves the file and shows
- *        "✔ Downloaded offer-listing-report-2026-10-08.xlsx (21 fragments)" — or a red error line
+ *   author clicks "Save report to DAM"
+ *     -> scbSaveReport(): button disabled ("Saving report…"), "[spinner] Saving the report… 12 s"
+ *        under it; POSTs to .../report.json, which builds the report and saves it in DAM; then shows
+ *        "✔ Saved …/offer-listing-report.xlsx · previous file kept as version …  Open in Assets"
+ *        — or a red error line
  *
  * The whole file is wrapped in a function that runs immediately, so none of these functions
  * or variables leak into the global "window" scope.
@@ -29,12 +30,12 @@
     var SUBMIT_SELECTOR = ".scb-cf-bulk-upload__submit";                // the Run button
     var RESULT_SELECTOR = ".scb-cf-bulk-upload__result";                // the area under the two cards
 
-    var REPORT_BUTTON = ".scb-cf-bulk-upload__report";                 // the Generate report button
+    var REPORT_BUTTON = ".scb-cf-bulk-upload__report";                 // the Save report to DAM button
     var REPORT_STATUS = ".scb-cf-bulk-upload__report-status";           // the line under it
 
-    // Generate report button labels: idle / while the report is being built.
-    var LABEL_REPORT = "Generate report";
-    var LABEL_REPORT_BUSY = "Generating report…";                 // … = "…"
+    // Save report to DAM button labels: idle / while the report is being saved.
+    var LABEL_REPORT = "Save report to DAM";
+    var LABEL_REPORT_BUSY = "Saving report…";                 // … = "…"
 
     // Table / CSV columns: header text -> key in each result object from the servlet.
     var COLUMNS = [
@@ -386,11 +387,11 @@
     }
 
     /**
-     * Writes one line into the status area under the Generate report button.
+     * Writes one line into the status area under the Save report to DAM button.
      *
      * Input:  kind    - "busy" (spinner), "done" (green tick) or "error" (red)
-     *         text    - e.g. "Building the Excel… 12 s", "Downloaded offer-listing-report-2026-10-08.xlsx (21 fragments)"
-     * Output: the <span> holding the text (scbGenerateReport updates it every second for the timer).
+     *         text    - e.g. "Saving the report… 12 s", "Saved /content/dam/.../offer-listing-report.xlsx"
+     * Output: the <span> holding the text (scbSaveReport updates it every second for the timer).
      */
     function scbReportStatus(kind, text) {
         var status = document.querySelector(REPORT_STATUS);
@@ -413,90 +414,65 @@
     }
 
     /**
-     * Reads the file name the servlet chose from its Content-Disposition header.
-     * Input:  'attachment; filename="offer-listing-report-2026-10-08.xlsx"'
-     * Output: "offer-listing-report-2026-10-08.xlsx"   (fallback "report.xlsx" if missing)
-     */
-    function scbFileName(contentDisposition) {
-        var match = /filename="([^"]+)"/.exec(contentDisposition || "");
-        return match ? match[1] : "report.xlsx";
-    }
-
-    /**
-     * Runs when "Generate report" is clicked: fetches the report in the background, shows progress
-     * while waiting, then saves the file.
+     * Runs when "Save report to DAM" is clicked: asks the server to build the report and save it in
+     * DAM, shows progress while waiting, then where it was saved.
      *
-     * Input:  button - the Generate report button (its data-report-url is
-     *                  /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.xlsx)
+     * Input:  button - the Save report to DAM button (its data-report-url is
+     *                  /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.json)
      * Output: nothing returned. On the page:
-     *   while waiting: button disabled, label "Generating report…", line "[spinner] Building the Excel… 12 s"
-     *                  (the seconds count up, so the author can see it's still working)
-     *   HTTP 200:      the browser saves offer-listing-report-2026-10-08.xlsx;
-     *                  line "✔ Downloaded offer-listing-report-2026-10-08.xlsx (21 fragments)"
-     *                  (file name from Content-Disposition, count from X-Fragment-Count)
-     *   HTTP 500:      line "⚠ Could not build the report: ..." (the servlet's message)
-     *   network error: line "⚠ Request failed: ..."
-     *   always:        button enabled again, label "Generate report"
+     *   while waiting: button disabled, label "Saving report…", line "[spinner] Saving the report… 12 s"
+     *   HTTP 200:      line "✔ Saved /content/dam/.../offer-listing-report.xlsx ·
+     *                  previous file kept as version 2026-10-14 21.33.17  Open in Assets"
+     *                  (no version part on the very first save)
+     *   HTTP 500:      line "⚠ Could not save the report: ..." (the servlet's message)
+     *   always:        button enabled again, label "Save report to DAM"
      */
-    function scbGenerateReport(button) {
-        var url = button.dataset.reportUrl;
+    function scbSaveReport(button) {
         var started = Date.now();
 
         button.disabled = true;
         button.label.textContent = LABEL_REPORT_BUSY;
-        var label = scbReportStatus("busy", "Building the Excel… 0 s");
-        // Every second: "Building the Excel… 1 s", "… 2 s", ...
+        var label = scbReportStatus("busy", "Saving the report… 0 s");
+        // Every second: "Saving the report… 1 s", "… 2 s", ...
         var timer = window.setInterval(function () {
-            label.textContent = "Building the Excel… " + Math.round((Date.now() - started) / 1000) + " s";
+            label.textContent = "Saving the report… " + Math.round((Date.now() - started) / 1000) + " s";
         }, 1000);
 
-        var fileName;
-        var count;
-        // fetch sends the author's login cookie (same origin); a GET needs no CSRF token.
-        fetch(url, { credentials: "same-origin" })
-            .then(function (response) {
-                if (!response.ok) {
-                    // HTTP 500: the servlet's text, e.g. "Could not build the report: ..."
-                    return response.text().then(function (text) {
-                        throw new Error(text || "Request failed (HTTP " + response.status + ").");
-                    });
-                }
-                fileName = scbFileName(response.headers.get("Content-Disposition"));
-                count = response.headers.get("X-Fragment-Count");
-                return response.blob();         // the whole .xlsx, in the browser's memory
-            })
-            .then(function (blob) {
-                // Same trick as the CSV download: a temporary link with the download attribute.
-                var objectUrl = URL.createObjectURL(blob);
-                var link = document.createElement("a");
-                link.href = objectUrl;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(objectUrl);
-                scbReportStatus("done", "Downloaded " + fileName + (count !== null ? " (" + count + " fragments)" : ""));
-            })
-            .catch(function (error) {
-                // Both "Could not build the report: ..." from the servlet and network failures land here.
-                var message = error.message || String(error);
-                scbReportStatus("error", message.indexOf("Could not") === 0 ? message : "Request failed: " + message);
-            })
-            .then(function () {
-                // Runs last in every case: stop the timer, give the button back.
-                window.clearInterval(timer);
-                button.disabled = false;
-                button.label.textContent = LABEL_REPORT;
-            });
+        // jQuery POST, so granite.csrf.standalone adds the CSRF token.
+        $.ajax({
+            url: button.dataset.reportUrl,
+            type: "POST",
+            dataType: "json"
+        }).done(function (data) {
+            var text = "Saved " + data.path
+                + (data.versionLabel ? " · previous file kept as version " + data.versionLabel : "");
+            var saved = scbReportStatus("done", text);
+            var link = document.createElement("a");
+            link.href = "/assetdetails.html" + data.path;
+            link.target = "_blank";
+            link.className = "scb-cf-bulk-upload__report-link";
+            link.textContent = "Open in Assets";
+            saved.appendChild(document.createTextNode(" "));
+            saved.appendChild(link);
+        }).fail(function (xhr) {
+            var data = xhr.responseJSON;
+            scbReportStatus("error", data && data.message ? data.message
+                : "Request failed (HTTP " + xhr.status + ").");
+        }).always(function () {
+            // Runs last in every case: stop the timer, give the button back.
+            window.clearInterval(timer);
+            button.disabled = false;
+            button.label.textContent = LABEL_REPORT;
+        });
     }
 
     // Listen for "submit" on the whole document, but only react when it comes from our form.
     // Works even if the form is rendered after this script runs.
     $(document).on("submit", FORM_SELECTOR, scbSubmitCfBulkUpload);
 
-    // "Generate report" button -> scbGenerateReport.
+    // "Save report to DAM" button -> scbSaveReport.
     $(document).on("click", REPORT_BUTTON, function (event) {
-        scbGenerateReport(event.currentTarget);
+        scbSaveReport(event.currentTarget);
     });
 
 // Granite.$ is the jQuery that AEM's Granite UI pages load; CSRF is patched into it.

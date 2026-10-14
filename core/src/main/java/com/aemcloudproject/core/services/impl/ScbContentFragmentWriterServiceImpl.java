@@ -11,7 +11,7 @@ import com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration;
 import com.aemcloudproject.core.dto.ScbSheetData;
 import com.aemcloudproject.core.services.ScbContentFragmentWriterService;
 import com.aemcloudproject.core.services.ScbModelProfile;
-import com.aemcloudproject.core.utils.ScbCfModelUtil;
+import com.aemcloudproject.core.utils.ScbCfBulkUploadUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
@@ -53,11 +53,10 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
 
     private static final Logger log = LoggerFactory.getLogger(ScbContentFragmentWriterServiceImpl.class);
 
-    private static final String FOLDER_TYPE = "sling:OrderedFolder";
     private static final String ACTION = "action";
     private static final String NAME_PATTERN = "[a-z0-9_-]+";
 
-    /** Cell value that empties a field. */
+    /** Former clearing token; now rejected because a blank cell clears a field. */
     private static final String CLEAR = "#CLEAR";
 
     private static final String PASS = "PASS";
@@ -87,8 +86,9 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      * {@inheritDoc}
      * Rows without an action are skipped; a sheet where no row has an action gets one SKIP result.
      * A CREATE row with an empty ID gets the next ID after the
-     * highest ID in its sheet; the ID is used up only when the row passes. Each row is committed on
-     * PASS in a real run and reverted on FAIL or in a dry run.
+     * highest ID in its sheet; the ID is used up only when the row passes. On UPDATE a blank cell
+     * clears its field, except the ID field. Each row is committed on PASS in a real run and
+     * reverted on FAIL or in a dry run.
      */
     @Override
     public List<Map<String, Object>> scbWriteFragments(ResourceResolver resolver, Map<String, ScbSheetData> sheets,
@@ -119,9 +119,10 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                 continue;
             }
             Map<String, DataType> fieldTypes = scbModelFieldTypes(template);
-            Set<String> requiredFields = ScbCfModelUtil.scbRequiredFields(resolver, modelPath);
+            Set<String> requiredFields = ScbCfBulkUploadUtil.scbRequiredFields(resolver, modelPath);
 
             List<Integer> rowNumbers = sheet.getValue().getRowNumbers();
+            List<String> headers = sheet.getValue().getHeaders();
             long nextId = scbNextId(rows, profile);
             for (int i = 0; i < rows.size(); i++) {
                 Map<String, Object> row = rows.get(i);
@@ -135,7 +136,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                     row.put(profile.getIdField(), String.valueOf(nextId));
                 }
                 Map<String, Object> result = scbWriteRow(resolver, sheetName, rowNumber, profile, template,
-                        modelPath, fieldTypes, requiredFields, row, dryRun);
+                        modelPath, fieldTypes, requiredFields, headers, row, dryRun);
                 try {
                     if (dryRun || FAIL.equals(result.get("result"))) {
                         resolver.revert();
@@ -199,7 +200,8 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     /**
      * Checks one row and, unless this is a dry run, creates or updates its fragment.
      * All checks (name, columns, required fields, existence and model, values) run before anything is written.
-     * Does not commit; the caller commits or reverts.
+     * On UPDATE, fields whose column is in the sheet but blank are cleared (except the ID field), and
+     * the ones that had a value are listed in the result. Does not commit; the caller commits or reverts.
      *
      * @param resolver   the author's resource resolver
      * @param sheetName  the sheet (model) name
@@ -209,15 +211,16 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      * @param modelPath  the model path
      * @param fieldTypes     the model's field types, keyed by field name
      * @param requiredFields the fields marked Required in the model
+     * @param headers        the sheet's column headers
      * @param row            the row values, keyed by header
      * @param dryRun         {@code true} to check only
-     * @return a PASS result with the fragment path, or a FAIL result whose details start
-     *         with the field name or {@code Fragment:}
+     * @return a PASS result with the fragment path (and any cleared fields), or a FAIL result whose
+     *         details start with the field name or {@code Fragment:}
      */
     private Map<String, Object> scbWriteRow(ResourceResolver resolver, String sheetName, int rowNumber,
                                             ScbModelProfile profile, FragmentTemplate template, String modelPath,
                                             Map<String, DataType> fieldTypes, Set<String> requiredFields,
-                                            Map<String, Object> row, boolean dryRun) {
+                                            List<String> headers, Map<String, Object> row, boolean dryRun) {
         String action = (String) row.get(ACTION);
         Object nameValue = row.get(profile.getNameField());
         String name = nameValue instanceof String ? (String) nameValue : null;
@@ -228,13 +231,14 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                             + "\" must be lowercase letters, digits, - or _");
         }
 
-        String unknownField = scbCheckFields(row, fieldTypes);
+        String unknownField = scbCheckFields(headers, fieldTypes);
         if (unknownField != null) {
             return scbResult(sheetName, rowNumber, name, action, FAIL,
                     unknownField + ": not a field of model " + sheetName);
         }
 
-        String missingRequired = scbCheckRequired(row, requiredFields, "CREATE".equals(action));
+        boolean create = "CREATE".equals(action);
+        String missingRequired = scbCheckRequired(row, headers, requiredFields, create, profile.getIdField());
         if (missingRequired != null) {
             return scbResult(sheetName, rowNumber, name, action, FAIL, missingRequired);
         }
@@ -244,7 +248,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
         Resource existing = resolver.getResource(fragmentPath);
 
         ContentFragment fragment = null;
-        if ("CREATE".equals(action)) {
+        if (create) {
             if (existing != null) {
                 return scbResult(sheetName, rowNumber, name, action, FAIL, "Fragment: already exists at " + fragmentPath);
             }
@@ -267,26 +271,29 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
 
         Map<String, Object> values;
         try {
-            values = scbPrepareValues(row, fieldTypes);
+            values = scbPrepareValues(row, headers, fieldTypes, create, profile.getIdField());
         } catch (IllegalArgumentException e) {
             return scbResult(sheetName, rowNumber, name, action, FAIL, e.getMessage());
         }
+        List<String> cleared = scbClearedFields(fragment, values);
+        String details = cleared.isEmpty() ? fragmentPath
+                : fragmentPath + " (cleared: " + String.join(", ", cleared) + ")";
 
         if (dryRun) {
-            return scbResult(sheetName, rowNumber, name, action, PASS, fragmentPath);
+            return scbResult(sheetName, rowNumber, name, action, PASS, details);
         }
 
         Object titleValue = profile.getTitleField() == null ? null : row.get(profile.getTitleField());
         String title = titleValue instanceof String ? (String) titleValue : null;
         try {
             if (fragment == null) {
-                Resource folder = scbGetOrCreateFolder(resolver, folderPath);
+                Resource folder = ScbCfBulkUploadUtil.scbGetOrCreateFolder(resolver, folderPath);
                 fragment = template.createFragment(folder, name, title != null ? title : name);
             } else if (title != null) {
                 fragment.setTitle(title);
             }
             scbSetFields(fragment, values, fieldTypes);
-            return scbResult(sheetName, rowNumber, name, action, PASS, fragmentPath);
+            return scbResult(sheetName, rowNumber, name, action, PASS, details);
         } catch (ContentFragmentException | PersistenceException | RuntimeException e) {
             log.warn("Could not write {} {}", sheetName, fragmentPath, e);
             return scbResult(sheetName, rowNumber, name, action, FAIL,
@@ -295,21 +302,65 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     }
 
     /**
-     * Converts every cell of a row (except the action) into the value to store.
+     * Converts every column of a row (except the action) into the value to store. A blank cell
+     * becomes {@code null} (clear the field) on UPDATE, except in the ID field; on CREATE it is left out.
      *
-     * @param row        the row values, keyed by header
+     * @param row        the row values, keyed by header; blank cells are absent
+     * @param headers    the sheet's column headers
      * @param fieldTypes the model's field types, keyed by field name
-     * @return the values to store, keyed by field name; {@code null} means empty the field
+     * @param create     {@code true} for a CREATE row
+     * @param idField    the profile's ID field, or {@code null}
+     * @return the values to store, keyed by field name; {@code null} means clear the field
      * @throws IllegalArgumentException for the first value that does not fit its field
      */
-    private Map<String, Object> scbPrepareValues(Map<String, Object> row, Map<String, DataType> fieldTypes) {
+    private Map<String, Object> scbPrepareValues(Map<String, Object> row, List<String> headers,
+                                                 Map<String, DataType> fieldTypes, boolean create, String idField) {
         Map<String, Object> values = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> cell : row.entrySet()) {
-            if (!ACTION.equals(cell.getKey())) {
-                values.put(cell.getKey(), scbPrepareValue(cell.getKey(), fieldTypes.get(cell.getKey()), cell.getValue()));
+        for (String field : headers) {
+            if (ACTION.equals(field)) {
+                continue;
+            }
+            Object value = row.get(field);
+            if (value != null) {
+                values.put(field, scbPrepareValue(field, fieldTypes.get(field), value));
+            } else if (!create && !field.equals(idField)) {
+                values.put(field, null);
             }
         }
         return values;
+    }
+
+    /**
+     * Finds the fields a row would clear that currently have a value, and drops clears of fields
+     * that are already empty so they are neither written nor reported.
+     *
+     * @param fragment the existing fragment, or {@code null} for a CREATE row
+     * @param values   the prepared values; {@code null} entries for already-empty fields are removed
+     * @return the fields that will be cleared, in column order
+     */
+    private List<String> scbClearedFields(ContentFragment fragment, Map<String, Object> values) {
+        List<String> cleared = new ArrayList<>();
+        if (fragment == null) {
+            return cleared;
+        }
+        Iterator<Map.Entry<String, Object>> entries = values.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String, Object> entry = entries.next();
+            if (entry.getValue() != null) {
+                continue;
+            }
+            ContentElement element = fragment.getElement(entry.getKey());
+            Object current = element == null ? null : element.getValue().getValue();
+            boolean empty = current == null
+                    || (current instanceof String && StringUtils.isBlank((String) current))
+                    || (current instanceof Object[] && ((Object[]) current).length == 0);
+            if (empty) {
+                entries.remove();
+            } else {
+                cleared.add(entry.getKey());
+            }
+        }
+        return cleared;
     }
 
     /**
@@ -318,15 +369,16 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      * @param field the field name, used in error messages
      * @param type  the field's data type
      * @param value the cell value: a {@code String} or a {@code List<String>}
-     * @return {@code null} for {@code #CLEAR}, a {@code String[]} for a multi-value text field,
-     *         the text for a single text field, or the converted value for a typed field
-     * @throws IllegalArgumentException if the value does not fit the field
+     * @return a {@code String[]} for a multi-value text field, the text for a single text field,
+     *         or the converted value for a typed field
+     * @throws IllegalArgumentException if the value does not fit the field, or is the retired {@code #CLEAR}
      */
     private Object scbPrepareValue(String field, DataType type, Object value) {
         String typeName = type.getTypeString();
 
         if (CLEAR.equals(value)) {
-            return null;
+            throw new IllegalArgumentException(field
+                    + ": #CLEAR is no longer used \u2014 leave the cell empty to clear the field");
         }
         if (value instanceof List) {
             if (!type.isMultiValue()) {
@@ -431,22 +483,25 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     }
 
     /**
-     * Checks the model's required fields: on CREATE each must have a value, and on any action
-     * none may be cleared with {@code #CLEAR}. An empty cell on UPDATE keeps the current value.
+     * Checks the model's required fields: on CREATE each must have a value; on UPDATE a required
+     * column in the sheet may not be blank, because a blank cell would clear it. The ID field is
+     * exempt on UPDATE, since a blank ID keeps the current one.
      *
-     * @param row            the row values, keyed by header
+     * @param row            the row values, keyed by header; blank cells are absent
+     * @param headers        the sheet's column headers
      * @param requiredFields the fields marked Required in the model
      * @param create         {@code true} for a CREATE row
+     * @param idField        the profile's ID field, or {@code null}
      * @return the problem, e.g. {@code offerTitle: required}, or {@code null} when all are fine
      */
-    private String scbCheckRequired(Map<String, Object> row, Set<String> requiredFields, boolean create) {
+    private String scbCheckRequired(Map<String, Object> row, List<String> headers, Set<String> requiredFields,
+                                    boolean create, String idField) {
         List<String> missing = new ArrayList<>();
         for (String field : requiredFields) {
-            Object value = row.get(field);
-            if (CLEAR.equals(value) && !create) {
-                return field + ": required, can't be cleared";
+            if (row.get(field) != null) {
+                continue;
             }
-            if (create && (value == null || CLEAR.equals(value))) {
+            if (create || (headers.contains(field) && !field.equals(idField))) {
                 missing.add(field);
             }
         }
@@ -456,12 +511,12 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     /**
      * Finds the first column (other than the action) that is not a field of the model.
      *
-     * @param row        the row values, keyed by header
+     * @param headers    the sheet's column headers
      * @param fieldTypes the model's field types, keyed by field name
      * @return the unknown column name, or {@code null} if every column is a model field
      */
-    private String scbCheckFields(Map<String, Object> row, Map<String, DataType> fieldTypes) {
-        for (String field : row.keySet()) {
+    private String scbCheckFields(List<String> headers, Map<String, DataType> fieldTypes) {
+        for (String field : headers) {
             if (!ACTION.equals(field) && !fieldTypes.containsKey(field)) {
                 return field;
             }
@@ -483,27 +538,6 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
             types.put(element.getName(), element.getDataType());
         }
         return types;
-    }
-
-    /**
-     * Returns the folder, creating it and any missing parents as {@code sling:OrderedFolder}.
-     * Does not commit.
-     *
-     * @param resolver   the author's resource resolver
-     * @param folderPath the folder path
-     * @return the existing or new folder
-     * @throws PersistenceException if a folder cannot be created
-     */
-    private Resource scbGetOrCreateFolder(ResourceResolver resolver, String folderPath) throws PersistenceException {
-        Resource folder = resolver.getResource(folderPath);
-        if (folder != null) {
-            return folder;
-        }
-        int lastSlash = folderPath.lastIndexOf('/');
-        Resource parent = scbGetOrCreateFolder(resolver, folderPath.substring(0, lastSlash));
-        Map<String, Object> props = new HashMap<>();
-        props.put("jcr:primaryType", FOLDER_TYPE);
-        return resolver.create(parent, folderPath.substring(lastSlash + 1), props);
     }
 
     /**

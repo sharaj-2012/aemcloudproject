@@ -37,7 +37,7 @@
                             fieldLabel="ID"
                             listOrder="3"
                             metaType="number"
-                            name="id"
+                            name="ID"
                             renderReadOnly="false"
                             showEmptyInReadOnly="true"
                             step="1"

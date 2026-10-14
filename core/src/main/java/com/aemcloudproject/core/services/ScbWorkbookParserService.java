@@ -13,7 +13,8 @@ import java.util.Map;
 public interface ScbWorkbookParserService {
 
     /**
-     * Reads every sheet and checks its headers and action column. Blank rows are skipped;
+     * Reads every sheet and checks its headers and action column. Sheets whose name starts with
+     * {@code _} (such as the report's {@code _Guide}) are ignored. Blank rows are skipped;
      * rows with a blank action are kept (their IDs count for ID generation) but not checked.
      *
      * @param file   the .xlsx content

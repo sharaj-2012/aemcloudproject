@@ -27,6 +27,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
     private static final String CREATE = "CREATE";
     private static final String UPDATE = "UPDATE";
     private static final String CONTENT_PATH_PREFIX = "/content";
+    private static final String IGNORED_SHEET_PREFIX = "_";
 
     /**
      * {@inheritDoc}
@@ -40,6 +41,9 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
 
         try (XSSFWorkbook workbook = scbOpenWorkbook(file)) {
             for (Sheet sheet : workbook) {
+                if (sheet.getSheetName().startsWith(IGNORED_SHEET_PREFIX)) {
+                    continue;
+                }
                 ScbSheetData data = new ScbSheetData();
 
                 Map<Integer, String> headerByColumn = scbReadHeaders(sheet, formatter, errors);

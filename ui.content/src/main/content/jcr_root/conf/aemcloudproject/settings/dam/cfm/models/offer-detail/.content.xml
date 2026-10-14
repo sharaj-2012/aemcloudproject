@@ -124,7 +124,7 @@
                         <_x0031_790041700004
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                            fieldLabel="Alternate Text"
+                            fieldLabel="Alternate text"
                             listOrder="1"
                             maxlength="255"
                             metaType="text-single"
@@ -151,7 +151,7 @@
                             sling:resourceType="dam/cfm/models/editor/components/datatypes/datepicker"
                             displayedFormat="YYYY-MM-DD HH:mm"
                             emptyText="YYYY-MM-DD HH:mm"
-                            fieldLabel="Offer Start Date"
+                            fieldLabel="Offer start date"
                             listOrder="5"
                             metaType="date"
                             name="offerStartDate"
@@ -169,7 +169,7 @@
                             sling:resourceType="dam/cfm/models/editor/components/datatypes/datepicker"
                             displayedFormat="YYYY-MM-DD HH:mm"
                             emptyText="YYYY-MM-DD HH:mm"
-                            fieldLabel="Offer End Date"
+                            fieldLabel="Offer end date"
                             listOrder="5"
                             metaType="date"
                             name="offerEndDate"
@@ -184,17 +184,34 @@
                         </_x0031_790041700007>
                         <_x0031_790041700008
                             jcr:primaryType="nt:unstructured"
-                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            sling:resourceType="dam/cfm/models/editor/components/contentreference"
                             fieldLabel="Offer URL"
+                            filter="hierarchy"
+                            listOrder="10"
+                            metaType="reference"
+                            name="offerURL"
+                            nameSuffix="contentReference"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            showThumbnail="false"
+                            valueType="string/reference">
+                            <granite:data
+                                jcr:primaryType="nt:unstructured"
+                                thumbnail-validation="cfm.validation.thumbnail.show"/>
+                        </_x0031_790041700008>
+                        <_x0031_790041700030
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Label"
                             listOrder="1"
                             maxlength="255"
                             metaType="text-single"
-                            name="offerURL"
+                            name="offerLabel"
                             renderReadOnly="false"
                             showEmptyInReadOnly="true"
                             valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
-                        </_x0031_790041700008>
+                        </_x0031_790041700030>
                         <_x0031_790041700009
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
@@ -211,7 +228,7 @@
                         <_x0031_790041700010
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="dam/cfm/admin/components/authoring/contenteditor/multieditor"
-                            cfm-element="Offer T&amp;C"
+                            cfm-element="Offer TNC"
                             checked="false"
                             default-mime-type="text/html"
                             listOrder="2"
@@ -222,6 +239,84 @@
                             valueType="string/multiline">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_790041700010>
+                        <_x0031_790041700031
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Type"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerType"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700031>
+                        <_x0031_790041700032
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Promo Codes"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerPromoCodes"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700032>
+                        <_x0031_790041700033
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Badge"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerBadge"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700033>
+                        <_x0031_790041700034
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Tags"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerTags"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700034>
+                        <_x0031_790041700035
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="offer Location"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerLocation"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700035>
+                        <_x0031_790041700036
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
+                            fieldLabel="Offer Location Type"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
+                            name="offerLocationType"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            valueType="string">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700036>
                         <_x0031_787608085137
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="dam/cfm/models/editor/components/fragmentreference/multifield"
@@ -296,7 +391,7 @@
                         </_x0031_787608098171>
                         <_x0031_787608101990
                             jcr:primaryType="nt:unstructured"
-                            sling:resourceType="dam/cfm/models/editor/components/fragmentreference/multifield"
+                            sling:resourceType="dam/cfm/models/editor/components/fragmentreference"
                             allowNew="{Boolean}true"
                             fieldLabel="Offer CTA"
                             filter="hierarchy"
@@ -307,16 +402,9 @@
                             nameSuffix="contentReference"
                             renderReadOnly="false"
                             showEmptyInReadOnly="true"
-                            valueType="string/content-fragment[]">
+                            valueType="string/content-fragment">
                             <granite:data jcr:primaryType="nt:unstructured"/>
-                            <field
-                                jcr:primaryType="nt:unstructured"
-                                sling:resourceType="dam/cfm/models/editor/components/fragmentreference"
-                                fragmentmodelreference="/conf/aemcloudproject/settings/dam/cfm/models/offer-cta"
-                                name="offerCta"
-                                renderReadOnly="false">
-                                <granite:data jcr:primaryType="nt:unstructured"/>
-                            </field>
+                            <field jcr:primaryType="nt:unstructured"/>
                         </_x0031_787608101990>
                         <_x0031_790041700011
                             jcr:primaryType="nt:unstructured"
@@ -334,7 +422,7 @@
                         <_x0031_790041700012
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                            fieldLabel="BR Code"
+                            fieldLabel="Br code"
                             listOrder="1"
                             maxlength="255"
                             metaType="text-single"
@@ -347,7 +435,7 @@
                         <_x0031_790041700013
                             jcr:primaryType="nt:unstructured"
                             sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
-                            fieldLabel="QR Code"
+                            fieldLabel="Qr code"
                             listOrder="1"
                             maxlength="255"
                             metaType="text-single"
@@ -357,6 +445,30 @@
                             valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_790041700013>
+                        <_x0031_790041700037
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                            listOrder="4"
+                            metaType="boolean"
+                            name="preview"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            text="Preview"
+                            valueType="boolean">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700037>
+                        <_x0031_790041700038
+                            jcr:primaryType="nt:unstructured"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                            listOrder="4"
+                            metaType="boolean"
+                            name="cache"
+                            renderReadOnly="false"
+                            showEmptyInReadOnly="true"
+                            text="Cache"
+                            valueType="boolean">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
+                        </_x0031_790041700038>
                     </items>
                 </content>
             </cq:dialog>

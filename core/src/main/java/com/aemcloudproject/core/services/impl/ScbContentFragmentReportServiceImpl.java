@@ -7,7 +7,9 @@ import com.adobe.cq.dam.cfm.FragmentTemplate;
 import com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration;
 import com.aemcloudproject.core.services.ScbContentFragmentReportService;
 import com.aemcloudproject.core.services.ScbModelProfile;
-import com.aemcloudproject.core.utils.ScbCfModelUtil;
+import com.aemcloudproject.core.utils.ScbCfBulkUploadUtil;
+import com.day.cq.dam.api.Asset;
+import com.day.cq.dam.api.AssetManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -26,9 +28,11 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -38,6 +42,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,18 +59,72 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     private static final String ORDERED_FOLDER = "sling:OrderedFolder";
     private static final String ASSET = "dam:Asset";
     private static final String DEFAULT_FILE_NAME = "report";
+    private static final String GUIDE_SHEET = "_Guide";
+    private static final String TITLE_MARK = "# ";
+    private static final String HEADING_MARK = "## ";
+
+    /** Fixed text of the _Guide sheet: "# " = title, "## " = section heading, "" = empty row. */
+    private static final String[] GUIDE_TEXT = {
+        "# CF Bulk Upload \u2013 how to fill this workbook",
+        "",
+        "## How to use it",
+        "1. Edit this workbook in Excel and upload it to DAM, into /content/dam/aemcloudproject/imports.",
+        "2. In AEM, open Tools \u2192 SCB Tools \u2192 Content Fragment Bulk Upload, pick the file, keep Dry run ticked and click Run.",
+        "3. Fix any Fail rows, upload the file again and repeat until the dry run is clean.",
+        "4. Untick Dry run and click Run to write the changes.",
+        "5. The upload never publishes or deletes anything. Do that in AEM.",
+        "",
+        "## Sheets and columns",
+        "- Each sheet is one content fragment model. Don't rename the sheets.",
+        "- Row 1 holds the field names. Keep them exactly as they are (case-sensitive, no spaces).",
+        "- You may delete columns you don't need, except action and the slug column.",
+        "- Sheets whose name starts with _ (like this one) are ignored by the upload.",
+        "",
+        "## The action column",
+        "- CREATE: makes a new fragment (it must not exist yet).",
+        "- UPDATE: changes an existing fragment.",
+        "- Empty: the row is ignored.",
+        "- Upper or lower case doesn't matter. Any other value stops the whole upload.",
+        "",
+        "## Filling in cells",
+        "- Slug: lowercase letters, digits, - and _ only, e.g. summer-sale. It becomes the fragment's name and path.",
+        "- Title column: also sets the fragment's title shown in Assets.",
+        "- Numbers: digits, with . for decimals. Yes/no: true/false, 1/0 or yes/no.",
+        "- Dates: typed as text, e.g. 2026-10-01, 2026-10-01T09:30 or 2026-10-01T00:00:00.000+05:30. Format the column as Text, or start the value with '.",
+        "- Rich text: HTML, as shown in this report.",
+        "- References: the full path, e.g. /content/dam/aemcloudproject/cfs/offer-listing/categories/dining.",
+        "- Several references: one path per line in the cell (Alt+Enter). Fields that take one reference, like offerCta, accept a single path.",
+        "",
+        "## Empty cells",
+        "- CREATE: an empty cell leaves the field empty.",
+        "- UPDATE: an empty cell clears the field. Columns you deleted are not touched.",
+        "- An empty ID on UPDATE keeps the current ID.",
+        "",
+        "## IDs and required fields",
+        "- Red headers are required: they must be filled on CREATE and can't be emptied on UPDATE.",
+        "- Leave the ID empty on new rows. It's numbered automatically: the highest ID in the sheet + 1.",
+        "- Keep the existing rows in the sheet so the numbering continues correctly.",
+    };
+    private static final String XLSX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    /** Version label pattern; JCR labels can't contain {@code :}, so the time uses dots. */
+    private static final DateTimeFormatter VERSION_LABEL_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH.mm.ss");
 
     private String reportPath;
-    private String fileNamePrefix;
+    private String modelsPath;
+    private String fragmentRootPath;
+    private int maxFileSizeMb;
+    private int maxRows;
+    private String reportFolder;
+    private String reportFileName;
 
     @Reference(service = ScbModelProfile.class, cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY)
     private volatile List<ScbModelProfile> profiles;
 
     /**
-     * Reads the report path and file name from the configuration. In the file name, characters other
-     * than letters, digits, {@code .}, {@code _} and {@code -} are replaced by {@code -}; an empty name
-     * becomes {@code report}.
+     * Reads the report path, folder and file name from the configuration. In the file name, characters
+     * other than letters, digits, {@code .}, {@code _} and {@code -} are replaced by {@code -}; an empty
+     * name becomes {@code report}, and {@code .xlsx} is added.
      *
      * @param config the CF bulk upload configuration
      */
@@ -73,29 +132,78 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     @Modified
     protected void activate(ScbCfBulkUploadConfiguration config) {
         reportPath = StringUtils.removeEnd(config.reportPath(), "/");
-        String name = StringUtils.strip(StringUtils.trimToEmpty(config.reportFileName())
-                .replaceAll("[^A-Za-z0-9._-]+", "-"), "-.");
-        fileNamePrefix = name.isEmpty() ? DEFAULT_FILE_NAME : name;
+        modelsPath = StringUtils.removeEnd(config.modelsPath(), "/");
+        fragmentRootPath = StringUtils.removeEnd(config.fragmentRootPath(), "/");
+        maxFileSizeMb = config.maxFileSizeMb();
+        maxRows = config.maxRows();
+        reportFolder = StringUtils.removeEnd(config.reportFolder(), "/");
+        String name = StringUtils.strip(StringUtils.removeEndIgnoreCase(StringUtils.trimToEmpty(config.reportFileName()),
+                ".xlsx").replaceAll("[^A-Za-z0-9._-]+", "-"), "-.");
+        reportFileName = (name.isEmpty() ? DEFAULT_FILE_NAME : name) + ".xlsx";
     }
 
     /**
      * {@inheritDoc}
+     * Uses the DAM {@link AssetManager}: a revision of the existing file is created first, then the
+     * file's original rendition is replaced. A missing report folder is created.
      */
     @Override
-    public String scbReportFileName() {
-        return fileNamePrefix + "-" + LocalDate.now() + ".xlsx";
+    public Map<String, Object> scbSaveReport(ResourceResolver resolver) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        scbWriteReport(resolver, buffer);
+
+        AssetManager assetManager = resolver.adaptTo(AssetManager.class);
+        if (assetManager == null) {
+            throw new IOException("the DAM asset manager is not available");
+        }
+        String assetPath = reportFolder + "/" + reportFileName;
+        String versionLabel = null;
+        try {
+            Resource existing = resolver.getResource(assetPath);
+            if (existing == null) {
+                ScbCfBulkUploadUtil.scbGetOrCreateFolder(resolver, reportFolder);
+                resolver.commit();
+            } else {
+                Asset asset = existing.adaptTo(Asset.class);
+                if (asset == null) {
+                    throw new IOException(assetPath + " exists but is not a DAM asset");
+                }
+                versionLabel = LocalDateTime.now().format(VERSION_LABEL_FORMAT);
+                assetManager.createRevision(asset, versionLabel, null);
+            }
+            Asset saved = assetManager.createAsset(assetPath, new ByteArrayInputStream(buffer.toByteArray()),
+                    XLSX_MIME_TYPE, true);
+            if (saved == null) {
+                throw new IOException("DAM did not save " + assetPath);
+            }
+        } catch (IOException e) {
+            resolver.revert();
+            throw e;
+        } catch (Exception e) {
+            resolver.revert();
+            throw new IOException(e.getMessage(), e);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("path", assetPath);
+        result.put("versionLabel", versionLabel);
+        return result;
     }
 
     /**
      * {@inheritDoc}
-     * When no fragments are found, the workbook holds a single "report" sheet with a message.
+     * The first sheet is {@code _Guide} with the authoring rules. Every model with a profile gets a
+     * sheet, with only its header row when it has no fragments, so the report doubles as an empty template.
      */
     @Override
-    public int scbWriteReport(ResourceResolver resolver, OutputStream out) throws IOException {
+    public void scbWriteReport(ResourceResolver resolver, OutputStream out) throws IOException {
         Map<String, List<ContentFragment>> fragmentsByModel = new LinkedHashMap<>();
         Resource folder = resolver.getResource(reportPath);
         if (folder != null) {
             scbFindFragments(folder, fragmentsByModel);
+        }
+        for (ScbModelProfile profile : profiles) {
+            fragmentsByModel.putIfAbsent(modelsPath + "/" + profile.getModel(), new ArrayList<>());
         }
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
@@ -111,17 +219,88 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             CellStyle wrapStyle = workbook.createCellStyle();
             wrapStyle.setWrapText(true);
 
+            scbWriteGuideSheet(workbook, resolver, headerStyle);
             if (fragmentsByModel.isEmpty()) {
                 Sheet sheet = workbook.createSheet("report");
-                sheet.createRow(0).createCell(0).setCellValue("No content fragments found under " + reportPath);
+                sheet.createRow(0).createCell(0).setCellValue("No model profiles and no content fragments found");
             }
             for (String modelPath : scbSheetOrder(fragmentsByModel.keySet())) {
                 scbWriteSheet(workbook, resolver, modelPath, fragmentsByModel.get(modelPath),
                         headerStyle, requiredHeaderStyle, wrapStyle);
             }
+            workbook.setActiveSheet(0);
             workbook.write(out);
         }
-        return fragmentsByModel.values().stream().mapToInt(List::size).sum();
+    }
+
+    /**
+     * Writes the {@code _Guide} sheet: the fixed authoring rules, the upload limits from the
+     * configuration, and a table of every model profile with its folder, slug, title and ID
+     * columns and the model's required fields. The upload ignores this sheet.
+     *
+     * @param workbook    the workbook to add the sheet to
+     * @param resolver    the author's resource resolver
+     * @param headerStyle bold style for headings and the table header
+     */
+    private void scbWriteGuideSheet(XSSFWorkbook workbook, ResourceResolver resolver, CellStyle headerStyle) {
+        Sheet sheet = workbook.createSheet(GUIDE_SHEET);
+        CellStyle titleStyle = workbook.createCellStyle();
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 14);
+        titleStyle.setFont(titleFont);
+
+        List<String> lines = new ArrayList<>();
+        for (String line : GUIDE_TEXT) {
+            lines.add(line);
+        }
+        lines.add("");
+        lines.add(HEADING_MARK + "Limits");
+        lines.add("- Files up to " + maxFileSizeMb + " MB, and up to " + String.format(Locale.ROOT, "%,d", maxRows)
+                + " rows with an action per upload.");
+        lines.add("");
+        lines.add(HEADING_MARK + "Sheets in this workbook");
+
+        int rowIndex = 0;
+        for (String line : lines) {
+            Row row = sheet.createRow(rowIndex++);
+            if (line.isEmpty()) {
+                continue;
+            }
+            Cell cell = row.createCell(0);
+            if (line.startsWith(TITLE_MARK)) {
+                cell.setCellValue(line.substring(TITLE_MARK.length()));
+                cell.setCellStyle(titleStyle);
+            } else if (line.startsWith(HEADING_MARK)) {
+                cell.setCellValue(line.substring(HEADING_MARK.length()));
+                cell.setCellStyle(headerStyle);
+            } else {
+                cell.setCellValue(line);
+            }
+        }
+
+        String[] columns = {"Sheet", "Folder", "Slug column", "Title column", "ID column", "Required fields"};
+        Row header = sheet.createRow(rowIndex++);
+        for (int c = 0; c < columns.length; c++) {
+            scbHeaderCell(header, c, columns[c], headerStyle);
+        }
+        List<ScbModelProfile> ordered = new ArrayList<>(profiles);
+        ordered.sort(Comparator.comparingInt(ScbModelProfile::getOrder));
+        for (ScbModelProfile profile : ordered) {
+            Set<String> required = ScbCfBulkUploadUtil.scbRequiredFields(resolver, modelsPath + "/" + profile.getModel());
+            Row row = sheet.createRow(rowIndex++);
+            row.createCell(0).setCellValue(profile.getModel());
+            row.createCell(1).setCellValue(fragmentRootPath + "/" + profile.getFolder());
+            row.createCell(2).setCellValue(profile.getNameField());
+            row.createCell(3).setCellValue(StringUtils.defaultString(profile.getTitleField(), "\u2013"));
+            row.createCell(4).setCellValue(StringUtils.defaultString(profile.getIdField(), "\u2013"));
+            row.createCell(5).setCellValue(required.isEmpty() ? "\u2013" : String.join(", ", required));
+        }
+
+        int[] widths = {20, 62, 22, 16, 14, 40};
+        for (int c = 0; c < widths.length; c++) {
+            sheet.setColumnWidth(c, widths[c] * 256);
+        }
     }
 
     /**
@@ -179,12 +358,13 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
 
     /**
      * Writes one sheet named after the model: a header row with an empty action column
-     * and the model fields (mandatory ones in red bold), then one row per fragment sorted by ID.
+     * and the model fields (mandatory ones in red bold), then one row per fragment sorted by ID
+     * (no rows when the model has no fragments).
      *
      * @param workbook            the workbook to add the sheet to
      * @param resolver            the author's resource resolver
      * @param modelPath           the model path
-     * @param fragments           the model's fragments
+     * @param fragments           the model's fragments, possibly none
      * @param headerStyle         style for normal headers
      * @param requiredHeaderStyle style for mandatory headers
      * @param wrapStyle           style for multi-line cells
@@ -193,8 +373,8 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
                                List<ContentFragment> fragments, CellStyle headerStyle,
                                CellStyle requiredHeaderStyle, CellStyle wrapStyle) {
         Sheet sheet = workbook.createSheet(scbModelName(modelPath));
-        List<String> fields = scbFieldNames(resolver, modelPath, fragments.get(0));
-        Set<String> requiredFields = ScbCfModelUtil.scbRequiredFields(resolver, modelPath);
+        List<String> fields = scbFieldNames(resolver, modelPath, fragments.isEmpty() ? null : fragments.get(0));
+        Set<String> requiredFields = ScbCfBulkUploadUtil.scbRequiredFields(resolver, modelPath);
 
         Row header = sheet.createRow(0);
         scbHeaderCell(header, 0, ACTION, headerStyle);
@@ -238,12 +418,19 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
      *
      * @param fragment the fragment
      * @param idField  the ID field name
-     * @return the numeric ID, or {@link Long#MAX_VALUE} when it is empty or not a number
+     * @return the numeric ID (a number field, or a text field holding only digits), or
+     *         {@link Long#MAX_VALUE} when it is empty or not a number
      */
     private long scbIdValue(ContentFragment fragment, String idField) {
         ContentElement element = fragment.getElement(idField);
         Object value = element == null ? null : element.getValue().getValue();
-        return value instanceof Number ? ((Number) value).longValue() : Long.MAX_VALUE;
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof String && ((String) value).trim().matches("\\d{1,18}")) {
+            return Long.parseLong(((String) value).trim());
+        }
+        return Long.MAX_VALUE;
     }
 
     /**
@@ -289,11 +476,11 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
 
     /**
      * Returns the model's field names in model order, or the sample fragment's fields
-     * when the model cannot be read.
+     * when the model cannot be read (none when there is no sample either).
      *
      * @param resolver  the author's resource resolver
      * @param modelPath the model path
-     * @param sample    a fragment of the model, used as a fallback
+     * @param sample    a fragment of the model, used as a fallback; may be {@code null}
      * @return the field names
      */
     private List<String> scbFieldNames(ResourceResolver resolver, String modelPath, ContentFragment sample) {
@@ -305,7 +492,7 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             while (elements.hasNext()) {
                 fields.add(elements.next().getName());
             }
-        } else {
+        } else if (sample != null) {
             Iterator<ContentElement> elements = sample.getElements();
             while (elements.hasNext()) {
                 fields.add(elements.next().getName());

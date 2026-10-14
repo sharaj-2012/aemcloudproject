@@ -33,17 +33,16 @@
                         maxGeneratedOrder="20">
                         <_x0031_787607744474
                             jcr:primaryType="nt:unstructured"
-                            sling:resourceType="granite/ui/components/coral/foundation/form/numberfield"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/textfield"
                             fieldLabel="Merchant ID"
-                            listOrder="3"
-                            metaType="number"
+                            listOrder="1"
+                            maxlength="255"
+                            metaType="text-single"
                             name="merchantID"
                             renderReadOnly="false"
                             required="on"
                             showEmptyInReadOnly="true"
-                            step="1"
-                            typeHint="long"
-                            valueType="long">
+                            valueType="string">
                             <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_787607744474>
                         <_x0031_787607723540
@@ -75,22 +74,15 @@
                         </_x0031_790041700016>
                         <_x0031_790041700017
                             jcr:primaryType="nt:unstructured"
-                            sling:resourceType="dam/cfm/models/editor/components/contentreference"
-                            fieldLabel="Merchant Logo"
-                            filter="hierarchy"
-                            listOrder="10"
-                            metaType="reference"
+                            sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
+                            listOrder="4"
+                            metaType="boolean"
                             name="merchantLogo"
-                            nameSuffix="contentReference"
                             renderReadOnly="false"
-                            rootPath="/content/dam"
                             showEmptyInReadOnly="true"
-                            showThumbnail="false"
-                            validation="cfm.validation.contenttype.image"
-                            valueType="string/reference">
-                            <granite:data
-                                jcr:primaryType="nt:unstructured"
-                                thumbnail-validation="cfm.validation.thumbnail.show"/>
+                            text="Merchant Logo"
+                            valueType="boolean">
+                            <granite:data jcr:primaryType="nt:unstructured"/>
                         </_x0031_790041700017>
                         <_x0031_787607811324
                             jcr:primaryType="nt:unstructured"

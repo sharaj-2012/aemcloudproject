@@ -38,11 +38,19 @@ public @interface ScbCfBulkUploadConfiguration {
     String reportPath() default "/content/dam/aemcloudproject/cfs/offer-listing";
 
     /**
-     * Start of the report's file name; the date and {@code .xlsx} are added to it.
+     * DAM folder the report is saved in; created if missing.
      *
-     * @return the file name prefix, e.g. {@code offer-listing-report} for {@code offer-listing-report-2026-10-13.xlsx}
+     * @return the report folder
      */
-    @AttributeDefinition(name = "Report file name", description = "Start of the report file name; -<date>.xlsx is added")
+    @AttributeDefinition(name = "Report folder", description = "DAM folder the report is saved in")
+    String reportFolder() default "/content/dam/aemcloudproject/reports";
+
+    /**
+     * Fixed file name of the saved report; {@code .xlsx} is added. Each save keeps the previous file as a version.
+     *
+     * @return the file name, e.g. {@code offer-listing-report} for {@code offer-listing-report.xlsx}
+     */
+    @AttributeDefinition(name = "Report file name", description = "Fixed file name of the saved report; .xlsx is added")
     String reportFileName() default "offer-listing-report";
 
     /**

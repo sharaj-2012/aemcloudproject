@@ -20,7 +20,9 @@ workbook. Its layout is the format; this doc spells out the rules behind it.
 
 - **The sheet name is the model name** — the model's node name under the conf root
   (default `/conf/aemcloudproject/settings/dam/cfm/models`), e.g. `offer-detail`, `merchant-venue`.
-- Sheets starting with `_` (e.g. `_README`) are ignored, so authors can keep notes in the file.
+- Sheets starting with `_` are ignored, so authors can keep notes in the file. The report's first
+  sheet, `_Guide`, uses this: the authoring rules, the limits and a generated table of every model
+  profile (folder, slug, title and ID columns, required fields).
 - A sheet whose name isn't a model with a [model profile](#model-profiles) is reported as an
   error and skipped; the other sheets still run.
 - **Sheet order and row order don't matter.** One workbook can create venues, merchants that
@@ -48,7 +50,7 @@ Every sheet has an `action` column (any position) that says what each row does.
 | `action` | The fragment must… | Otherwise |
 |----------|--------------------|-----------|
 | `CREATE` | **not exist** yet. Required fields must be filled. | Error: already exists — nothing is overwritten. |
-| `UPDATE` | **already exist**. Only non-empty cells change. | Error: not found — catches typos in the slug. |
+| `UPDATE` | **already exist**. Every column in the sheet is applied; a blank cell clears its field. | Error: not found — catches typos in the slug. |
 
 - Matched case-insensitively: `create`, `Create`, `CREATE` are the same.
 - A row with a blank `action` is skipped: it is not checked, written or listed in the results.
@@ -170,13 +172,23 @@ at a row below it.
 
 ### Empty cells vs. clearing a field
 
-On `UPDATE` an empty cell means "leave unchanged", so clearing a field needs an explicit marker:
+Start from **Generate report**: the sheet then holds every current value, and a blank cell means
+"this field has no value".
 
-| Cell             | `CREATE`                  | `UPDATE`  |
-|------------------|---------------------------|-----------|
-| empty            | field keeps model default | field **left unchanged** |
-| `#CLEAR` (exact) | field empty               | field **emptied** |
-| any other value  | field set                 | field overwritten |
+| Cell                          | `CREATE`                  | `UPDATE`  |
+|-------------------------------|---------------------------|-----------|
+| value                         | field set                 | field overwritten |
+| blank                         | field empty               | field **cleared** |
+| blank ID field (`idField`)    | ID [generated](#generated-ids) | ID **kept** |
+| column not in the sheet       | field empty               | field **not touched** |
+| `#CLEAR`                      | row fails: `#CLEAR is no longer used — leave the cell empty to clear the field` | same |
+
+- Only columns present in the sheet can clear fields, so a sheet with just `action`, the slug and
+  one more column changes that one column and nothing else.
+- The fragment's own title (`jcr:title`) is only changed by a non-blank title cell; a blank title
+  cell clears the title field but keeps the title shown in Assets.
+- Results list the fields a row clears that had a value, in dry runs too:
+  `…/offer-cta/book-now (cleared: deeplink)`. Clearing an already-empty field is not reported.
 
 ### Required fields
 
@@ -186,8 +198,9 @@ model editor (read from the model's dialog definition). Nothing is configured in
 - `CREATE`: every required field must have a value, otherwise the row fails with
   `offerTitle: required` (all missing fields in one message). A missing column counts as empty.
   An empty ID field that gets [generated](#generated-ids) counts as filled.
-- `UPDATE`: an empty cell is fine (field unchanged), but `#CLEAR` on a required field fails the
-  row with `offerTitle: required, can't be cleared`.
+- `UPDATE`: a required column that is in the sheet may not be blank (it would clear the field):
+  the row fails with `offerTitle: required`. A required column left out of the sheet is fine, and a
+  blank ID field keeps the current ID.
 - The `nameField` column must be present in the sheet and filled on every row with an action.
 - The report shows required fields as red bold headers, from the same model flags.
 
@@ -213,78 +226,90 @@ without breaking this format.
 ## Model field reference (this project)
 
 `*` = required on create. **bold** = profile `nameField`. Arrows show the model a fragment reference allows.
+Field order = model order = report column order.
 
 ### `merchant-venue`
 
-| Property name           | Type |
-|-------------------------|------|
-| **`merchantVenueSlug`** | Single-line text `*` |
-| `name`                  | Single-line text |
-| `address`               | Multi-line text (HTML) |
-| `latitude`              | Number (fraction) |
-| `longitude`             | Number (fraction) |
-| `telephone`             | Single-line text |
+| Property name           | Field label         | Type |
+|-------------------------|---------------------|------|
+| `name`                  | Name                | Single-line text |
+| **`merchantVenueSlug`** | Merchant Venue Slug | Single-line text `*` |
+| `address`               | Address             | Multi-line text (HTML) |
+| `latitude`              | Latitude            | Single-line text |
+| `longitude`             | Longitude           | Single-line text |
+| `telephone`             | Telephone           | Single-line text |
+| `ophr`                  | Ophr                | Single-line text |
+| `fax`                   | Fax                 | Single-line text |
 
 ### `merchant-details`
 
-| Property name      | Type |
-|--------------------|------|
-| `merchantID`       | Number (integer) `*` |
-| **`merchantSlug`** | Single-line text `*` |
-| `merchantName`     | Single-line text |
-| `merchantLogo`     | Content reference |
-| `merchantVenues`   | Fragment reference, multiple → `merchant-venue` |
+| Property name      | Field label     | Type |
+|--------------------|-----------------|------|
+| `merchantID`       | Merchant ID     | Single-line text `*` (digits; generated on CREATE) |
+| `merchantName`     | Merchant Name   | Single-line text |
+| **`merchantSlug`** | Merchant Slug   | Single-line text `*` |
+| `merchantLogo`     | Merchant Logo   | Boolean |
+| `merchantVenues`   | Merchant Venues | Fragment reference, multiple → `merchant-venue` |
 
 ### `category`
 
-| Property name           | Type |
-|-------------------------|------|
-| `ID`                    | Number (integer) `*` |
-| **`offerCategorySlug`** | Single-line text `*` |
-| `name`                  | Single-line text |
-| `categoryIconPath`      | Single-line text |
-| `parent`                | Fragment reference → `category` |
+| Property name           | Field label         | Type |
+|-------------------------|---------------------|------|
+| `ID`                    | ID                  | Number (integer) `*` |
+| `name`                  | Name                | Single-line text |
+| **`offerCategorySlug`** | Offer Category Slug | Single-line text `*` |
+| `categoryIconPath`      | Category Icon Path  | Content reference |
+| `parent`                | Parent              | Fragment reference → `category` |
 
 ### `offer-card`
 
-| Property name       | Type |
-|---------------------|------|
-| `id`                | Number (integer) |
-| **`offerCardSlug`** | Single-line text `*` |
-| `name`              | Single-line text |
-| `logo`              | Content reference |
-| `parent`            | Fragment reference → `offer-card` |
+| Property name       | Field label     | Type |
+|---------------------|-----------------|------|
+| `ID`                | ID              | Number (integer) |
+| `name`              | Name            | Single-line text |
+| **`offerCardSlug`** | Offer Card Slug | Single-line text `*` |
+| `logo`              | Logo            | Content reference |
+| `parent`            | Parent          | Fragment reference → `offer-card` |
 
 ### `offer-cta`
 
-| Property name      | Type |
-|--------------------|------|
-| **`offerCtaSlug`** | Single-line text `*` |
-| `label`            | Single-line text |
-| `url`              | Content reference (external URLs allowed) |
-| `deeplink`         | Single-line text |
+| Property name      | Field label    | Type |
+|--------------------|----------------|------|
+| `label`            | Label          | Single-line text |
+| **`offerCtaSlug`** | Offer CTA Slug | Single-line text `*` |
+| `url`              | URL            | Content reference (external URLs allowed) |
+| `deeplink`         | Deep Link      | Content reference |
 
 ### `offer-detail`
 
-| Property name      | Type |
-|--------------------|------|
-| `offerID`          | Number (integer) `*` |
-| **`offerSlug`**    | Single-line text `*` |
-| `offerTitle`       | Single-line text `*` |
-| `offerSummary`     | Multi-line text (HTML) |
-| `offerDescription` | Multi-line text (HTML) |
-| `offerImage`       | Content reference |
-| `alternateText`    | Single-line text |
-| `hotPromo`         | Boolean |
-| `offerStartDate`   | Date and time |
-| `offerEndDate`     | Date and time |
-| `offerURL`         | Single-line text |
-| `offerEmail`       | Single-line text |
-| `offerTnc`         | Multi-line text (HTML) |
-| `offerCategories`  | Fragment reference, multiple → `category` |
-| `offerMerchants`   | Fragment reference, multiple → `merchant-details` |
-| `offerCards`       | Fragment reference, multiple → `offer-card` |
-| `offerCta`         | Fragment reference, multiple → `offer-cta` |
-| `offerOrigin`      | Single-line text |
-| `brCode`           | Single-line text |
-| `qrCode`           | Single-line text |
+| Property name       | Field label         | Type |
+|---------------------|---------------------|------|
+| `offerID`           | Offer ID            | Number (integer) `*` |
+| `offerTitle`        | Offer Title         | Single-line text `*` |
+| **`offerSlug`**     | Offer Slug          | Single-line text `*` |
+| `offerSummary`      | Offer Summary       | Multi-line text (HTML) |
+| `offerDescription`  | Offer Description   | Multi-line text (HTML) |
+| `offerImage`        | Offer Image         | Content reference |
+| `alternateText`     | Alternate text      | Single-line text |
+| `hotPromo`          | Hot Promo           | Boolean |
+| `offerStartDate`    | Offer start date    | Date and time |
+| `offerEndDate`      | Offer end date      | Date and time |
+| `offerURL`          | Offer URL           | Content reference |
+| `offerLabel`        | Offer Label         | Single-line text |
+| `offerEmail`        | Offer Email         | Single-line text |
+| `offerTnc`          | Offer TNC           | Multi-line text (HTML) |
+| `offerType`         | Offer Type          | Single-line text |
+| `offerPromoCodes`   | Offer Promo Codes   | Single-line text |
+| `offerBadge`        | Offer Badge         | Single-line text |
+| `offerTags`         | Offer Tags          | Single-line text |
+| `offerLocation`     | offer Location      | Single-line text |
+| `offerLocationType` | Offer Location Type | Single-line text |
+| `offerCategories`   | Offer Categories    | Fragment reference, multiple → `category` |
+| `offerMerchants`    | Offer Merchants     | Fragment reference, multiple → `merchant-details` |
+| `offerCards`        | Offer Cards         | Fragment reference, multiple → `offer-card` |
+| `offerCta`          | Offer CTA           | Fragment reference, **single** → `offer-cta` |
+| `offerOrigin`       | Offer Origin        | Single-line text |
+| `brCode`            | Br code             | Single-line text |
+| `qrCode`            | Qr code             | Single-line text |
+| `preview`           | Preview             | Boolean |
+| `cache`             | Cache               | Boolean |

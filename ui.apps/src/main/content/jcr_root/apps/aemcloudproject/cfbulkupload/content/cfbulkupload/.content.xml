@@ -5,9 +5,9 @@
 
     Renders:
       SCB CF bulk upload                                             <- page heading
-      ┌ Upload workbook ──────────────────┐ ┌ Download report ─────┐
+      ┌ Upload workbook ──────────────────┐ ┌ Save report ─────────┐
       │ Workbook (.xlsx) * [path][📁]     │ │ text                 │
-      │ ☑ Dry run: check only ...        │ │ [⬇ Generate report]  │
+      │ ☑ Dry run: check only ...        │ │ [Save report to DAM] │
       │ ▸ How it works                    │ └──────────────────────┘
       │                         [ Run ]   │
       └───────────────────────────────────┘
@@ -124,12 +124,12 @@
                                                     <clear
                                                         jcr:primaryType="nt:unstructured"
                                                         sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                        text="An empty cell keeps the current value; #CLEAR empties the field."
+                                                        text="On UPDATE, a blank cell clears its field (except the ID); columns left out of the sheet are not touched."
                                                         granite:class="scb-cf-bulk-upload__help-item"/>
                                                     <start
                                                         jcr:primaryType="nt:unstructured"
                                                         sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                        text="Start from Generate report to get a workbook in the right format."
+                                                        text="Start from Save report to DAM to get a workbook in the right format."
                                                         granite:class="scb-cf-bulk-upload__help-item"/>
                                                 </items>
                                             </howItWorks>
@@ -158,31 +158,31 @@
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/heading"
                                 level="{Long}2"
-                                text="Download report"
+                                text="Save report"
                                 granite:class="scb-cf-bulk-upload__card-heading"/>
                             <intro
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/text"
-                                text="Export every fragment in offer-listing to Excel, in the same layout as the upload."
+                                text="Save every fragment in offer-listing to an Excel file in DAM, in the same layout as the upload. The previous file is kept as a version."
                                 granite:class="scb-cf-bulk-upload__card-text"/>
-                            <!-- "Generate report": cf-bulk-upload.js (scbGenerateReport) fetches the URL in
-                                 data-report-url in the background, shows a spinner + timer meanwhile, then saves
-                                 <reportFileName>-<date>.xlsx (name set in the OSGi config). type="button" so it never submits anything. -->
+                            <!-- "Save report to DAM": cf-bulk-upload.js (scbSaveReport) POSTs to data-report-url, shows a
+                                 spinner + timer meanwhile, then the saved path and version. Folder and file name come from
+                                 the OSGi config. type="button" so it never submits anything. -->
                             <reportButton
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/button"
                                 type="button"
-                                text="Generate report"
-                                icon="download"
+                                text="Save report to DAM"
+                                icon="upload"
                                 variant="secondary"
                                 granite:class="scb-cf-bulk-upload__report">
-                                <!-- Rendered as data-report-url="/apps/.../report.xlsx" on the button. -->
+                                <!-- Rendered as data-report-url="/apps/.../report.json" on the button. -->
                                 <granite:data
                                     jcr:primaryType="nt:unstructured"
-                                    report-url="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.xlsx"/>
+                                    report-url="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.json"/>
                             </reportButton>
                             <!-- Empty <div class="scb-cf-bulk-upload__report-status">; the JS shows
-                                 "Building the Excel… 12 s", then "Downloaded … (21 fragments)" or an error here. -->
+                                 "Saving the report… 12 s", then "Saved …" or an error here. -->
                             <reportStatus
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/container"
@@ -204,7 +204,7 @@
     <upload
         jcr:primaryType="nt:unstructured"
         sling:resourceType="aemcloudproject/cfbulkupload/upload"/>
-    <!-- Not rendered on the page. Gives the report servlet a URL: GET .../report.xlsx on resource type
+    <!-- Not rendered on the page. Gives the report servlet a URL: POST .../report.json on resource type
          aemcloudproject/cfbulkupload/report calls ScbCfReportServlet. -->
     <report
         jcr:primaryType="nt:unstructured"

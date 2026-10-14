@@ -64,7 +64,7 @@
     clear: both;
 }
 
-/* Line under "Generate report" (scbReportStatus): [spinner] Building the Excel… 12 s / ✔ Downloaded … / ⚠ error. */
+/* Line under "Save report to DAM" (scbReportStatus): [spinner] Saving the report… 12 s / ✔ Saved … Open in Assets / ⚠ error. */
 .scb-cf-bulk-upload__report-status {
     display: flex;
     align-items: center;
@@ -83,6 +83,10 @@
 
 .scb-cf-bulk-upload__report-status--done {
     color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__report-link {
+    white-space: nowrap;
 }
 
 .scb-cf-bulk-upload__report-status--error {

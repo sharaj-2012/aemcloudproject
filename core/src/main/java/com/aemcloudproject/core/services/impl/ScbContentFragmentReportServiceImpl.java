@@ -359,7 +359,9 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     /**
      * Writes one sheet named after the model: a header row with an empty action column
      * and the model fields (mandatory ones in red bold), then one row per fragment sorted by ID
-     * (no rows when the model has no fragments).
+     * (no rows when the model has no fragments). The slug column ({@code nameField}) always holds the
+     * fragment's node name, not the stored field, so every row addresses its own fragment on UPDATE
+     * and an UPDATE back-fills an empty or hand-edited slug field.
      *
      * @param workbook            the workbook to add the sheet to
      * @param resolver            the author's resource resolver
@@ -386,11 +388,17 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
         int rowIndex = 1;
         ScbModelProfile profile = scbFindProfile(scbModelName(modelPath));
         String idField = profile == null ? null : profile.getIdField();
+        String nameField = profile == null ? null : profile.getNameField();
         for (ContentFragment fragment : scbSortById(fragments, idField)) {
             Row row = sheet.createRow(rowIndex++);
             for (int f = 0; f < fields.size(); f++) {
-                ContentElement element = fragment.getElement(fields.get(f));
-                Object value = element == null ? null : element.getValue().getValue();
+                Object value;
+                if (fields.get(f).equals(nameField)) {
+                    value = fragment.getName();
+                } else {
+                    ContentElement element = fragment.getElement(fields.get(f));
+                    value = element == null ? null : element.getValue().getValue();
+                }
                 scbWriteCell(row.createCell(f + 1), value, wrapStyle);
             }
         }

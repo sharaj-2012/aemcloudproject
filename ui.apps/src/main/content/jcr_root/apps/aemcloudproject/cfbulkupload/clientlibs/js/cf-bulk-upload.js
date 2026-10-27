@@ -3,18 +3,28 @@
  * the reply. Uses jQuery ajax so granite.csrf.standalone adds the CSRF token.
  *
  * Flow:
- *   author clicks "Run"
+ *   page loads
+ *     -> scbPrefillFolder(): GET .../upload.json -> {"rootPath": "/content/dam/.../offer-listing"} fills the
+ *        Fragment folder picker when it is empty
+ *   author clicks "Dry run" (or presses Enter)
  *     -> browser fires "submit" on <form class="scb-cf-bulk-upload">
- *     -> scbSubmitCfBulkUpload(): checks a file is picked, reads the Dry run checkbox
- *     -> scbSendUpload(): spinner, then POST filePath=...&dryRun=true|false to .../upload.json
- *        (no confirm dialog: unticked Dry run writes straight away)
- *     -> HTTP 200: scbRenderResults() = dry-run banner (dry run only) + "12 fail · 138 pass" + Download CSV
- *                  + results table in a fixed-height scroll box, failures first
- *     -> HTTP 400 / other: scbShowAlert() = red Coral alert with the problem(s)
+ *     -> scbSubmitCfBulkUpload(): checks a file and a folder are picked
+ *     -> scbSendUpload(): spinner, then POST filePath=...&rootPath=...&dryRun=true to .../upload.json
+ *     -> HTTP 200: scbRenderResults() = banner + "12 fail · 3 warn · 138 pass" + Download CSV
+ *                  + results table in a fixed-height scroll box, failures first.
+ *                  No failures -> the dry run is remembered (file, folder, fileVersion) and Final run is enabled.
+ *     -> HTTP 400 / other: scbShowAlert() = red Coral alert with the problem(s); Final run stays disabled
+ *   author changes the workbook or the folder
+ *     -> Final run is disabled again until a new dry run passes
+ *   author clicks "Final run"
+ *     -> scbSendUpload(): POST ...&dryRun=false&fileVersion=... (the server refuses it if the file changed)
+ *     -> HTTP 200: banner with a link to the saved run report, counts, table; Final run disabled again
+ *   author clicks "Download sample sheet"
+ *     -> plain link to .../report.xlsx; the browser downloads cf-bulk-upload-sample.xlsx
  *   author clicks "Save report to DAM"
  *     -> scbSaveReport(): button disabled ("Saving report…"), "[spinner] Saving the report… 12 s"
- *        under it; POSTs to .../report.json, which builds the report and saves it in DAM; then shows
- *        "✔ Saved …/offer-listing-report.xlsx · previous file kept as version …  Open in Assets"
+ *        under it; POSTs the picked folder to .../report.json, which builds the report and saves it in DAM;
+ *        then shows "✔ Saved …/offer-listing-report-2026-10-20-14-05-33.xlsx  Open in Assets"
  *        — or a red error line
  *
  * The whole file is wrapped in a function that runs immediately, so none of these functions
@@ -25,9 +35,10 @@
 
     // CSS selectors for the elements rendered by the Granite page (.content.xml, granite:class).
     var FORM_SELECTOR = ".scb-cf-bulk-upload";                          // the <form>
-    var FILE_PATH_FIELD = "foundation-autocomplete[name='filePath']";   // the path browser element
-    var DRY_RUN_FIELD = "coral-checkbox[name='dryRun']";                // the "Dry run" checkbox
-    var SUBMIT_SELECTOR = ".scb-cf-bulk-upload__submit";                // the Run button
+    var FILE_PATH_FIELD = "foundation-autocomplete[name='filePath']";   // the workbook path browser
+    var ROOT_PATH_FIELD = "foundation-autocomplete[name='rootPath']";   // the fragment folder picker
+    var SUBMIT_SELECTOR = ".scb-cf-bulk-upload__submit";                // the Dry run button
+    var FINAL_RUN_SELECTOR = ".scb-cf-bulk-upload__final-run";          // the Final run button
     var RESULT_SELECTOR = ".scb-cf-bulk-upload__result";                // the area under the two cards
 
     var REPORT_BUTTON = ".scb-cf-bulk-upload__report";                 // the Save report to DAM button
@@ -37,11 +48,15 @@
     var LABEL_REPORT = "Save report to DAM";
     var LABEL_REPORT_BUSY = "Saving report…";                 // … = "…"
 
+    // The last dry run without failures: { filePath, rootPath, fileVersion }, or null.
+    // Final run is enabled only while the picked file and folder still match it.
+    var lastDryRun = null;
+
     // Table / CSV columns: header text -> key in each result object from the servlet.
     var COLUMNS = [
         { title: "Sheet", key: "sheet" },
         { title: "Row", key: "row" },
-        { title: "Name", key: "name" },
+        { title: "Slug", key: "slug" },
         { title: "Action", key: "action" },
         { title: "Result", key: "result" },
         { title: "Details", key: "details" }
@@ -56,22 +71,40 @@
     }
 
     /**
-     * Is the "Dry run" checkbox ticked?
-     * Input:  form
-     * Output: true (ticked, the default) or false. No checkbox found -> true, to be safe.
+     * Reads a path field of the form.
+     * Input:  form, selector (FILE_PATH_FIELD or ROOT_PATH_FIELD)
+     * Output: the trimmed path without a trailing "/", e.g. "/content/dam/aemcloudproject/cfs/offer-listing",
+     *         or "" when nothing is picked.
      */
-    function scbIsDryRun(form) {
-        var box = form.querySelector(DRY_RUN_FIELD);
-        return box ? box.checked : true;
+    function scbFieldValue(form, selector) {
+        var field = form.querySelector(selector);
+        return field && field.value ? field.value.trim().replace(/\/$/, "") : "";
     }
 
     /**
-     * Enables or disables the button while a request is running.
+     * Enables Final run only when the last clean dry run used the workbook and folder picked now.
+     * Input:  form
+     * Output: nothing returned; the Final run button is enabled or disabled.
+     */
+    function scbUpdateFinalRun(form) {
+        form.querySelector(FINAL_RUN_SELECTOR).disabled = !lastDryRun
+            || lastDryRun.filePath !== scbFieldValue(form, FILE_PATH_FIELD)
+            || lastDryRun.rootPath !== scbFieldValue(form, ROOT_PATH_FIELD);
+    }
+
+    /**
+     * Enables or disables the buttons while a request is running.
      * Input:  form, busy (true = request running)
-     * Output: nothing returned; the button is disabled (busy) or enabled again.
+     * Output: nothing returned; both buttons are disabled (busy), or Dry run is enabled again and
+     *         Final run follows scbUpdateFinalRun.
      */
     function scbSetBusy(form, busy) {
         form.querySelector(SUBMIT_SELECTOR).disabled = busy;
+        if (busy) {
+            form.querySelector(FINAL_RUN_SELECTOR).disabled = true;
+        } else {
+            scbUpdateFinalRun(form);
+        }
     }
 
     /**
@@ -130,25 +163,46 @@
     }
 
     /**
-     * Shows the outcome of a run: dry-run banner, counts + Download CSV, and the results table.
+     * Shows the outcome of a run: banner, counts + Download CSV, and the results table.
      *
-     * Input:  results - the "results" array of the servlet's HTTP 200 reply, e.g.
-     *           [{sheet: "category", row: 14, name: "dining", action: "UPDATE", result: "FAIL",
-     *             details: "promoCode: not a field of model category"},
-     *            {sheet: "merchant-venue", row: 2, name: "central-mall-branch", action: "CREATE", result: "PASS",
-     *             details: "/content/dam/aemcloudproject/cfs/offer-listing/merchants/venues/central-mall-branch"}, ...]
-     *         dryRun  - the reply's "dryRun" flag
+     * Input:  data - the servlet's HTTP 200 reply, e.g.
+     *           { dryRun: true, fileVersion: "1792027440793", results: [
+     *             {sheet: "category", row: 14, slug: "dining", action: "UPDATE", result: "FAIL",
+     *              details: "promoCode: not a field of model category"},
+     *             {sheet: "merchant-venue", row: 2, slug: "central-mall-branch", action: "CREATE", result: "PASS",
+     *              details: "/content/dam/aemcloudproject/cfs/offer-listing/merchants/venues/central-mall-branch"}, ...] }
+     *         a final run's reply has reportPath (or reportError) instead of fileVersion
      * Output: nothing returned; the result area now holds
-     *           <coral-alert variant="warning">Dry run: nothing was written.</coral-alert>   (dry run only)
-     *           <div class="scb-cf-bulk-upload__summary">[12 fail] [138 pass] 150 rows   [Download CSV]</div>
+     *           banner: dry run with failures   -> red    "Dry run: 12 rows failed. Nothing was written."
+     *                   dry run without failures -> yellow "Dry run: nothing was written." (click Final run)
+     *                   final run               -> green  "Final run done." + "Open the run report" link
+     *                                              (yellow with the reason when the report could not be saved)
+     *           <div class="scb-cf-bulk-upload__summary">[12 fail] [3 warn] [138 pass] 153 rows   [Download CSV]</div>
      *           <div class="scb-cf-bulk-upload__table-box"><table>...</table></div>       (scrolls inside, header sticky)
      */
-    function scbRenderResults(results, dryRun) {
+    function scbRenderResults(data) {
+        var results = data.results || [];
+        var failed = results.filter(function (r) { return r.result === "FAIL"; }).length;
         var box = scbResultBox();
         box.textContent = "";
-        if (dryRun) {
+        if (data.dryRun && failed > 0) {
+            box.appendChild(scbAlert("error", "Dry run: " + failed + (failed === 1 ? " row" : " rows")
+                + " failed. Nothing was written.",
+                "Fix the failed rows, upload the workbook again and run the dry run again. "
+                + "Final run is enabled once the dry run has no failures."));
+        } else if (data.dryRun) {
             box.appendChild(scbAlert("warning", "Dry run: nothing was written.",
-                "Untick Dry run and click Run to create or update these fragments."));
+                "Click Final run to make these changes. Rows marked Warn are left as they are."));
+        } else if (data.reportError) {
+            box.appendChild(scbAlert("warning", "Final run done.", data.reportError));
+        } else {
+            var done = scbAlert("success", "Final run done.", "Run report: " + data.reportPath + " ");
+            var link = document.createElement("a");
+            link.href = "/assetdetails.html" + data.reportPath;
+            link.target = "_blank";
+            link.textContent = "Open in Assets";
+            done.content.appendChild(link);
+            box.appendChild(done);
         }
         box.appendChild(scbRenderSummary(results));
 
@@ -161,23 +215,23 @@
     }
 
     /**
-     * Puts FAIL rows first, then SKIP (sheets with no action), then PASS, keeping sheet / row order
-     * inside each group.
-     * Input:  [venue row 2 PASS, category SKIP, offer row 87 FAIL]
-     * Output: [offer row 87 FAIL, category SKIP, venue row 2 PASS]   (a new array)
+     * Puts FAIL rows first, then WARN (deletes left in place), SKIP (sheets with no action), then PASS,
+     * keeping the run order inside each group.
+     * Input:  [venue row 2 PASS, category SKIP, offer row 87 FAIL, cta row 4 WARN]
+     * Output: [offer row 87 FAIL, cta row 4 WARN, category SKIP, venue row 2 PASS]   (a new array)
      */
     function scbFailuresFirst(results) {
         function only(result) {
             return results.filter(function (r) { return r.result === result; });
         }
-        return only("FAIL").concat(only("SKIP"), only("PASS"));
+        return only("FAIL").concat(only("WARN"), only("SKIP"), only("PASS"));
     }
 
     /**
-     * Builds the line above the table: fail / pass / skip chips, total, Download CSV button.
+     * Builds the line above the table: fail / warn / pass / skip chips, total, Download CSV button.
      * Input:  results
-     * Output: a <div>, e.g. [12 fail] [138 pass] [5 skip] 155 rows ............ [⬇ Download CSV]
-     *         The skip chip only appears when a sheet was skipped.
+     * Output: a <div>, e.g. [12 fail] [3 warn] [138 pass] [5 skip] 158 rows ............ [⬇ Download CSV]
+     *         The warn and skip chips only appear when there is such a row.
      *         Clicking the button calls scbDownloadCsv(results) (all rows, original order).
      */
     function scbRenderSummary(results) {
@@ -185,10 +239,14 @@
             return results.filter(function (r) { return r.result === result; }).length;
         }
         var skipCount = count("SKIP");
+        var warnCount = count("WARN");
 
         var summary = document.createElement("div");
         summary.className = "scb-cf-bulk-upload__summary";
         summary.appendChild(scbChip("scb-cf-bulk-upload__chip--fail", count("FAIL") + " fail"));
+        if (warnCount > 0) {
+            summary.appendChild(scbChip("scb-cf-bulk-upload__chip--warn", warnCount + " warn"));
+        }
         summary.appendChild(scbChip("scb-cf-bulk-upload__chip--pass", count("PASS") + " pass"));
         if (skipCount > 0) {
             summary.appendChild(scbChip("scb-cf-bulk-upload__chip--skip", skipCount + " skip"));
@@ -230,17 +288,18 @@
      *
      * Input:  results (already ordered failures first)
      * Output: a <table>:
-     *   | Sheet          | Row | Name                | Action | Result | Details                                    |
+     *   | Sheet          | Row | Slug                | Action | Result | Details                                    |
      *   | category       | 14  | dining              | UPDATE | [Fail] | promoCode: not a field of model category   |
      *   | merchant-venue | 2   | central-mall-branch | CREATE | [Pass] | /content/dam/.../venues/central-mall-branch|
      *   | venues         | –   | –                   | –      | [Fail] | Sheet: "venues" is not a known CF model    |
-     *   | category       | –   | –                   | –      | [Skip] | Sheet: no row has an action (CREATE or UPDATE) |
+     *   | offer-cta      | 4   | book-now            | DELETE | [Warn] | Not deleted: referenced by /content/dam/.../offers/x (remove the references first) |
+     *   | category       | –   | –                   | –      | [Skip] | Sheet: no row has an action (CREATE, UPDATE or DELETE) |
      */
     function scbRenderTable(results) {
         var table = document.createElement("table");
         table.className = "scb-cf-bulk-upload__table";
 
-        // Header row: Sheet | Row | Name | Action | Result | Details (sticky inside the scroll box)
+        // Header row: Sheet | Row | Slug | Action | Result | Details (sticky inside the scroll box)
         var headRow = table.createTHead().insertRow();
         COLUMNS.forEach(function (column) {
             var th = document.createElement("th");
@@ -255,8 +314,8 @@
                 var cell = row.insertCell();
                 var value = result[column.key];
                 if (column.key === "result") {
-                    // PASS -> green "Pass", SKIP -> grey "Skip", FAIL -> red "Fail"
-                    var kind = value === "PASS" ? "pass" : value === "SKIP" ? "skip" : "fail";
+                    // PASS -> green "Pass", WARN -> amber "Warn", SKIP -> grey "Skip", FAIL -> red "Fail"
+                    var kind = value === "PASS" ? "pass" : value === "WARN" ? "warn" : value === "SKIP" ? "skip" : "fail";
                     var badge = document.createElement("span");
                     badge.className = "scb-cf-bulk-upload__badge scb-cf-bulk-upload__badge--" + kind;
                     badge.textContent = kind.charAt(0).toUpperCase() + kind.slice(1);
@@ -276,7 +335,7 @@
      *
      * Input:  results
      * Output: nothing returned; the browser saves upload-results-2026-10-08.csv:
-     *   Sheet,Row,Name,Action,Result,Details
+     *   Sheet,Row,Slug,Action,Result,Details
      *   "offer-cta","2","book-now","CREATE","FAIL","Fragment: already exists at /content/dam/.../offer-cta/book-now"
      *   "venues","","","","FAIL","Sheet: ""venues"" is not a known CF model"
      * The file starts with a byte-order mark so Excel opens it as UTF-8.
@@ -321,15 +380,24 @@
     /**
      * Sends the upload request and shows the outcome.
      *
-     * Input:  form, filePath e.g. "/content/dam/aemcloudproject/imports/cf-import-combined.xlsx", dryRun true / false
+     * Input:  form, filePath e.g. "/content/dam/aemcloudproject/imports/cf-import-combined.xlsx",
+     *         rootPath e.g. "/content/dam/aemcloudproject/cfs/offer-listing", dryRun true / false
      * Output: nothing returned. Shows a spinner, then either
-     *   - HTTP 200: scbRenderResults(results, dryRun), from
-     *       { "status": "ok" | "error", "dryRun": true, "path": "...", "results": [ {...}, ... ] }
+     *   - HTTP 200: scbRenderResults(data), from
+     *       { "status": "ok" | "error", "dryRun": true, "path": "...", "rootPath": "...", "fileVersion": "...",
+     *         "results": [ {...}, ... ] }
+     *     A dry run without FAIL rows is remembered in lastDryRun (enables Final run); any other reply clears it.
      *   - HTTP 400 with "errors": red alert "Fix these problems in the workbook" + one problem per line (nothing written)
      *   - HTTP 400 with "message": red alert with that message, e.g. "No file found at /content/dam/.../abc.xlsx."
+     *     or "The workbook changed after the dry run. Run the dry run again."
      *   - anything else (500, network down): red alert "Request failed (HTTP 500)."
      */
-    function scbSendUpload(form, filePath, dryRun) {
+    function scbSendUpload(form, filePath, rootPath, dryRun) {
+        var request = { filePath: filePath, rootPath: rootPath, dryRun: dryRun ? "true" : "false" };
+        if (!dryRun) {
+            request.fileVersion = lastDryRun.fileVersion;
+        }
+        lastDryRun = null;
         scbSetBusy(form, true);
         scbShowWait((dryRun ? "Checking " : "Running ") + filePath);
 
@@ -338,12 +406,16 @@
             // /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/upload.json
             url: form.getAttribute("action"),
             type: "POST",
-            // Sent as form data: filePath=%2Fcontent%2Fdam%2F...%2Fcf-import-combined.xlsx&dryRun=true
-            data: { filePath: filePath, dryRun: dryRun ? "true" : "false" },
+            // Sent as form data: filePath=%2Fcontent%2F...xlsx&rootPath=%2Fcontent%2F...&dryRun=true
+            data: request,
             // Parse the reply as JSON, so "data" below is an object, not a string.
             dataType: "json"
         }).done(function (data) {
-            scbRenderResults(data.results || [], data.dryRun);
+            var failed = (data.results || []).some(function (r) { return r.result === "FAIL"; });
+            if (data.dryRun && !failed) {
+                lastDryRun = { filePath: filePath, rootPath: rootPath, fileVersion: data.fileVersion };
+            }
+            scbRenderResults(data);
         }).fail(function (xhr) {
             // HTTP 400 from the servlet carries {"status":"error","errors":[...]} or
             // {"status":"error","message":"..."} in responseJSON.
@@ -354,36 +426,57 @@
                 scbShowAlert("error", data && data.message ? data.message : "Request failed (HTTP " + xhr.status + ").", "");
             }
         }).always(function () {
-            // Runs after done or fail: re-enable the button.
+            // Runs after done or fail: re-enable Dry run; Final run only after a clean dry run.
             scbSetBusy(form, false);
         });
     }
 
     /**
-     * Runs when the form is submitted (button clicked or Enter pressed).
+     * Starts a dry or final run after checking that a workbook and a folder are picked.
      *
-     * Input:  event - the browser's submit event; event.currentTarget is the <form>
+     * Input:  form, dryRun true (Dry run button / Enter) or false (Final run button)
      * Output: nothing returned.
-     *   - no file picked          -> red alert "Select a workbook first"
-     *   - file picked             -> scbSendUpload(..., dryRun) straight away; dryRun = the checkbox
-     *                                (ticked: check only, unticked: create / update)
+     *   - no file picked   -> red alert "Select a workbook first"
+     *   - no folder picked -> red alert "Select the fragment folder first"
+     *   - both picked      -> scbSendUpload(...) straight away (no confirm dialog)
+     */
+    function scbRun(form, dryRun) {
+        var filePath = scbFieldValue(form, FILE_PATH_FIELD);
+        var rootPath = scbFieldValue(form, ROOT_PATH_FIELD);
+        // Same messages as the servlet gives, without a round trip to AEM.
+        if (!filePath) {
+            scbShowAlert("error", "Select a workbook first", "");
+            return;
+        }
+        if (!rootPath) {
+            scbShowAlert("error", "Select the fragment folder first", "");
+            return;
+        }
+        scbSendUpload(form, filePath, rootPath, dryRun);
+    }
+
+    /**
+     * Runs when the form is submitted (Dry run clicked or Enter pressed): starts a dry run.
+     * Input:  event - the browser's submit event; event.currentTarget is the <form>
      */
     function scbSubmitCfBulkUpload(event) {
         // Stop the browser's normal form submit, which would navigate away from the page.
         event.preventDefault();
-        var form = event.currentTarget;
-        // The Coral path browser element; its .value is the picked path, e.g.
-        // "/content/dam/aemcloudproject/imports/cf-import-combined.xlsx", or "" when nothing is picked.
-        var field = form.querySelector(FILE_PATH_FIELD);
-        var filePath = field && field.value ? field.value.trim() : "";
-        var dryRun = scbIsDryRun(form);
+        scbRun(event.currentTarget, true);
+    }
 
-        if (!filePath) {
-            // Same message as the servlet gives, without a round trip to AEM.
-            scbShowAlert("error", "Select a workbook first", "");
-            return;
-        }
-        scbSendUpload(form, filePath, dryRun);
+    /**
+     * Fills the Fragment folder picker with the configured default when it is empty.
+     * GET .../upload.json -> {"rootPath": "/content/dam/aemcloudproject/cfs/offer-listing"}
+     * Input:  form
+     */
+    function scbPrefillFolder(form) {
+        $.getJSON(form.getAttribute("action")).done(function (data) {
+            var field = form.querySelector(ROOT_PATH_FIELD);
+            if (field && !field.value && data.rootPath) {
+                field.value = data.rootPath;
+            }
+        });
     }
 
     /**
@@ -414,21 +507,25 @@
     }
 
     /**
-     * Runs when "Save report to DAM" is clicked: asks the server to build the report and save it in
-     * DAM, shows progress while waiting, then where it was saved.
+     * Runs when "Save report to DAM" is clicked: asks the server to build the report of the picked
+     * folder and save it in DAM, shows progress while waiting, then where it was saved.
      *
      * Input:  button - the Save report to DAM button (its data-report-url is
      *                  /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.json)
      * Output: nothing returned. On the page:
+     *   no folder picked: line "⚠ Select the fragment folder first."
      *   while waiting: button disabled, label "Saving report…", line "[spinner] Saving the report… 12 s"
-     *   HTTP 200:      line "✔ Saved /content/dam/.../offer-listing-report.xlsx ·
-     *                  previous file kept as version 2026-10-14 21.33.17  Open in Assets"
-     *                  (no version part on the very first save)
-     *   HTTP 500:      line "⚠ Could not save the report: ..." (the servlet's message)
+     *   HTTP 200:      line "✔ Saved /content/dam/.../offer-listing-report-2026-10-20-14-05-33.xlsx  Open in Assets"
+     *   HTTP 400/500:  line "⚠ ..." (the servlet's message)
      *   always:        button enabled again, label "Save report to DAM"
      */
     function scbSaveReport(button) {
         var started = Date.now();
+        var rootPath = scbFieldValue(document.querySelector(FORM_SELECTOR), ROOT_PATH_FIELD);
+        if (!rootPath) {
+            scbReportStatus("error", "Select the fragment folder first.");
+            return;
+        }
 
         button.disabled = true;
         button.label.textContent = LABEL_REPORT_BUSY;
@@ -442,11 +539,10 @@
         $.ajax({
             url: button.dataset.reportUrl,
             type: "POST",
+            data: { rootPath: rootPath },
             dataType: "json"
         }).done(function (data) {
-            var text = "Saved " + data.path
-                + (data.versionLabel ? " · previous file kept as version " + data.versionLabel : "");
-            var saved = scbReportStatus("done", text);
+            var saved = scbReportStatus("done", "Saved " + data.path);
             var link = document.createElement("a");
             link.href = "/assetdetails.html" + data.path;
             link.target = "_blank";
@@ -469,6 +565,27 @@
     // Listen for "submit" on the whole document, but only react when it comes from our form.
     // Works even if the form is rendered after this script runs.
     $(document).on("submit", FORM_SELECTOR, scbSubmitCfBulkUpload);
+
+    // "Final run" button -> final run of the dry-run-checked workbook.
+    $(document).on("click", FINAL_RUN_SELECTOR, function (event) {
+        var form = event.currentTarget.closest(FORM_SELECTOR);
+        if (lastDryRun) {
+            scbRun(form, false);
+        }
+    });
+
+    // Picking another workbook or folder disables Final run until a new dry run passes.
+    $(document).on("change", FILE_PATH_FIELD + ", " + ROOT_PATH_FIELD, function (event) {
+        scbUpdateFinalRun(event.currentTarget.closest(FORM_SELECTOR));
+    });
+
+    // Pre-fill the folder picker once the page (and our form) is ready.
+    $(document).on("foundation-contentloaded", function () {
+        var form = document.querySelector(FORM_SELECTOR);
+        if (form) {
+            scbPrefillFolder(form);
+        }
+    });
 
     // "Save report to DAM" button -> scbSaveReport.
     $(document).on("click", REPORT_BUTTON, function (event) {

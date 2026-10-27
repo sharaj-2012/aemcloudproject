@@ -1,9 +1,9 @@
 {
-  "fragmentRootPath": "/content/dam/aemcloudproject/cfs",
+  "fragmentRootPath": "/content/dam/aemcloudproject/cfs/offer-listing",
   "modelsPath": "/conf/aemcloudproject/settings/dam/cfm/models",
-  "reportPath": "/content/dam/aemcloudproject/cfs/offer-listing",
   "reportFolder": "/content/dam/aemcloudproject/reports",
   "reportFileName": "offer-listing-report",
+  "runReportFileName": "cf-upload-run",
   "maxFileSizeMb": 10,
   "maxRows": 5000
 }

@@ -52,9 +52,22 @@
     margin-bottom: 6px;
 }
 
-/* "Run" button: right-aligned at the bottom of the card. */
-.scb-cf-bulk-upload__submit {
+/* "Dry run" and "Final run" buttons: right-aligned at the bottom of the card, Final run at the far right. */
+.scb-cf-bulk-upload__submit,
+.scb-cf-bulk-upload__final-run {
     float: right;
+    margin-left: 8px;
+}
+
+/* "Download sample sheet" and "Save report to DAM": side by side, or the second one wrapped flush left
+   (Coral's own margin between adjacent buttons is removed). */
+.scb-cf-bulk-upload__sample {
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.scb-cf-bulk-upload__card .scb-cf-bulk-upload__report {
+    margin-left: 0;
 }
 
 /* Clearfix: the form (and so the card) grows to contain the floated button. */
@@ -140,6 +153,11 @@
     color: #1e6b2b;
 }
 
+.scb-cf-bulk-upload__chip--warn {
+    background: #fff4e5;
+    color: #8a4b00;
+}
+
 .scb-cf-bulk-upload__chip--skip {
     background: #eeeeee;
     color: #4b4b4b;
@@ -193,7 +211,7 @@
     word-break: break-word;
 }
 
-/* Result column badges: green Pass, red Fail, grey Skip. */
+/* Result column badges: green Pass, red Fail, amber Warn, grey Skip. */
 .scb-cf-bulk-upload__badge {
     display: inline-block;
     border-radius: 4px;
@@ -210,6 +228,11 @@
 .scb-cf-bulk-upload__badge--fail {
     background: #fdecea;
     color: #b42318;
+}
+
+.scb-cf-bulk-upload__badge--warn {
+    background: #fff4e5;
+    color: #8a4b00;
 }
 
 .scb-cf-bulk-upload__badge--skip {

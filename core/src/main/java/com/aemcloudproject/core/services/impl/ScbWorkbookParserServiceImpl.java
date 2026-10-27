@@ -26,6 +26,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
     private static final String ACTION = "action";
     private static final String CREATE = "CREATE";
     private static final String UPDATE = "UPDATE";
+    private static final String DELETE = "DELETE";
     private static final String CONTENT_PATH_PREFIX = "/content";
     private static final String IGNORED_SHEET_PREFIX = "_";
 
@@ -147,7 +148,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
     }
 
     /**
-     * Checks that the row's action is CREATE or UPDATE (any case) and stores it in upper case.
+     * Checks that the row's action is CREATE, UPDATE or DELETE (any case) and stores it in upper case.
      *
      * @param sheetName the sheet name, for the error message
      * @param rowNumber the Excel row number, for the error message
@@ -157,9 +158,9 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
     private void scbCheckAction(String sheetName, int rowNumber, Map<String, Object> values, List<String> errors) {
         String action = (String) values.get(ACTION);
         String upper = action.toUpperCase();
-        if (!CREATE.equals(upper) && !UPDATE.equals(upper)) {
+        if (!CREATE.equals(upper) && !UPDATE.equals(upper) && !DELETE.equals(upper)) {
             errors.add("Sheet \"" + sheetName + "\", row " + rowNumber + ": action \"" + action
-                    + "\" must be CREATE or UPDATE.");
+                    + "\" must be CREATE, UPDATE or DELETE.");
             return;
         }
         values.put(ACTION, upper);

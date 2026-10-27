@@ -5,13 +5,13 @@
 
     Renders:
       SCB CF bulk upload                                             <- page heading
-      ┌ Upload workbook ──────────────────┐ ┌ Save report ─────────┐
-      │ Workbook (.xlsx) * [path][📁]     │ │ text                 │
-      │ ☑ Dry run: check only ...        │ │ [Save report to DAM] │
-      │ ▸ How it works                    │ └──────────────────────┘
-      │                         [ Run ]   │
-      └───────────────────────────────────┘
-      results: dry-run banner / counts / scroll box with the table   <- filled by cf-bulk-upload.js
+      ┌ Upload workbook ────────────────────┐ ┌ Sample and report ─────┐
+      │ Workbook (.xlsx) * [path][📁]       │ │ text                   │
+      │ Fragment folder *  [path][📁]       │ │ [Download sample sheet]│
+      │ ▸ How it works                      │ │ [Save report to DAM]   │
+      │            [ Dry run ] [ Final run ]│ └────────────────────────┘
+      └─────────────────────────────────────┘
+      results: banner / counts / scroll box with the table   <- filled by cf-bulk-upload.js
 -->
 <jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
     jcr:primaryType="nt:unstructured"
@@ -63,7 +63,7 @@
                             <intro
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/text"
-                                text="Create or update content fragments from an .xlsx in DAM."
+                                text="Create, update or delete content fragments from an .xlsx in DAM."
                                 granite:class="scb-cf-bulk-upload__card-text"/>
                             <!-- <form class="scb-cf-bulk-upload" action=".../upload.json" method="post">.
                                  cf-bulk-upload.js catches its submit and sends it with ajax instead. -->
@@ -85,16 +85,18 @@
                                         name="filePath"
                                         rootPath="/content/dam/aemcloudproject/imports"
                                         required="{Boolean}true"/>
-                                    <!-- Dry run checkbox, ticked by default. cf-bulk-upload.js reads it on Run and sends dryRun=true / false. -->
-                                    <dryRun
+                                    <!-- Folder picker (folders only). name="rootPath" is the parameter the servlets read; the model
+                                         folders (offers, merchants, ...) are under it. cf-bulk-upload.js pre-fills it with the
+                                         OSGi default from GET .../upload.json. -->
+                                    <rootPath
                                         jcr:primaryType="nt:unstructured"
-                                        sling:resourceType="granite/ui/components/coral/foundation/form/checkbox"
-                                        name="dryRun"
-                                        text="Dry run: check only, nothing is written"
-                                        value="true"
-                                        uncheckedValue="false"
-                                        checked="{Boolean}true"
-                                        granite:class="scb-cf-bulk-upload__dry-run"/>
+                                        sling:resourceType="granite/ui/components/coral/foundation/form/pathfield"
+                                        fieldLabel="Fragment folder"
+                                        emptyText="/content/dam/aemcloudproject/cfs/offer-listing"
+                                        name="rootPath"
+                                        rootPath="/content/dam"
+                                        filter="folder"
+                                        required="{Boolean}true"/>
                                     <!-- "How it works": collapsed accordion with the main rules. -->
                                     <help
                                         jcr:primaryType="nt:unstructured"
@@ -109,12 +111,22 @@
                                                     <sheets
                                                         jcr:primaryType="nt:unstructured"
                                                         sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                        text="One sheet per model. Row 1 holds the field names; red headers are mandatory."
+                                                        text="One sheet per model. Row 1 holds the column names: action, slug and the model fields; red headers are mandatory."
                                                         granite:class="scb-cf-bulk-upload__help-item"/>
                                                     <action
                                                         jcr:primaryType="nt:unstructured"
                                                         sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                        text="The action column says CREATE (new fragment) or UPDATE (existing fragment). Rows with an empty action are skipped; an empty ID on a CREATE row is filled with the next ID."
+                                                        text="The action column says CREATE, UPDATE or DELETE. Rows with an empty action are skipped; an empty ID on a CREATE row is filled with the next ID."
+                                                        granite:class="scb-cf-bulk-upload__help-item"/>
+                                                    <slug
+                                                        jcr:primaryType="nt:unstructured"
+                                                        sling:resourceType="granite/ui/components/coral/foundation/text"
+                                                        text="The slug is the fragment's name under the picked folder, e.g. offers/summer-sale. It is not stored in the fragment."
+                                                        granite:class="scb-cf-bulk-upload__help-item"/>
+                                                    <delete
+                                                        jcr:primaryType="nt:unstructured"
+                                                        sling:resourceType="granite/ui/components/coral/foundation/text"
+                                                        text="DELETE leaves a fragment in place (Warn) while other fragments or pages point to it, or while it is published."
                                                         granite:class="scb-cf-bulk-upload__help-item"/>
                                                     <multiValue
                                                         jcr:primaryType="nt:unstructured"
@@ -129,20 +141,29 @@
                                                     <start
                                                         jcr:primaryType="nt:unstructured"
                                                         sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                        text="Start from Save report to DAM to get a workbook in the right format."
+                                                        text="Run a dry run first. Final run is enabled only when the dry run has no failures, and it saves a report of the run in DAM."
                                                         granite:class="scb-cf-bulk-upload__help-item"/>
                                                 </items>
                                             </howItWorks>
                                         </items>
                                     </help>
-                                    <!-- type="submit": clicking it submits the form -> scbSubmitCfBulkUpload(), which runs straight away
-                                         (dry run or real run, depending on the checkbox; no confirm dialog). -->
+                                    <!-- Final run: disabled until a dry run of the same workbook and folder has no failures
+                                         (cf-bulk-upload.js). Listed first so it floats to the far right. -->
+                                    <finalRun
+                                        jcr:primaryType="nt:unstructured"
+                                        sling:resourceType="granite/ui/components/coral/foundation/button"
+                                        type="button"
+                                        text="Final run"
+                                        variant="primary"
+                                        disabled="{Boolean}true"
+                                        granite:class="scb-cf-bulk-upload__final-run"/>
+                                    <!-- type="submit": clicking it (or Enter) submits the form -> scbSubmitCfBulkUpload() runs a dry run. -->
                                     <submit
                                         jcr:primaryType="nt:unstructured"
                                         sling:resourceType="granite/ui/components/coral/foundation/button"
                                         type="submit"
-                                        text="Run"
-                                        variant="primary"
+                                        text="Dry run"
+                                        variant="secondary"
                                         granite:class="scb-cf-bulk-upload__submit"/>
                                 </items>
                             </form>
@@ -158,16 +179,26 @@
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/heading"
                                 level="{Long}2"
-                                text="Save report"
+                                text="Sample and report"
                                 granite:class="scb-cf-bulk-upload__card-heading"/>
                             <intro
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/text"
-                                text="Save every fragment in offer-listing to an Excel file in DAM, in the same layout as the upload. The previous file is kept as a version."
+                                text="Download the empty sample sheet to author in, or save every fragment under the picked folder to a new, dated Excel file in DAM."
                                 granite:class="scb-cf-bulk-upload__card-text"/>
-                            <!-- "Save report to DAM": cf-bulk-upload.js (scbSaveReport) POSTs to data-report-url, shows a
-                                 spinner + timer meanwhile, then the saved path and version. Folder and file name come from
-                                 the OSGi config. type="button" so it never submits anything. -->
+                            <!-- "Download sample sheet": a plain link (GET .../report.xlsx -> ScbCfReportServlet.doGet)
+                                 rendered as a Coral button; the browser downloads cf-bulk-upload-sample.xlsx. -->
+                            <sampleButton
+                                jcr:primaryType="nt:unstructured"
+                                sling:resourceType="granite/ui/components/coral/foundation/anchorbutton"
+                                href="/apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.xlsx"
+                                text="Download sample sheet"
+                                icon="download"
+                                variant="secondary"
+                                granite:class="scb-cf-bulk-upload__sample"/>
+                            <!-- "Save report to DAM": cf-bulk-upload.js (scbSaveReport) POSTs the picked folder to
+                                 data-report-url, shows a spinner + timer meanwhile, then the saved path. The report folder
+                                 and file name prefix come from the OSGi config. type="button" so it never submits anything. -->
                             <reportButton
                                 jcr:primaryType="nt:unstructured"
                                 sling:resourceType="granite/ui/components/coral/foundation/button"
@@ -200,12 +231,12 @@
         </items>
     </content>
     <!-- Not rendered on the page. Gives the servlet a URL: Sling sees resource type
-         aemcloudproject/cfbulkupload/upload on POST .../upload.json and calls ScbCfBulkUploadServlet. -->
+         aemcloudproject/cfbulkupload/upload on GET / POST .../upload.json and calls ScbCfBulkUploadServlet. -->
     <upload
         jcr:primaryType="nt:unstructured"
         sling:resourceType="aemcloudproject/cfbulkupload/upload"/>
-    <!-- Not rendered on the page. Gives the report servlet a URL: POST .../report.json on resource type
-         aemcloudproject/cfbulkupload/report calls ScbCfReportServlet. -->
+    <!-- Not rendered on the page. Gives the report servlet a URL: GET .../report.xlsx (sample) and
+         POST .../report.json (save report) on resource type aemcloudproject/cfbulkupload/report call ScbCfReportServlet. -->
     <report
         jcr:primaryType="nt:unstructured"
         sling:resourceType="aemcloudproject/cfbulkupload/report"/>

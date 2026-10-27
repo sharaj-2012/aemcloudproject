@@ -12,6 +12,8 @@ import com.aemcloudproject.core.dto.ScbSheetData;
 import com.aemcloudproject.core.services.ScbContentFragmentWriterService;
 import com.aemcloudproject.core.services.ScbModelProfile;
 import com.aemcloudproject.core.utils.ScbCfBulkUploadUtil;
+import com.day.cq.replication.ReplicationStatus;
+import com.day.cq.wcm.commons.ReferenceSearch;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
@@ -35,16 +37,20 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Creates and updates Content Fragments with the Content Fragment API, or runs the same
+ * Creates, updates and deletes Content Fragments with the Content Fragment API, or runs the same
  * checks without writing anything in a dry run.
  */
 @Component(service = ScbContentFragmentWriterService.class, configurationPid = ScbCfBulkUploadConfiguration.PID)
@@ -54,7 +60,12 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     private static final Logger log = LoggerFactory.getLogger(ScbContentFragmentWriterServiceImpl.class);
 
     private static final String ACTION = "action";
+    private static final String SLUG = "slug";
+    private static final String CREATE = "CREATE";
+    private static final String DELETE = "DELETE";
     private static final String NAME_PATTERN = "[a-z0-9_-]+";
+    private static final String CONTENT_PREFIX = "/content/";
+    private static final int SHOWN_REFERENCES = 5;
 
     /** Former clearing token; now rejected because a blank cell clears a field. */
     private static final String CLEAR = "#CLEAR";
@@ -62,8 +73,8 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     private static final String PASS = "PASS";
     private static final String FAIL = "FAIL";
     private static final String SKIP = "SKIP";
+    private static final String WARN = "WARN";
 
-    private String fragmentRootPath;
     private String modelsPath;
 
     @Reference(service = ScbModelProfile.class, cardinality = ReferenceCardinality.MULTIPLE,
@@ -71,29 +82,31 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     private volatile List<ScbModelProfile> profiles;
 
     /**
-     * Reads the fragment root and models paths from the configuration.
+     * Reads the models path from the configuration.
      *
      * @param config the CF bulk upload configuration
      */
     @Activate
     @Modified
     protected void activate(ScbCfBulkUploadConfiguration config) {
-        fragmentRootPath = StringUtils.removeEnd(config.fragmentRootPath(), "/");
         modelsPath = StringUtils.removeEnd(config.modelsPath(), "/");
     }
 
     /**
      * {@inheritDoc}
      * Rows without an action are skipped; a sheet where no row has an action gets one SKIP result.
-     * A CREATE row with an empty ID gets the next ID after the
-     * highest ID in its sheet; the ID is used up only when the row passes. On UPDATE a blank cell
-     * clears its field, except the ID field. Each row is committed on PASS in a real run and
-     * reverted on FAIL or in a dry run.
+     * CREATE and UPDATE rows run first, sheet by sheet; DELETE rows run afterwards, sheets in reverse
+     * profile order, so a fragment is checked for references after the other rows are written and
+     * after the fragments that point to it are deleted. A CREATE row with an empty ID gets the next ID
+     * after the highest ID in its sheet; the ID is used up only when the row passes. On UPDATE a blank
+     * cell clears its field, except the ID field. Each row is committed on PASS in a real run and
+     * reverted otherwise or in a dry run.
      */
     @Override
     public List<Map<String, Object>> scbWriteFragments(ResourceResolver resolver, Map<String, ScbSheetData> sheets,
-                                                      boolean dryRun) {
+                                                      String rootPath, boolean dryRun) {
         List<Map<String, Object>> results = new ArrayList<>();
+        List<ScbModelProfile> deleteSheets = new ArrayList<>();
 
         for (Map.Entry<String, ScbSheetData> sheet : sheets.entrySet()) {
             String sheetName = sheet.getKey();
@@ -115,40 +128,31 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
             List<Map<String, Object>> rows = sheet.getValue().getRows();
             if (rows.stream().noneMatch(row -> row.containsKey(ACTION))) {
                 results.add(scbResult(sheetName, null, null, null, SKIP,
-                        "Sheet: no row has an action (CREATE or UPDATE)"));
+                        "Sheet: no row has an action (CREATE, UPDATE or DELETE)"));
                 continue;
+            }
+            if (rows.stream().anyMatch(row -> DELETE.equals(row.get(ACTION)))) {
+                deleteSheets.add(profile);
             }
             Map<String, DataType> fieldTypes = scbModelFieldTypes(template);
             Set<String> requiredFields = ScbCfBulkUploadUtil.scbRequiredFields(resolver, modelPath);
 
             List<Integer> rowNumbers = sheet.getValue().getRowNumbers();
             List<String> headers = sheet.getValue().getHeaders();
-            long nextId = scbNextId(rows, profile);
+            long nextId = scbNextId(resolver, rows, profile, modelPath, rootPath);
             for (int i = 0; i < rows.size(); i++) {
                 Map<String, Object> row = rows.get(i);
-                if (!row.containsKey(ACTION)) {
+                if (!row.containsKey(ACTION) || DELETE.equals(row.get(ACTION))) {
                     continue;
                 }
                 int rowNumber = rowNumbers.get(i);
-                boolean newId = profile.getIdField() != null && "CREATE".equals(row.get(ACTION))
+                boolean newId = profile.getIdField() != null && CREATE.equals(row.get(ACTION))
                         && !row.containsKey(profile.getIdField());
                 if (newId) {
                     row.put(profile.getIdField(), String.valueOf(nextId));
                 }
-                Map<String, Object> result = scbWriteRow(resolver, sheetName, rowNumber, profile, template,
-                        modelPath, fieldTypes, requiredFields, headers, row, dryRun);
-                try {
-                    if (dryRun || FAIL.equals(result.get("result"))) {
-                        resolver.revert();
-                    } else {
-                        resolver.commit();
-                    }
-                } catch (PersistenceException e) {
-                    log.warn("Could not save {} row {}", sheetName, rowNumber, e);
-                    resolver.revert();
-                    result = scbResult(sheetName, rowNumber, (String) row.get(profile.getNameField()),
-                            (String) row.get(ACTION), FAIL, "Fragment: could not be saved (" + e.getMessage() + ")");
-                }
+                Map<String, Object> result = scbFinishRow(resolver, scbWriteRow(resolver, sheetName, rowNumber,
+                        profile, template, modelPath, rootPath, fieldTypes, requiredFields, headers, row, dryRun), dryRun);
                 if (newId && PASS.equals(result.get("result"))) {
                     result.put("details", result.get("details") + " (" + profile.getIdField() + " " + nextId + ")");
                     nextId++;
@@ -156,7 +160,47 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                 results.add(result);
             }
         }
+
+        if (!deleteSheets.isEmpty()) {
+            deleteSheets.sort(Comparator.comparingInt(ScbModelProfile::getOrder).reversed());
+            Map<String, Set<String>> references = scbFragmentReferences(resolver, rootPath);
+            Set<String> deleted = new HashSet<>();
+            for (ScbModelProfile profile : deleteSheets) {
+                ScbSheetData data = sheets.get(profile.getModel());
+                for (int i = 0; i < data.getRows().size(); i++) {
+                    Map<String, Object> row = data.getRows().get(i);
+                    if (DELETE.equals(row.get(ACTION))) {
+                        results.add(scbFinishRow(resolver, scbDeleteRow(resolver, profile, data.getRowNumbers().get(i),
+                                rootPath, row, references, deleted, dryRun), dryRun));
+                    }
+                }
+            }
+        }
         return results;
+    }
+
+    /**
+     * Commits the row's changes when it passed in a real run, otherwise reverts them.
+     *
+     * @param resolver the author's resource resolver
+     * @param result   the row's result
+     * @param dryRun   {@code true} for a dry run
+     * @return the result, or a FAIL result when the commit fails
+     */
+    private Map<String, Object> scbFinishRow(ResourceResolver resolver, Map<String, Object> result, boolean dryRun) {
+        try {
+            if (!dryRun && PASS.equals(result.get("result"))) {
+                resolver.commit();
+            } else {
+                resolver.revert();
+            }
+            return result;
+        } catch (PersistenceException e) {
+            log.warn("Could not save {} row {}", result.get("sheet"), result.get("row"), e);
+            resolver.revert();
+            return scbResult((String) result.get("sheet"), (Integer) result.get("row"), (String) result.get("slug"),
+                    (String) result.get("action"), FAIL, "Fragment: could not be saved (" + e.getMessage() + ")");
+        }
     }
 
     /**
@@ -176,25 +220,43 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
 
     /**
      * Returns the ID for the first new row of a sheet: one more than the highest numeric ID in any
-     * row of the sheet (with or without an action), or the profile's start ID when there is none.
+     * row of the sheet (with or without an action) or in any existing fragment of the model in its
+     * folder, or the profile's start ID when there is none.
      *
-     * @param rows    the sheet rows, keyed by header
-     * @param profile the model's profile
+     * @param resolver  the author's resource resolver
+     * @param rows      the sheet rows, keyed by header
+     * @param profile   the model's profile
+     * @param modelPath the model path
+     * @param rootPath  the folder picked on the page
      * @return the next ID, or 0 when the model has no ID field
      */
-    private long scbNextId(List<Map<String, Object>> rows, ScbModelProfile profile) {
-        if (profile.getIdField() == null) {
+    private long scbNextId(ResourceResolver resolver, List<Map<String, Object>> rows, ScbModelProfile profile,
+                           String modelPath, String rootPath) {
+        String idField = profile.getIdField();
+        if (idField == null) {
             return 0;
         }
-        Long highest = null;
-        for (Map<String, Object> row : rows) {
-            Object value = row.get(profile.getIdField());
-            if (value instanceof String && ((String) value).matches("\\d+")) {
-                long id = Long.parseLong((String) value);
-                highest = highest == null ? id : Math.max(highest, id);
+        List<Object> ids = new ArrayList<>();
+        rows.forEach(row -> ids.add(row.get(idField)));
+        Resource folder = resolver.getResource(rootPath + "/" + profile.getFolder());
+        if (folder != null) {
+            for (Resource fragment : ScbCfBulkUploadUtil.scbFindFragments(folder)) {
+                Resource master = fragment.getChild("jcr:content/data/master");
+                String model = fragment.getChild("jcr:content/data").getValueMap().get("cq:model", String.class);
+                if (master != null && modelPath.equals(model)) {
+                    ids.add(master.getValueMap().get(idField));
+                }
             }
         }
-        return highest == null ? profile.getStartId() : highest + 1;
+        long highest = profile.getStartId() - 1;
+        for (Object id : ids) {
+            if (id instanceof Number) {
+                highest = Math.max(highest, ((Number) id).longValue());
+            } else if (id instanceof String && ((String) id).trim().matches("\\d{1,18}")) {
+                highest = Math.max(highest, Long.parseLong(((String) id).trim()));
+            }
+        }
+        return highest + 1;
     }
 
     /**
@@ -209,6 +271,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      * @param profile    the model's profile
      * @param template   the model
      * @param modelPath  the model path
+     * @param rootPath   the folder picked on the page
      * @param fieldTypes     the model's field types, keyed by field name
      * @param requiredFields the fields marked Required in the model
      * @param headers        the sheet's column headers
@@ -219,16 +282,14 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      */
     private Map<String, Object> scbWriteRow(ResourceResolver resolver, String sheetName, int rowNumber,
                                             ScbModelProfile profile, FragmentTemplate template, String modelPath,
-                                            Map<String, DataType> fieldTypes, Set<String> requiredFields,
-                                            List<String> headers, Map<String, Object> row, boolean dryRun) {
+                                            String rootPath, Map<String, DataType> fieldTypes,
+                                            Set<String> requiredFields, List<String> headers,
+                                            Map<String, Object> row, boolean dryRun) {
         String action = (String) row.get(ACTION);
-        Object nameValue = row.get(profile.getNameField());
-        String name = nameValue instanceof String ? (String) nameValue : null;
+        String name = scbSlug(row);
 
         if (name == null || !name.matches(NAME_PATTERN)) {
-            return scbResult(sheetName, rowNumber, name, action, FAIL,
-                    profile.getNameField() + ": \"" + (nameValue == null ? "" : nameValue)
-                            + "\" must be lowercase letters, digits, - or _");
+            return scbResult(sheetName, rowNumber, name, action, FAIL, scbSlugProblem(row));
         }
 
         String unknownField = scbCheckFields(headers, fieldTypes);
@@ -237,13 +298,13 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                     unknownField + ": not a field of model " + sheetName);
         }
 
-        boolean create = "CREATE".equals(action);
+        boolean create = CREATE.equals(action);
         String missingRequired = scbCheckRequired(row, headers, requiredFields, create, profile.getIdField());
         if (missingRequired != null) {
             return scbResult(sheetName, rowNumber, name, action, FAIL, missingRequired);
         }
 
-        String folderPath = fragmentRootPath + "/" + profile.getFolder();
+        String folderPath = rootPath + "/" + profile.getFolder();
         String fragmentPath = folderPath + "/" + name;
         Resource existing = resolver.getResource(fragmentPath);
 
@@ -256,17 +317,11 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
             if (existing == null) {
                 return scbResult(sheetName, rowNumber, name, action, FAIL, "Fragment: not found at " + fragmentPath);
             }
+            String problem = scbCheckExisting(existing, modelPath);
+            if (problem != null) {
+                return scbResult(sheetName, rowNumber, name, action, FAIL, problem);
+            }
             fragment = existing.adaptTo(ContentFragment.class);
-            if (fragment == null) {
-                return scbResult(sheetName, rowNumber, name, action, FAIL,
-                        "Fragment: " + fragmentPath + " is not a content fragment");
-            }
-            Resource data = existing.getChild("jcr:content/data");
-            String existingModel = data == null ? null : data.getValueMap().get("cq:model", String.class);
-            if (!modelPath.equals(existingModel)) {
-                return scbResult(sheetName, rowNumber, name, action, FAIL,
-                        "Fragment: uses model " + existingModel + ", not " + modelPath);
-            }
         }
 
         Map<String, Object> values;
@@ -302,7 +357,152 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     }
 
     /**
-     * Converts every column of a row (except the action) into the value to store. A blank cell
+     * Checks one DELETE row and, unless this is a dry run, deletes its fragment. A fragment that
+     * other fragments under the picked folder or pages point to, or that is still published, is not
+     * deleted and gets a WARN result. Fragments deleted earlier in the same run, dry or real, do not
+     * count as references. Does not commit; the caller commits or reverts.
+     *
+     * @param resolver   the author's resource resolver
+     * @param profile    the model's profile
+     * @param rowNumber  the Excel row number
+     * @param rootPath   the folder picked on the page
+     * @param row        the row values, keyed by header
+     * @param references the fragments under the picked folder that point to each path
+     * @param deleted    the fragments deleted so far in this run; a passing row is added
+     * @param dryRun     {@code true} to check only
+     * @return a PASS result with the fragment path, a WARN result saying why it was not deleted,
+     *         or a FAIL result
+     */
+    private Map<String, Object> scbDeleteRow(ResourceResolver resolver, ScbModelProfile profile, int rowNumber,
+                                             String rootPath, Map<String, Object> row,
+                                             Map<String, Set<String>> references, Set<String> deleted,
+                                             boolean dryRun) {
+        String sheetName = profile.getModel();
+        String name = scbSlug(row);
+        if (name == null || !name.matches(NAME_PATTERN)) {
+            return scbResult(sheetName, rowNumber, name, DELETE, FAIL, scbSlugProblem(row));
+        }
+        String fragmentPath = rootPath + "/" + profile.getFolder() + "/" + name;
+        Resource existing = resolver.getResource(fragmentPath);
+        if (existing == null) {
+            return scbResult(sheetName, rowNumber, name, DELETE, FAIL, "Fragment: not found at " + fragmentPath);
+        }
+        String problem = scbCheckExisting(existing, modelsPath + "/" + sheetName);
+        if (problem != null) {
+            return scbResult(sheetName, rowNumber, name, DELETE, FAIL, problem);
+        }
+
+        List<String> referencedBy = new ArrayList<>();
+        for (String path : references.getOrDefault(fragmentPath, Collections.emptySet())) {
+            if (!path.equals(fragmentPath) && !deleted.contains(path) && resolver.getResource(path) != null) {
+                referencedBy.add(path);
+            }
+        }
+        referencedBy.addAll(new ReferenceSearch().setExact(true).setHollow(true)
+                .search(resolver, fragmentPath).keySet());
+        List<String> reasons = new ArrayList<>();
+        if (!referencedBy.isEmpty()) {
+            String shown = String.join(", ", referencedBy.subList(0, Math.min(SHOWN_REFERENCES, referencedBy.size())));
+            int more = referencedBy.size() - SHOWN_REFERENCES;
+            reasons.add("referenced by " + shown + (more > 0 ? " and " + more + " more" : "")
+                    + " (remove the references first)");
+        }
+        ReplicationStatus status = existing.adaptTo(ReplicationStatus.class);
+        if (status != null && status.isActivated()) {
+            reasons.add("still published (unpublish it first)");
+        }
+        if (!reasons.isEmpty()) {
+            return scbResult(sheetName, rowNumber, name, DELETE, WARN, "Not deleted: " + String.join("; ", reasons));
+        }
+
+        if (dryRun) {
+            deleted.add(fragmentPath);
+            return scbResult(sheetName, rowNumber, name, DELETE, PASS, fragmentPath + " (to be deleted)");
+        }
+        try {
+            resolver.delete(existing);
+            deleted.add(fragmentPath);
+            return scbResult(sheetName, rowNumber, name, DELETE, PASS, fragmentPath + " (deleted)");
+        } catch (PersistenceException e) {
+            log.warn("Could not delete {}", fragmentPath, e);
+            return scbResult(sheetName, rowNumber, name, DELETE, FAIL,
+                    "Fragment: could not be deleted (" + e.getMessage() + ")");
+        }
+    }
+
+    /**
+     * Collects, for every path stored in a fragment under the picked folder, the fragments that store it.
+     *
+     * @param resolver the author's resource resolver
+     * @param rootPath the folder picked on the page
+     * @return the referring fragment paths, keyed by the referenced path
+     */
+    private Map<String, Set<String>> scbFragmentReferences(ResourceResolver resolver, String rootPath) {
+        Map<String, Set<String>> references = new HashMap<>();
+        Resource root = resolver.getResource(rootPath);
+        if (root == null) {
+            return references;
+        }
+        for (Resource fragment : ScbCfBulkUploadUtil.scbFindFragments(root)) {
+            Resource master = fragment.getChild("jcr:content/data/master");
+            if (master == null) {
+                continue;
+            }
+            for (Object value : master.getValueMap().values()) {
+                Object[] values = value instanceof Object[] ? (Object[]) value : new Object[] {value};
+                for (Object item : values) {
+                    if (item instanceof String && ((String) item).startsWith(CONTENT_PREFIX)) {
+                        references.computeIfAbsent((String) item, key -> new LinkedHashSet<>()).add(fragment.getPath());
+                    }
+                }
+            }
+        }
+        return references;
+    }
+
+    /**
+     * Checks that an existing resource is a Content Fragment of the expected model.
+     *
+     * @param existing  the resource at the fragment path
+     * @param modelPath the model the sheet stands for
+     * @return the problem, starting with {@code Fragment:}, or {@code null} when it fits
+     */
+    private String scbCheckExisting(Resource existing, String modelPath) {
+        if (existing.adaptTo(ContentFragment.class) == null) {
+            return "Fragment: " + existing.getPath() + " is not a content fragment";
+        }
+        Resource data = existing.getChild("jcr:content/data");
+        String existingModel = data == null ? null : data.getValueMap().get("cq:model", String.class);
+        if (!modelPath.equals(existingModel)) {
+            return "Fragment: uses model " + existingModel + ", not " + modelPath;
+        }
+        return null;
+    }
+
+    /**
+     * Returns the row's slug, the fragment's node name.
+     *
+     * @param row the row values, keyed by header
+     * @return the slug, or {@code null} when the cell is empty or holds several lines
+     */
+    private String scbSlug(Map<String, Object> row) {
+        Object value = row.get(SLUG);
+        return value instanceof String ? (String) value : null;
+    }
+
+    /**
+     * Describes an empty or invalid slug.
+     *
+     * @param row the row values, keyed by header
+     * @return the message, e.g. {@code slug: "Summer Sale" must be lowercase letters, digits, - or _}
+     */
+    private String scbSlugProblem(Map<String, Object> row) {
+        Object value = row.get(SLUG);
+        return SLUG + ": \"" + (value == null ? "" : value) + "\" must be lowercase letters, digits, - or _";
+    }
+
+    /**
+     * Converts every column of a row (except the action and slug) into the value to store. A blank cell
      * becomes {@code null} (clear the field) on UPDATE, except in the ID field; on CREATE it is left out.
      *
      * @param row        the row values, keyed by header; blank cells are absent
@@ -317,7 +517,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
                                                  Map<String, DataType> fieldTypes, boolean create, String idField) {
         Map<String, Object> values = new LinkedHashMap<>();
         for (String field : headers) {
-            if (ACTION.equals(field)) {
+            if (ACTION.equals(field) || SLUG.equals(field)) {
                 continue;
             }
             Object value = row.get(field);
@@ -509,7 +709,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
     }
 
     /**
-     * Finds the first column (other than the action) that is not a field of the model.
+     * Finds the first column (other than the action and slug) that is not a field of the model.
      *
      * @param headers    the sheet's column headers
      * @param fieldTypes the model's field types, keyed by field name
@@ -517,7 +717,7 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      */
     private String scbCheckFields(List<String> headers, Map<String, DataType> fieldTypes) {
         for (String field : headers) {
-            if (!ACTION.equals(field) && !fieldTypes.containsKey(field)) {
+            if (!ACTION.equals(field) && !SLUG.equals(field) && !fieldTypes.containsKey(field)) {
                 return field;
             }
         }
@@ -545,18 +745,18 @@ public class ScbContentFragmentWriterServiceImpl implements ScbContentFragmentWr
      *
      * @param sheet   the sheet name
      * @param row     the Excel row number, or {@code null} for a whole-sheet problem
-     * @param name    the fragment name, may be {@code null}
-     * @param action  CREATE or UPDATE, may be {@code null}
-     * @param result  PASS, FAIL or SKIP
-     * @param details the fragment path on PASS, the problem on FAIL
-     * @return the result with the keys sheet, row, name, action, result and details
+     * @param slug    the fragment name, may be {@code null}
+     * @param action  CREATE, UPDATE or DELETE, may be {@code null}
+     * @param result  PASS, FAIL, WARN or SKIP
+     * @param details the fragment path on PASS, the reason on WARN, the problem on FAIL
+     * @return the result with the keys sheet, row, slug, action, result and details
      */
-    private Map<String, Object> scbResult(String sheet, Integer row, String name, String action, String result,
+    private Map<String, Object> scbResult(String sheet, Integer row, String slug, String action, String result,
                                           String details) {
         Map<String, Object> entry = new LinkedHashMap<>();
         entry.put("sheet", sheet);
         entry.put("row", row);
-        entry.put("name", name);
+        entry.put("slug", slug);
         entry.put("action", action);
         entry.put("result", result);
         entry.put("details", details);

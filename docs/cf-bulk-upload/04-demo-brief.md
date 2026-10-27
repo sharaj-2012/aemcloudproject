@@ -2,6 +2,25 @@
 
 The SCB CF bulk upload creates and updates content fragments for six models from one Excel workbook, with a dry run, a results table and a versioned report saved to DAM. Everything below is built, deployed on local AEM (port 4507) and committed; delete, publishing and Phase 2 validation are the open topics.
 
+> This brief describes the tool as demoed on 15 Oct 2026. The feedback from the demo was built on
+> 20 Oct; see [Demo feedback and changes](#demo-feedback-and-changes-20-oct) below. The other
+> documents describe the current behaviour.
+
+## Demo feedback and changes (20 Oct)
+
+| Feedback | Built |
+| --- | --- |
+| Dry Run button; Final Run enabled only after a dry run | **Dry run** and **Final run** buttons replace the checkbox and Run. Final run is enabled only after a dry run of the same workbook and folder with **no Fail rows**; the server refuses it when the workbook changed after the dry run |
+| Each run saves a report with date and time in its name, in a dedicated folder | Each final run saves `cf-upload-run-<yyyy-MM-dd-HH-mm-ss>.xlsx` (results) in `/content/dam/aemcloudproject/reports`. **Save report to DAM** stays, now saving `offer-listing-report-<yyyy-MM-dd-HH-mm-ss>.xlsx` as a new file each time instead of versions (this also removes the Assets "Replace" risk that wiped the version history) |
+| Users download a sample sheet and author on top of it | **Download sample sheet**: `_Guide` plus every sheet with all column names, no rows |
+| Slug used only for the path; no slug field in the models; existing slug fields stay as they are | A fixed `slug` column sets the path and is not stored. The slug fields were removed from all six models in the repo (decided after the feedback); `nameField` is gone from the profiles. Because the `/conf` filter is `mode="merge"`, instances that already have the models keep the old slug fields until they are removed by hand |
+| Delete option; referenced fragments give a warning and must be fixed first | `DELETE` action. Referenced (other fragments under the picked folder, pages, experience fragments) or published fragments get **Warn** and are not deleted; deletes run last, offers first |
+| Offer details sorted by offer end date, descending | Saved reports sort `offer-detail` by `offerEndDate`, latest first (profile setting `sortField`) |
+| Action dropdown with Create / Update / Delete | Excel dropdown on the action column of the sample and reports |
+| Pathfield for the DAM parent path | **Fragment folder** picker, pre-filled from OSGi (`/content/dam/aemcloudproject/cfs/offer-listing`); profile folders are relative to it (`offers`, `merchants`, …) |
+
+Side effect: with an empty sample sheet, new IDs now continue from the highest ID in the sheet **or in DAM**, so they no longer restart at 100001 / 1001.
+
 ## Demo script
 
 About 15 minutes: template → dry run with errors → real run → update and clear → config.
@@ -147,10 +166,10 @@ These are waiting on you or the lead; each has a suggestion ready.
 
 | Topic | Question | Suggestion |
 | --- | --- | --- |
-| Delete | Add a DELETE action? Real delete or archive; block referenced or published fragments; safeguard | Archive folder, refuse referenced and published, "Allow deletes" checkbox, deletes run last (details in the Delete Challenges doc) |
+| Delete | Decided and built 20 Oct: real delete, referenced or published fragments left in place with Warn, dry-run gate as the safeguard | Open: may a deleted fragment's ID be reused? |
 | Publishing | How to publish exactly what a run wrote | Now: Manage Publication with "include references", checked against the run's CSV. Later: a "Publish N written fragments" step with confirmation |
 | Rollback | Versions before every UPDATE? Backup workbook per real run? Restrict real runs to a group? Show before → after values in the dry run? | Versions before UPDATE + before/after in the dry run first |
-| Duplicates | Fail only the rows involved? Include rows without an action? Check IDs against AEM? Generate IDs from sheet + AEM? | Yes to all four |
+| Duplicates | Fail only the rows involved? Include rows without an action? Check IDs against AEM? (IDs are now generated from sheet + AEM) | Yes to all three |
 | Headers vs model | Bad headers reject the workbook or the sheet? "Did you mean" hint? Check skipped sheets? | Reject the workbook, add the hint, ignore skipped sheets |
 | Slug messages | Separate messages for missing column, empty, invalid, several lines; "e.g." hint? | Yes, with the hint; missing column fails that sheet |
 | Models on other environments | How to deploy model changes despite `mode="merge"` | Decide with the team before stage |
@@ -179,14 +198,14 @@ Suggested order after the demo: decide the deployment of models, close the data-
 2. **Phase 2 validation:** duplicates (IDs and slugs), clearer slug messages, header check per sheet, then reference checks.
 3. **Safety:** versions before UPDATE and before → after values in the dry run.
 4. **Publishing:** start with Manage Publication; build the publish step if uploads become regular.
-5. **Delete:** only after the lead's decisions.
+5. **Delete:** built 20 Oct; open: whether deleted IDs may be reused.
 6. **Quality:** JUnit tests (deferred until the design is final), remaining tests (date cells, header with a space, conversion errors), local clean-up.
 7. **Later / optional:** Sling Job for very large uploads, multi-value text fields, fragment metadata or variations, report walking every profile folder, UI colour polish.
 
 ## Related documents
 
 - [CF Bulk Upload – Authoring Guide](02-authoring-guide.md): for authors, first time to everyday use.
-- [CF Bulk Upload – Delete Challenges](06-proposal-delete-challenges.md): open decision for the lead.
+- [CF Bulk Upload – Delete Challenges](06-proposal-delete-challenges.md): decided and built 20 Oct.
 - [CF Bulk Upload – Empty Cell Clears Field](05-decision-empty-cell-clears-field.md): decided and built.
 - [Input format (spec)](01-input-format.md): the contract the code implements.
 - [Test scenarios](03-test-scenarios.md): every scenario with its workbook rows and verified result.

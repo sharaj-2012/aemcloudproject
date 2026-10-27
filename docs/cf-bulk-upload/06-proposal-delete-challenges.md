@@ -1,12 +1,35 @@
 # CF Bulk Upload – Delete Challenges
 
-Adding DELETE to the CF bulk uploader is a small code change, but it is the only action that cannot be undone by uploading again — so it needs a decision on safeguards before we build it.
+Adding DELETE to the CF bulk uploader is a small code change, but it is the only action that cannot be undone by uploading again — so it needed a decision on safeguards before we built it.
+
+## Status: decided and built (20 Oct 2026)
+
+After the demo, DELETE was agreed and built as a real delete with these safeguards:
+
+| # | Decision | How it works |
+| --- | --- | --- |
+| 1 | Real delete, no archive folder | The fragment is removed. Save a report before a big change to keep its values |
+| 2 | Referenced by other fragments: not deleted | `WARN Not deleted: referenced by … (remove the references first)`, listing up to five fragments under the picked folder |
+| 3 | Sites pages and experience fragments are checked | AEM's reference search; they are listed in the same warning |
+| 4 | Published: not deleted | `WARN Not deleted: still published (unpublish it first)` |
+| 5 | Safeguard: dry run first | Final run is enabled only after a dry run with no failures; no extra checkbox or OSGi switch |
+| 6 | Who may delete | AEM permissions of the author running the upload; no extra group |
+| 8 | Order | Deletes run after all CREATE / UPDATE rows, sheets in reverse profile order (offers first, venues last); a fragment deleted earlier in the run no longer counts as a reference |
+| 9 | Audit trail | Each final run saves a results report in `/content/dam/aemcloudproject/reports` |
+| 10 | Language copies | Out of scope |
+| 11 | Speed | References inside the picked folder are read once per upload |
+
+Still open:
+
+- **Reused IDs (7):** new IDs are now the highest in the sheet **or in DAM** + 1. Deleting the fragment with the highest ID still lets the next CREATE reuse its ID.
+
+The proposal and challenges below are kept as written before the decision.
 
 ## Proposal
 
 Today the uploader supports CREATE and UPDATE; deletes are done by hand in AEM. The proposal adds `DELETE` as a third value in the action column.
 
-| action | offerSlug | other columns |
+| action | slug | other columns |
 | --- | --- | --- |
 | DELETE | summer-sale | ignored |
 
@@ -35,16 +58,16 @@ The biggest risks are irreversibility, broken references and fragments that are 
 
 ## Decisions needed
 
-We need these answers before building DELETE; each maps to a row in the table above.
+We needed these answers before building DELETE; each maps to a row in the table above. See the status table at the top for the answers.
 
-- [ ] Real delete or archive folder? (1)
-- [ ] Referenced by other fragments: block or allow with a warning? (2)
-- [ ] Check Sites pages and other consumers, or accept the risk? (3)
-- [ ] Published fragments: block, or unpublish automatically? (4)
-- [ ] Safeguard: "Allow deletes" checkbox, OSGi switch, both, or none? (5)
-- [ ] Who may delete: all authors with write access, or an admin group only? (6)
-- [ ] Must deleted IDs never be reused? (7)
-- [ ] Language copies: in scope or not? (10)
+- [x] Real delete or archive folder? (1) — real delete
+- [x] Referenced by other fragments: block or allow with a warning? (2) — not deleted, with a warning
+- [x] Check Sites pages and other consumers, or accept the risk? (3) — Sites pages and experience fragments are checked
+- [x] Published fragments: block, or unpublish automatically? (4) — not deleted, with a warning
+- [x] Safeguard: "Allow deletes" checkbox, OSGi switch, both, or none? (5) — the dry run / final run gate
+- [x] Who may delete: all authors with write access, or an admin group only? (6) — AEM permissions
+- [ ] Must deleted IDs never be reused? (7) — open
+- [x] Language copies: in scope or not? (10) — out of scope
 
 ## Our suggestion
 

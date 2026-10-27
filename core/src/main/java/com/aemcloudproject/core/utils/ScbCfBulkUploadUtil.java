@@ -1,21 +1,27 @@
 package com.aemcloudproject.core.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Helpers shared by the CF bulk upload and its report: reading model settings the Content
- * Fragment API does not expose, and creating DAM folders.
+ * Fragment API does not expose, checking and creating DAM folders, and finding fragments.
  */
 public final class ScbCfBulkUploadUtil {
 
     private static final String FOLDER_TYPE = "sling:OrderedFolder";
+    private static final String FOLDER = "sling:Folder";
+    private static final String ASSET = "dam:Asset";
+    private static final String DAM_PREFIX = "/content/dam/";
 
     private ScbCfBulkUploadUtil() {
     }
@@ -62,5 +68,49 @@ public final class ScbCfBulkUploadUtil {
         Map<String, Object> props = new HashMap<>();
         props.put("jcr:primaryType", FOLDER_TYPE);
         return resolver.create(parent, folderPath.substring(lastSlash + 1), props);
+    }
+
+    /**
+     * Walks a folder and its sub-folders and returns every Content Fragment in it.
+     *
+     * @param folder the folder to walk
+     * @return the fragment assets (assets with {@code jcr:content/data}), in folder order
+     */
+    public static List<Resource> scbFindFragments(Resource folder) {
+        List<Resource> fragments = new ArrayList<>();
+        for (Resource child : folder.getChildren()) {
+            String type = child.getValueMap().get("jcr:primaryType", String.class);
+            if (FOLDER.equals(type) || FOLDER_TYPE.equals(type)) {
+                fragments.addAll(scbFindFragments(child));
+            } else if (ASSET.equals(type) && child.getChild("jcr:content/data") != null) {
+                fragments.add(child);
+            }
+        }
+        return fragments;
+    }
+
+    /**
+     * Checks the fragment folder picked on the page.
+     *
+     * @param resolver the resource resolver
+     * @param path     the picked folder, without a trailing slash; may be empty
+     * @return the problem shown to the author, or {@code null} when it is an existing folder under {@code /content/dam}
+     */
+    public static String scbCheckFolder(ResourceResolver resolver, String path) {
+        if (StringUtils.isEmpty(path)) {
+            return "Select the fragment folder first.";
+        }
+        if (!path.startsWith(DAM_PREFIX)) {
+            return path + " is not a DAM folder.";
+        }
+        Resource folder = resolver.getResource(path);
+        if (folder == null) {
+            return "No folder found at " + path + ".";
+        }
+        String type = folder.getValueMap().get("jcr:primaryType", String.class);
+        if (!FOLDER.equals(type) && !FOLDER_TYPE.equals(type)) {
+            return path + " is not a folder.";
+        }
+        return null;
     }
 }

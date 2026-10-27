@@ -1,7 +1,6 @@
 {
   "model": "offer-card",
-  "folder": "offer-listing/cards",
-  "nameField": "offerCardSlug",
+  "folder": "cards",
   "titleField": "name",
   "idField": "ID",
   "startId": 1001,

@@ -5,7 +5,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
  * Factory configuration describing one Content Fragment model for the CF bulk upload and report:
- * where its fragments go and which fields give their name, title and ID. One configuration per model.
+ * where its fragments go, which fields give their title and ID, and how the report sorts them. One configuration per model.
  */
 @ObjectClassDefinition(name = "SCB CF Model Profile", description = "One Content Fragment model handled by the CF bulk upload and report")
 public @interface ScbModelProfileConfiguration {
@@ -19,20 +19,12 @@ public @interface ScbModelProfileConfiguration {
     String model() default "";
 
     /**
-     * Folder for the model's fragments, relative to the fragment root path.
+     * Folder for the model's fragments, relative to the folder picked on the page.
      *
-     * @return the folder, e.g. {@code offer-listing/offers}
+     * @return the folder, e.g. {@code offers}
      */
-    @AttributeDefinition(name = "Folder", description = "Folder relative to the fragment root path, e.g. offer-listing/offers")
+    @AttributeDefinition(name = "Folder", description = "Folder relative to the picked folder, e.g. offers")
     String folder() default "";
-
-    /**
-     * Field whose value becomes the fragment's node name.
-     *
-     * @return the name field, e.g. {@code offerSlug}
-     */
-    @AttributeDefinition(name = "Name field", description = "Field whose value becomes the fragment name")
-    String nameField() default "";
 
     /**
      * Field whose value becomes the fragment's title; the name is used when empty.
@@ -49,6 +41,14 @@ public @interface ScbModelProfileConfiguration {
      */
     @AttributeDefinition(name = "ID field", description = "Numeric ID field generated on CREATE (optional)")
     String idField() default "";
+
+    /**
+     * Field the report sorts the model's sheet by, latest or highest first; empty sorts by the ID field, smallest first.
+     *
+     * @return the sort field, e.g. {@code offerEndDate}
+     */
+    @AttributeDefinition(name = "Sort field", description = "Field the report sorts by, latest or highest first (optional; default: ID field, smallest first)")
+    String sortField() default "";
 
     /**
      * First ID used when the sheet has no IDs yet.

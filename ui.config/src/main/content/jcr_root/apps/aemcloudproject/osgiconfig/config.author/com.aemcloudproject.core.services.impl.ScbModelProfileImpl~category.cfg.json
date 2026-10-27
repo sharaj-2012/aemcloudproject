@@ -1,7 +1,6 @@
 {
   "model": "category",
-  "folder": "offer-listing/categories",
-  "nameField": "offerCategorySlug",
+  "folder": "categories",
   "titleField": "name",
   "idField": "ID",
   "startId": 1001,

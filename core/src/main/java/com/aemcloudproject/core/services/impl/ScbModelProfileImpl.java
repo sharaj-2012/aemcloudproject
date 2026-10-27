@@ -17,9 +17,9 @@ public class ScbModelProfileImpl implements ScbModelProfile {
 
     private String model;
     private String folder;
-    private String nameField;
     private String titleField;
     private String idField;
+    private String sortField;
     private long startId;
     private int order;
 
@@ -27,19 +27,19 @@ public class ScbModelProfileImpl implements ScbModelProfile {
      * Reads the profile from its configuration.
      *
      * @param config the model profile configuration
-     * @throws IllegalArgumentException if the model, folder or name field is empty; the profile is then not registered
+     * @throws IllegalArgumentException if the model or folder is empty; the profile is then not registered
      */
     @Activate
     protected void activate(ScbModelProfileConfiguration config) {
         model = StringUtils.trimToNull(config.model());
         folder = StringUtils.strip(StringUtils.trimToNull(config.folder()), "/");
-        nameField = StringUtils.trimToNull(config.nameField());
-        if (model == null || StringUtils.isEmpty(folder) || nameField == null) {
+        if (model == null || StringUtils.isEmpty(folder)) {
             throw new IllegalArgumentException("SCB CF model profile \"" + config.model()
-                    + "\" needs a model, a folder and a name field");
+                    + "\" needs a model and a folder");
         }
         titleField = StringUtils.trimToNull(config.titleField());
         idField = StringUtils.trimToNull(config.idField());
+        sortField = StringUtils.trimToNull(config.sortField());
         startId = config.startId();
         order = config.order();
     }
@@ -55,11 +55,6 @@ public class ScbModelProfileImpl implements ScbModelProfile {
     }
 
     @Override
-    public String getNameField() {
-        return nameField;
-    }
-
-    @Override
     public String getTitleField() {
         return titleField;
     }
@@ -67,6 +62,11 @@ public class ScbModelProfileImpl implements ScbModelProfile {
     @Override
     public String getIdField() {
         return idField;
+    }
+
+    @Override
+    public String getSortField() {
+        return sortField;
     }
 
     @Override

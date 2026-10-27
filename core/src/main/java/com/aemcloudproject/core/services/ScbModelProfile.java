@@ -14,18 +14,11 @@ public interface ScbModelProfile {
     String getModel();
 
     /**
-     * Returns the folder for the model's fragments, relative to the fragment root path.
+     * Returns the folder for the model's fragments, relative to the folder picked on the page.
      *
-     * @return the folder, e.g. {@code offer-listing/offers}
+     * @return the folder, e.g. {@code offers}
      */
     String getFolder();
-
-    /**
-     * Returns the field whose value becomes the fragment's node name.
-     *
-     * @return the name field
-     */
-    String getNameField();
 
     /**
      * Returns the field whose value becomes the fragment's title.
@@ -40,6 +33,13 @@ public interface ScbModelProfile {
      * @return the ID field, or {@code null} when the model has none
      */
     String getIdField();
+
+    /**
+     * Returns the field the report sorts by, latest or highest first.
+     *
+     * @return the sort field, or {@code null} to sort by the ID field
+     */
+    String getSortField();
 
     /**
      * Returns the first ID used when the sheet has no IDs yet.

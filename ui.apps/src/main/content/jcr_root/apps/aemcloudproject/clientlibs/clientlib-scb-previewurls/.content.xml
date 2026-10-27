@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SCB Workflows Preview URL dialog, shared by every Request for Activation entry point.
+
+    The page and XF editors load it through cq.authoring.editor.sites.page.hook, like
+    clientlib-authoring-workflow: the editor bundle embeds that category but not the libraries those
+    clients embed. clientlib-scb-startbulkworkflows (Sites and XF console wizard) and
+    clientlib-scb-assetsworkflow (Assets console dialog) embed it.
+-->
+<jcr:root xmlns:cq="http://www.day.com/jcr/cq/1.0"
+          xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          jcr:primaryType="cq:ClientLibraryFolder"
+          categories="[aemcloudproject.scb.previewurls,cq.authoring.editor.sites.page.hook]"/>

@@ -18,6 +18,7 @@
                                         text="Request for Activation">
                                         <granite:data
                                             jcr:primaryType="nt:unstructured"
+                                            show-preview="{Boolean}true"
                                             workflow-model="/var/workflow/models/request_for_activation"
                                             workflow-name="Request for Activation"/>
                                         <granite:rendercondition

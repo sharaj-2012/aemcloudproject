@@ -2,6 +2,9 @@
  * SCB Workflows: opens the Start Workflow dialog rendered by
  * aemcloudproject/components/authoring/scbstartworkflow for the header bar action that was
  * clicked, and submits it the same way the OOTB page editor dialog does.
+ *
+ * For actions flagged with data-show-preview (Request for Activation), it then shows the page's
+ * Preview URL (SCB.PreviewUrls, clientlib-scb-previewurls) as soon as the workflow has started.
  */
 (function ($, ns, channel, window) {
     "use strict";
@@ -10,6 +13,8 @@
     var DIALOG_SELECTOR = ".scb-WorkflowStart";
     var TITLE_SELECTOR = ".scb-WorkflowStart-title";
     var SUBMIT_SELECTOR = ".scb-WorkflowStart-submit";
+
+    var SHOW_PREVIEW_DATA = "scbShowPreview";
 
     function notify(message, type) {
         ns.ui.helpers.notify({
@@ -46,6 +51,7 @@
         dialog.querySelector("input[name=payload]").value =
             Granite.HTTP.internalize(ns.ContentFrame.getContentPath());
         dialog.querySelector(SUBMIT_SELECTOR).disabled = false;
+        $(dialog).data(SHOW_PREVIEW_DATA, this.getAttribute("data-show-preview") === "true");
 
         dialog.show();
     });
@@ -64,9 +70,15 @@
             dataType: "html",
             data: $form.serialize()
         }).done(function () {
+            var showPreview = $(dialog).data(SHOW_PREVIEW_DATA);
+            var payload = $form.find("input[name=payload]").val();
+
             dialog.hide();
             channel.one("cq-editor-loaded.scb-workflow-started", function () {
                 notify(Granite.I18n.get("Workflow Started"), ns.ui.helpers.NOTIFICATION_TYPES.INFO);
+                if (showPreview) {
+                    window.SCB.PreviewUrls.show([payload]);
+                }
             });
             ns.ContentFrame.reload();
         }).fail(function (jqXHR) {

@@ -3,4 +3,5 @@
           xmlns:jcr="http://www.jcp.org/jcr/1.0"
           jcr:primaryType="cq:ClientLibraryFolder"
           categories="[aemcloudproject.scb.startbulkworkflows]"
-          dependencies="[cq.common.startbulkworkflows]"/>
+          dependencies="[cq.common.startbulkworkflows]"
+          embed="[aemcloudproject.scb.previewurls]"/>

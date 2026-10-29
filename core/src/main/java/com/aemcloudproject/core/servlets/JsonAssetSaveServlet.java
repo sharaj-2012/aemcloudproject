@@ -2,6 +2,7 @@ package com.aemcloudproject.core.servlets;
 
 import com.aemcloudproject.core.services.JsonAssetSaveService;
 import com.aemcloudproject.core.services.SaveResult;
+import com.aemcloudproject.core.services.SaveStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
@@ -15,6 +16,7 @@ import javax.servlet.Servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.aemcloudproject.core.constants.MyProjectConstants.JSON;
@@ -37,13 +39,23 @@ public class JsonAssetSaveServlet extends SlingAllMethodsServlet {
     protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         long max = saveService.getMaxSizeBytes();
         SaveResult result;
-        if (request.getContentLength() > max) {
+        if (!isJsonRequest(request)) {
+            result = SaveResult.of(SaveStatus.WRONG_CONTENT_TYPE);
+        } else if (request.getContentLength() > max) {
             result = SaveResult.tooLarge(max);
         } else {
             byte[] body = readCapped(request.getInputStream(), max + 1);
             result = body.length > max ? SaveResult.tooLarge(max) : saveService.save(request.getResource(), body);
         }
         write(response, result);
+    }
+
+    /**
+     * Requiring application/json means a cross-site page cannot send the request without a CORS preflight.
+     */
+    private static boolean isJsonRequest(SlingHttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("application/json");
     }
 
     private static byte[] readCapped(InputStream in, long limit) throws IOException {

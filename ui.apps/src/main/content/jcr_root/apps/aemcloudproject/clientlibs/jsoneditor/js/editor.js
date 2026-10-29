@@ -210,7 +210,7 @@
             return;
         }
         var name = assetPath().substring(assetPath().lastIndexOf('/') + 1);
-        var patch = window.Diff.createTwoFilesPatch(name, name, before, after, 'original', 'modified', {
+        var patch = window.Diff.createTwoFilesPatch(name, name, before, after, '', '', {
             context: 3,
             timeout: 3000,
             maxEditLength: 20000
@@ -338,6 +338,7 @@
                     content: {text: text},
                     mode: 'text',
                     readOnly: !el('jsoneditor-save'),
+                    askToFormat: false,
                     mainMenuBar: false,
                     navigationBar: false,
                     statusBar: true,

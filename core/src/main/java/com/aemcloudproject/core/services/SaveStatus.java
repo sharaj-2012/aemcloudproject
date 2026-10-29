@@ -10,7 +10,6 @@ public enum SaveStatus {
     NOT_DAM_ASSET(400, "not_dam_asset", "Not a DAM asset."),
     INVALID_JSON(400, "invalid_json", "Invalid JSON."),
     FORBIDDEN(403, "forbidden", "You do not have permission to modify this asset."),
-    TOO_LARGE(413, "too_large", "File exceeds the size limit."),
     NOT_JSON(415, "not_json", "Only JSON assets can be edited."),
     WRONG_CONTENT_TYPE(415, "wrong_content_type", "Requests must be sent as application/json."),
     VERSION_FAILED(500, "version_failed", "Could not create a version; nothing was saved."),

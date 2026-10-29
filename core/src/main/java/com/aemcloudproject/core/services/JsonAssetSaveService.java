@@ -8,11 +8,6 @@ import org.apache.sling.api.resource.Resource;
 public interface JsonAssetSaveService {
 
     /**
-     * @return largest request body, in bytes, the editor may save
-     */
-    long getMaxSizeBytes();
-
-    /**
      * @param assetResource asset resource, resolved with the requesting user's resolver
      * @param content       new file content as sent by the editor
      * @return outcome of the save

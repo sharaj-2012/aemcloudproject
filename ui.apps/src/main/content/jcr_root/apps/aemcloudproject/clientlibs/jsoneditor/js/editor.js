@@ -6,11 +6,9 @@
 (function (window, document) {
     'use strict';
 
-    var MAX_BYTES = 2097152;
     var PREVIEW_DELAY_MS = 300;
     var EDITOR_MODULE_URL = '/etc.clientlibs/aemcloudproject/clientlibs/jsoneditor/resources/vendor/vanilla-jsoneditor-3.13.0/standalone.js';
     var CSRF_URL = '/libs/granite/csrf/token.json';
-    var TOO_LARGE = 'File too large to edit';
 
     var state = {
         baseline: '',
@@ -93,14 +91,8 @@
             if (!response.ok) {
                 throw new Error('Could not load file (HTTP ' + response.status + ')');
             }
-            if (Number(response.headers.get('Content-Length')) > MAX_BYTES) {
-                throw new Error(TOO_LARGE);
-            }
             return response.arrayBuffer();
         }).then(function (buffer) {
-            if (buffer.byteLength > MAX_BYTES) {
-                throw new Error(TOO_LARGE);
-            }
             var text;
             try {
                 text = new window.TextDecoder('utf-8', {fatal: true}).decode(buffer);

@@ -14,7 +14,6 @@ import org.osgi.service.component.annotations.Reference;
 
 import javax.servlet.Servlet;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -37,16 +36,9 @@ public class JsonAssetSaveServlet extends SlingAllMethodsServlet {
 
     @Override
     protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        long max = saveService.getMaxSizeBytes();
-        SaveResult result;
-        if (!isJsonRequest(request)) {
-            result = SaveResult.of(SaveStatus.WRONG_CONTENT_TYPE);
-        } else if (request.getContentLength() > max) {
-            result = SaveResult.tooLarge(max);
-        } else {
-            byte[] body = readCapped(request.getInputStream(), max + 1);
-            result = body.length > max ? SaveResult.tooLarge(max) : saveService.save(request.getResource(), body);
-        }
+        SaveResult result = isJsonRequest(request)
+                ? saveService.save(request.getResource(), request.getInputStream().readAllBytes())
+                : SaveResult.of(SaveStatus.WRONG_CONTENT_TYPE);
         write(response, result);
     }
 
@@ -56,10 +48,6 @@ public class JsonAssetSaveServlet extends SlingAllMethodsServlet {
     private static boolean isJsonRequest(SlingHttpServletRequest request) {
         String contentType = request.getContentType();
         return contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("application/json");
-    }
-
-    private static byte[] readCapped(InputStream in, long limit) throws IOException {
-        return in.readNBytes((int) Math.min(limit, Integer.MAX_VALUE));
     }
 
     private static void write(SlingHttpServletResponse response, SaveResult result) throws IOException {

@@ -38,14 +38,6 @@ public final class SaveResult {
     }
 
     /**
-     * @param maxBytes configured size limit
-     * @return too large result naming the limit
-     */
-    public static SaveResult tooLarge(long maxBytes) {
-        return new SaveResult(SaveStatus.TOO_LARGE, "File exceeds the size limit of " + maxBytes + " bytes.", null, null, null);
-    }
-
-    /**
      * @param versionLabel label of the version holding the previous content
      * @return saved result
      */

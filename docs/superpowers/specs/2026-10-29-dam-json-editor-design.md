@@ -27,7 +27,7 @@ Let authors edit JSON files stored in AEM Assets directly in the browser. The ed
 - Target UI is the **classic Touch UI Assets console** (`/assets.html`), not the new Assets View.
 - **Author only.**
 - Any DAM path is allowed. Normal JCR ACLs are the only access control.
-- Max file size: 2 MB, set by an OSGi property.
+- No file size limit: any size of JSON file can be opened and saved (user decision).
 
 ## 4. Library evaluation
 
@@ -64,7 +64,7 @@ Assets console (/assets.html)
 | C3 | Editor page | ui.apps | `/apps/aemcloudproject/gui/content/jsoneditor` |
 | C4 | Editor clientlib | ui.apps | `/apps/aemcloudproject/clientlibs/jsoneditor`, category `aemcloudproject.jsoneditor` |
 | C5 | Save servlet | core | `com.aemcloudproject.core.servlets.JsonAssetSaveServlet` |
-| C6 | Save service + config | core | `JsonAssetSaveService` / `impl.JsonAssetSaveServiceImpl` / `config.JsonAssetSaveConfiguration` |
+| C6 | Save service | core | `JsonAssetSaveService` / `impl.JsonAssetSaveServiceImpl` |
 | C7 | OSGi config (author only) | ui.config | `osgiconfig/config.author/com.aemcloudproject.core.services.impl.JsonAssetSaveServiceImpl.cfg.json` |
 | C8 | Package filters | ui.apps, ui.apps.structure | filter entries for C1 and `/apps/aemcloudproject/gui`; `/apps/dam` repository-structure root |
 
@@ -111,7 +111,7 @@ clientlibs/jsoneditor/
 - Version numbers in the folder names make upgrades change the URL, so browsers never serve a stale cached copy.
 
 **Editor behaviour (`editor.js`)**
-1. **Load.** The asset path comes from the URL suffix. It runs `fetch(<path>, {cache: 'no-store', credentials: 'same-origin'})`. If `Content-Length` (or the received text) is over 2 MB, it shows "File too large to edit" and stops. A leading BOM is removed. The text becomes the **baseline**, which stays fixed while the page is open.
+1. **Load.** The asset path comes from the URL suffix. It runs `fetch(<path>, {cache: 'no-store', credentials: 'same-origin'})`. A leading BOM is removed. The text becomes the **baseline**, which stays fixed while the page is open.
 2. **Editor (left).** `vanilla-jsoneditor` in text mode, with the editor's own menus turned off: transform, query, sort and mode switch. The raw text the user types is what gets saved.
 3. **Validation.** Errors appear as *"Line L, column C: message"*, at the first position where the text stops being valid JSON (a parser cannot locate a deleted character earlier in the file). The library's Auto repair is hidden with CSS (the library has no option to disable it) because it guesses at the structure and can produce valid but wrong JSON; Undo and Compare are the way to recover. Save is disabled while the text is invalid.
 4. **Preview (right).** A second `vanilla-jsoneditor` in read-only tree mode, debounced (about 300 ms). While the text is invalid, the preview keeps the last valid state and shows a "Preview out of date — fix errors" note.
@@ -131,17 +131,16 @@ clientlibs/jsoneditor/
   - A request to `/content/dam/a/file.json.jsoneditor.json` resolves to resource `file.json`, selector `jsoneditor`, extension `json`.
   - Sling only reaches the servlet if the user can read the asset. No part of the request is used to build a repository path.
 - It has a mandatory `@Reference` to `JsonAssetSaveService`, so the servlet is not active wherever the service is not (publish).
-- It reads the body as UTF-8 through a stream capped at `maxSizeBytes + 1` bytes, passes it to the service, and turns the result into JSON: `{ "status": "...", "message": "...", "line": n, "column": n, "versionLabel": "..." }`.
+- It requires `Content-Type: application/json` (otherwise **415** `wrong_content_type`), reads the whole body, passes it to the service, and turns the result into JSON: `{ "status": "...", "message": "...", "line": n, "column": n, "versionLabel": "..." }`.
 - Every response uses `Content-Type: application/json; charset=UTF-8`.
 
 ### C6 — Save service
-`JsonAssetSaveServiceImpl`, `@Component(configurationPolicy = ConfigurationPolicy.REQUIRE)`, `@Designate(ocd = JsonAssetSaveConfiguration.class)`:
-- `maxSizeBytes` (long, default `2097152`).
+`JsonAssetSaveServiceImpl`, `@Component(configurationPolicy = ConfigurationPolicy.REQUIRE)`. It has no settings; the REQUIRE policy only makes it start where its config file exists.
 
 It runs the save sequence in §7 on the **requesting user's resource resolver**. No service resolver is ever used.
 
 ### C7 — Config
-`config.author` only. Publish has no config, so neither the service nor the servlet starts there.
+`config.author` only, with an empty body (`{}`). Publish has no config, so neither the service nor the servlet starts there.
 
 ## 7. Save sequence
 
@@ -151,7 +150,6 @@ All steps run in one request, on the logged-in user's own session.
 |---|---|---|
 | 1a | Resource is under `/content/dam/` and adapts to `com.day.cq.dam.api.Asset` | **400** `not_dam_asset` |
 | 1b | Asset name ends in `.json` **or** its MIME type is `application/json` | **415** `not_json` |
-| 2 | Body size ≤ `maxSizeBytes` (stream cap; `Content-Length` checked first when present) | **413** `too_large` |
 | 3 | Body is valid UTF-8 and valid JSON. Jackson `ObjectMapper` with `FAIL_ON_TRAILING_TOKENS`, `StreamReadFeature.STRICT_DUPLICATE_DETECTION`, and Jackson's default `StreamReadConstraints`. A leading BOM is removed. | **400** `invalid_json` with message, line and column |
 | 4 | The user holds `rep:write` on the asset, `jcr:content`, `jcr:content/metadata` and `jcr:content/renditions/original`, and `jcr:versionManagement` on the asset, checked with `AccessControlManager.hasPrivileges`. This only gives a clearer error; Oak still enforces permissions at commit. | **403** `forbidden` |
 | 5 | Read the current original rendition and compare it byte-for-byte with the new content (after the BOM is removed) | Identical → **200** `unchanged`, no version created, stop |
@@ -182,7 +180,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 1. **Authorization.** All repository access uses the requesting user's session. Oak enforces ACLs at commit, and the step 4 precheck exists only to give a clear 403. The read-only UI uses the OOTB `privilege` render condition.
 2. **CSRF.** AEM's Granite CSRF filter is left fully on, with no exclusions. It stops a malicious website open in the same browser from silently making the author's browser POST a save to AEM. The editor sends a fresh token from `/libs/granite/csrf/token.json` in the `CSRF-Token` header.
 3. **No path injection.** The servlet is bound by resource type. The target asset is whatever Sling resolved, and it is checked to be a DAM asset under `/content/dam/`.
-4. **Input limits.** A body cap of `maxSizeBytes`, Jackson's default nesting and string-length limits, and strict UTF-8 decoding stop oversized or deeply nested JSON from exhausting the server.
+4. **Input limits.** There is no file size limit (user decision): very large files may make the browser editor slow and are read fully into server memory on save; only authors with write access can trigger this. Jackson's default nesting and string-length limits and strict UTF-8 decoding still apply.
 5. **XSS.** Our code never uses `innerHTML`. diff2html escapes file content, and its HTML only goes into the Compare container. A test with hostile content covers this (§10).
 6. **Author only.** The service requires an OSGi config that exists only in `config.author`, and the servlet depends on the service, so nothing is active on publish. The editor page and toolbar only exist in the author Assets console.
 7. **Supply chain.** Libraries are vendored and pinned. `VENDOR.md` records the version, source URL, licence and SHA-256 for each file. There is no CDN and no third-party network request at runtime. Upgrades go through a reviewed PR.
@@ -194,7 +192,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 ### 10.1 Unit tests — `core` (JUnit 5, AEM Mocks, Mockito; existing conventions)
 - **Validation:** valid JSON passes; trailing comma → correct line and column; content after the JSON → 400; duplicate key → 400; invalid UTF-8 → 400; empty body → 400; leading BOM removed.
 - **Eligibility:** `.json` name passes; `application/json` with another name passes; PNG → 415; resource outside `/content/dam` → 400 `not_dam_asset`.
-- **Size:** at the limit passes; one byte over → 413; multi-byte UTF-8 right at the limit.
+- **Content type:** a non-`application/json` POST → 415 `wrong_content_type`; `application/json; charset=UTF-8` passes.
 - **Permissions:** missing privileges → 403 and nothing written. The privilege check sits behind a small package-private method so tests can stub it, because AEM Mocks has no ACL support.
 - **Unchanged:** identical content → 200 `unchanged`; `createRevision` never called.
 - **Success:** Mockito `InOrder`: `createRevision` → `setBatchMode(true)` → `addRendition("original", …)` → `commit()`; `dam:size` and `dam:sha1` updated; 200 with the version label. A Mockito `Asset` is used here because AEM Mocks does not implement `createRevision`.
@@ -222,7 +220,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 10. **Last save wins:** open `sample.json` in two tabs, save in A, then save in B → B's content wins, and A's content is in the version history.
 11. **Read-only:** sign in as a user with read-only access → the banner shows and there's no Save button. A forced POST with curl → 403.
 12. **broken.json:** opens and shows the error immediately; it can be fixed and saved.
-13. **large.json:** "File too large to edit".
+13. **large.json:** opens and saves normally (no size limit).
 14. **Leave guard:** edit, then navigate away → browser warning.
 15. **Publish:** `POST /content/dam/…/sample.json.jsoneditor.json` on publish is not handled by our servlet (no `status` JSON in the response).
 16. **Network:** DevTools Network tab shows no requests to any external domain.
@@ -237,7 +235,7 @@ These are integration assumptions the SDK API jar cannot prove. Each one is chec
 5. **Batch mode** really holds back the `addRendition` write until `commit()` (throwaway probe, not committed).
 6. **`addRendition("original")`** updates `jcr:lastModified`/`jcr:lastModifiedBy`; if not, step 7 sets them.
 7. **Version contents:** the version created in step 6 holds the old bytes.
-8. **Loading the file from its asset URL on a real AEMaaCS environment, not only the SDK.** Cloud author can answer a binary GET with a redirect to blob storage (direct binary download). A cross-origin redirect would stop `fetch` from reading the body because of CORS. **Fallback if so:** add `GET` to `JsonAssetSaveServlet` (same selector) to stream the original rendition's text from the same origin, with the same size cap. This is a small addition and doesn't change the rest of the design.
+8. **Loading the file from its asset URL on a real AEMaaCS environment, not only the SDK.** Cloud author can answer a binary GET with a redirect to blob storage (direct binary download). A cross-origin redirect would stop `fetch` from reading the body because of CORS. **Fallback if so:** add `GET` to `JsonAssetSaveServlet` (same selector) to stream the original rendition's text from the same origin. This is a small addition and doesn't change the rest of the design.
 
 ## 12. Out of scope
 

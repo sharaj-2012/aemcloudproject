@@ -1,6 +1,5 @@
 package com.aemcloudproject.core.services.impl;
 
-import com.aemcloudproject.core.config.JsonAssetSaveConfiguration;
 import com.aemcloudproject.core.services.JsonAssetSaveService;
 import com.aemcloudproject.core.services.SaveResult;
 import com.aemcloudproject.core.services.SaveStatus;
@@ -12,11 +11,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +31,6 @@ import java.util.Optional;
  * Validates, versions and writes JSON asset content on the requesting user's session. Author only.
  */
 @Component(service = JsonAssetSaveService.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
-@Designate(ocd = JsonAssetSaveConfiguration.class)
 public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonAssetSaveServiceImpl.class);
@@ -50,19 +45,6 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
     AssetPrivileges privileges = new AssetPrivileges();
     Clock clock = Clock.systemDefaultZone();
     JsonValidator validator = new JsonValidator();
-
-    private long maxSizeBytes = 2097152;
-
-    @Activate
-    @Modified
-    protected void activate(JsonAssetSaveConfiguration config) {
-        maxSizeBytes = config.maxSizeBytes();
-    }
-
-    @Override
-    public long getMaxSizeBytes() {
-        return maxSizeBytes;
-    }
 
     @Override
     public SaveResult save(Resource assetResource, byte[] content) {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+    jcr:primaryType="nt:unstructured"
+    sling:resourceType="granite/ui/components/coral/foundation/collection/action"
+    action="foundation.link"
+    activeCondition="aemcloudproject.jsoneditor.eligible"
+    activeSelectionCount="single"
+    icon="code"
+    relScope="none"
+    target=".cq-damadmin-admin-childpages"
+    text="Edit JSON"
+    variant="actionBar">
+    <data
+        jcr:primaryType="nt:unstructured"
+        href.uritemplate="/mnt/overlay/aemcloudproject/gui/content/jsoneditor.html{+item}"/>
+</jcr:root>

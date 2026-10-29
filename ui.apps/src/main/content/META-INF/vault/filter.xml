@@ -5,4 +5,5 @@
     <filter root="/apps/aemcloudproject/gui"/>
     <filter root="/apps/aemcloudproject/i18n"/>
     <filter root="/apps/msm/aemcloudproject_blueprint" mode="merge"/>
+    <filter root="/apps/dam/gui/content/assets/jcr:content/actions/selection/editjson"/>
 </workspaceFilter>

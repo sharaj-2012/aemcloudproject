@@ -33,7 +33,7 @@ Let authors edit JSON files stored in AEM Assets directly in the browser. The ed
 
 | Library | Verdict | Reason |
 |---|---|---|
-| `josdejong/svelte-jsoneditor` (as the framework-free `vanilla-jsoneditor` package) | **Reuse** for editing and preview | Maintained, ISC licence. Text mode gives line and column errors and has Repair. Read-only tree mode is a good preview. Ships a single-file browser ES module (`standalone.js`), so no Svelte runtime and no build are needed. |
+| `josdejong/svelte-jsoneditor` (as the framework-free `vanilla-jsoneditor` package) | **Reuse** for editing and preview | Maintained, ISC licence. Text mode gives line and column errors. Read-only tree mode is a good preview. Ships a single-file browser ES module (`standalone.js`), so no Svelte runtime and no build are needed. |
 | `josdejong/jsoneditor` | **Rejected** | The legacy predecessor, in maintenance mode, and its author recommends svelte-jsoneditor instead. |
 | Microsoft Monaco | **Rejected** | The Monaco 0.53.0 changelog deprecates the AMD build with no support. Its ESM build needs a bundler, which conflicts with the no-build constraint. Pinning 0.52.x would start a new feature on a dead end. |
 | `jsdiff` + `diff2html` *(safe alternative)* | **Adopted** for Compare | Both ship prebuilt browser (UMD) bundles that work with no build. jsdiff is BSD-3-Clause and diff2html is MIT. They are much smaller than Monaco and need no web workers. |
@@ -113,7 +113,7 @@ clientlibs/jsoneditor/
 **Editor behaviour (`editor.js`)**
 1. **Load.** The asset path comes from the URL suffix. It runs `fetch(<path>, {cache: 'no-store', credentials: 'same-origin'})`. If `Content-Length` (or the received text) is over 2 MB, it shows "File too large to edit" and stops. A leading BOM is removed. The text becomes the **baseline**, which stays fixed while the page is open.
 2. **Editor (left).** `vanilla-jsoneditor` in text mode, with the editor's own menus turned off: transform, query, sort and mode switch. The raw text the user types is what gets saved.
-3. **Validation.** Errors appear as *"Line L, column C: message"*. The Repair button stays enabled because it is an explicit, undoable action. Save is disabled while the text is invalid.
+3. **Validation.** Errors appear as *"Line L, column C: message"*, at the first position where the text stops being valid JSON (a parser cannot locate a deleted character earlier in the file). The library's Auto repair is hidden with CSS (the library has no option to disable it) because it guesses at the structure and can produce valid but wrong JSON; Undo and Compare are the way to recover. Save is disabled while the text is invalid.
 4. **Preview (right).** A second `vanilla-jsoneditor` in read-only tree mode, debounced (about 300 ms). While the text is invalid, the preview keeps the last valid state and shows a "Preview out of date — fix errors" note.
 5. **Compare.** It toggles a view rendered by `Diff2HtmlUI` (side-by-side, word-level highlights) from `Diff.createTwoFilesPatch('original', 'modified', baseline, current)`.
    - **Normalize formatting** toggle: re-indents both sides before diffing. It only changes the display, keeps key order, and leaves the saved text alone.
@@ -213,7 +213,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 1. Deploy, then upload `sample.json`, `broken.json` (invalid), `large.json` (3 MB) and `image.png` to `/content/dam/aemcloudproject/jsoneditor-test/`.
 2. **Toolbar:** select `sample.json` → **Edit JSON** shows. Select `image.png` → hidden. Select two items → hidden. Check card, list and column views.
 3. **Editor:** opens with the asset path in the header; content loads; the preview shows the tree.
-4. **Validation:** delete a comma → "Line …, column …" error, Save disabled, preview marked out of date. **Repair** fixes it, and Ctrl+Z undoes it.
+4. **Validation:** delete a comma → "Line …, column …" error, Save disabled, preview marked out of date; no Auto repair button in the error bar or the line tooltip; Ctrl+Z restores the text.
 5. **Preview:** edit a value → the tree updates within about 300 ms.
 6. **Compare:** changes are highlighted side by side with word-level highlights. **Normalize formatting** hides whitespace-only changes.
 7. **Hostile content:** add `"x": "<img src=x onerror=alert(1)>"`, open Compare → no alert; the text appears literally.

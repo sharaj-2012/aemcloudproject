@@ -42,6 +42,12 @@
     font-style: italic;
 }
 
+/* Auto repair guesses at the structure and can produce valid but wrong JSON, so it is hidden (no library option exists). */
+#jsoneditor-left button[title="Automatically repair JSON"],
+#jsoneditor-left .cm-diagnosticAction {
+    display: none;
+}
+
 #jsoneditor-diff {
     overflow-x: auto;
 }

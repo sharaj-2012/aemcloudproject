@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:granite="http://www.adobe.com/jcr/granite/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="nt:unstructured"
+    jcr:title="Edit JSON"
+    sling:resourceType="granite/ui/components/shell/page">
+    <head jcr:primaryType="nt:unstructured">
+        <clientlibs
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="granite/ui/components/coral/foundation/includeclientlibs"
+            categories="[coralui3,granite.ui.coral.foundation,aemcloudproject.jsoneditor]"/>
+    </head>
+    <title
+        jcr:primaryType="nt:unstructured"
+        jcr:title="Edit JSON"/>
+    <actions jcr:primaryType="nt:unstructured">
+        <primary jcr:primaryType="nt:unstructured">
+            <save
+                granite:id="jsoneditor-save"
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/button"
+                text="Save"
+                variant="primary">
+                <granite:rendercondition
+                    jcr:primaryType="nt:unstructured"
+                    sling:resourceType="granite/ui/components/coral/foundation/renderconditions/privilege"
+                    path="${requestPathInfo.suffix}"
+                    privileges="[rep:write]"/>
+            </save>
+        </primary>
+        <secondary jcr:primaryType="nt:unstructured">
+            <close
+                granite:id="jsoneditor-close"
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/button"
+                text="Close"/>
+            <format
+                granite:id="jsoneditor-format"
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/button"
+                text="Format"/>
+            <compare
+                granite:id="jsoneditor-compare"
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/button"
+                text="Compare"/>
+        </secondary>
+    </actions>
+    <content
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="granite/ui/components/coral/foundation/container">
+        <items jcr:primaryType="nt:unstructured">
+            <readonly
+                granite:id="jsoneditor-readonly"
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="granite/ui/components/coral/foundation/alert"
+                text="You can view this file but not change it."
+                variant="info">
+                <granite:rendercondition
+                    jcr:primaryType="nt:unstructured"
+                    sling:resourceType="granite/ui/components/coral/foundation/renderconditions/not">
+                    <privilege
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/renderconditions/privilege"
+                        path="${requestPathInfo.suffix}"
+                        privileges="[rep:write]"/>
+                </granite:rendercondition>
+            </readonly>
+            <editor
+                jcr:primaryType="nt:unstructured"
+                sling:resourceType="aemcloudproject/gui/components/jsoneditor"/>
+        </items>
+    </content>
+</jcr:root>

@@ -1,0 +1,57 @@
+.aemcloudproject-jsoneditor {
+    padding: 0 1rem 1rem;
+}
+
+.aemcloudproject-jsoneditor__path {
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.aemcloudproject-jsoneditor__error {
+    color: #c9252d;
+    margin: 0.5rem 0;
+    white-space: pre-wrap;
+}
+
+.aemcloudproject-jsoneditor__panes {
+    display: flex;
+    gap: 1rem;
+}
+
+.aemcloudproject-jsoneditor__panes[hidden],
+.aemcloudproject-jsoneditor__compare[hidden] {
+    display: none;
+}
+
+.aemcloudproject-jsoneditor__pane {
+    flex: 1 1 50%;
+    min-width: 0;
+    height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+}
+
+.aemcloudproject-jsoneditor__pane > * {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.aemcloudproject-jsoneditor__pane > .aemcloudproject-jsoneditor__stale {
+    flex: 0 0 auto;
+    margin: 0 0 0.25rem;
+    font-style: italic;
+}
+
+#jsoneditor-diff {
+    overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+    .aemcloudproject-jsoneditor__panes {
+        flex-direction: column;
+    }
+
+    .aemcloudproject-jsoneditor__pane {
+        height: 60vh;
+    }
+}

@@ -1,0 +1,70 @@
+package com.aemcloudproject.core.servlets;
+
+import com.aemcloudproject.core.services.JsonAssetSaveService;
+import com.aemcloudproject.core.services.SaveResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+import org.apache.sling.servlets.annotations.SlingServletResourceTypes;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+import javax.servlet.Servlet;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static com.aemcloudproject.core.constants.MyProjectConstants.JSON;
+
+/**
+ * Accepts the JSON editor's save: POST {@code <asset>.jsoneditor.json} with the raw JSON text as the body.
+ */
+@Component(service = Servlet.class)
+@SlingServletResourceTypes(resourceTypes = "dam:Asset", selectors = JsonAssetSaveServlet.SELECTOR, extensions = JSON, methods = HttpConstants.METHOD_POST)
+public class JsonAssetSaveServlet extends SlingAllMethodsServlet {
+
+    static final String SELECTOR = "jsoneditor";
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Reference
+    private transient JsonAssetSaveService saveService;
+
+    @Override
+    protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        long max = saveService.getMaxSizeBytes();
+        SaveResult result;
+        if (request.getContentLength() > max) {
+            result = SaveResult.tooLarge(max);
+        } else {
+            byte[] body = readCapped(request.getInputStream(), max + 1);
+            result = body.length > max ? SaveResult.tooLarge(max) : saveService.save(request.getResource(), body);
+        }
+        write(response, result);
+    }
+
+    private static byte[] readCapped(InputStream in, long limit) throws IOException {
+        return in.readNBytes((int) Math.min(limit, Integer.MAX_VALUE));
+    }
+
+    private static void write(SlingHttpServletResponse response, SaveResult result) throws IOException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", result.getStatus().code());
+        body.put("message", result.getMessage());
+        putIfPresent(body, "line", result.getLine());
+        putIfPresent(body, "column", result.getColumn());
+        putIfPresent(body, "versionLabel", result.getVersionLabel());
+        response.setStatus(result.getStatus().httpStatus());
+        response.setContentType("application/json;charset=UTF-8");
+        MAPPER.writeValue(response.getWriter(), body);
+    }
+
+    private static void putIfPresent(Map<String, Object> body, String key, Object value) {
+        if (value != null) {
+            body.put(key, value);
+        }
+    }
+}

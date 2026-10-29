@@ -31,6 +31,17 @@
         return decodeURIComponent(window.location.pathname.split('/jsoneditor.html')[1] || '');
     }
 
+    /**
+     * Only same-origin DAM paths are accepted, so the suffix can never point fetch or save at another host.
+     */
+    function isValidAssetPath(path) {
+        return /^\/content\/dam\/[^/]/.test(path) && path.indexOf('//') === -1 && !/(^|\/)\.\.?(\/|$)/.test(path);
+    }
+
+    function assetUrl(suffix) {
+        return assetPath().split('/').map(encodeURIComponent).join('/') + (suffix || '');
+    }
+
     function setText(id, text) {
         var node = el(id);
         if (node) {
@@ -78,19 +89,25 @@
     }
 
     function load() {
-        return window.fetch(assetPath(), {cache: 'no-store', credentials: 'same-origin'}).then(function (response) {
+        return window.fetch(assetUrl(), {cache: 'no-store', credentials: 'same-origin'}).then(function (response) {
             if (!response.ok) {
                 throw new Error('Could not load file (HTTP ' + response.status + ')');
             }
             if (Number(response.headers.get('Content-Length')) > MAX_BYTES) {
                 throw new Error(TOO_LARGE);
             }
-            return response.text();
-        }).then(function (text) {
-            if (new window.Blob([text]).size > MAX_BYTES) {
+            return response.arrayBuffer();
+        }).then(function (buffer) {
+            if (buffer.byteLength > MAX_BYTES) {
                 throw new Error(TOO_LARGE);
             }
-            return text.charAt(0) === '﻿' ? text.slice(1) : text;
+            var text;
+            try {
+                text = new window.TextDecoder('utf-8', {fatal: true}).decode(buffer);
+            } catch (e) {
+                throw new Error('File is not valid UTF-8 and cannot be edited here.');
+            }
+            return text.replace(/\r\n?/g, '\n');
         });
     }
 
@@ -271,7 +288,7 @@
             }
             return readJson(response);
         }).then(function (csrf) {
-            return window.fetch(assetPath() + '.jsoneditor.json', {
+            return window.fetch(assetUrl('.jsoneditor.json'), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {'Content-Type': 'application/json', 'CSRF-Token': csrf.token},
@@ -298,8 +315,8 @@
     }
 
     function close() {
-        var path = assetPath();
-        window.location.href = '/assets.html' + path.substring(0, path.lastIndexOf('/'));
+        var url = assetUrl();
+        window.location.href = '/assets.html' + (isValidAssetPath(assetPath()) ? url.substring(0, url.lastIndexOf('/')) : '/content/dam');
     }
 
     function bind(id, handler) {
@@ -314,10 +331,19 @@
             return;
         }
         setText('jsoneditor-path', assetPath());
+        bind('jsoneditor-close', close);
+        if (!isValidAssetPath(assetPath())) {
+            showError('Not a DAM asset path.');
+            ['jsoneditor-save', 'jsoneditor-format', 'jsoneditor-compare'].forEach(function (id) {
+                if (el(id)) {
+                    el(id).disabled = true;
+                }
+            });
+            return;
+        }
         bind('jsoneditor-save', save);
         bind('jsoneditor-format', format);
         bind('jsoneditor-compare', toggleCompare);
-        bind('jsoneditor-close', close);
         el('jsoneditor-normalize').addEventListener('change', renderCompare);
         window.addEventListener('beforeunload', function (event) {
             if (isDirty()) {

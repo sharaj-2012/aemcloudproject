@@ -1,6 +1,7 @@
 /**
- * Enables the "Edit JSON" Assets toolbar action only when exactly one item
- * whose path ends in .json is selected.
+ * Enables the "Edit JSON" Assets toolbar action only when exactly one asset
+ * (not a folder) is selected whose MIME type is application/json or whose
+ * path ends in .json.
  */
 (function (window) {
     'use strict';
@@ -13,8 +14,14 @@
             if (!selections || selections.length !== 1) {
                 return false;
             }
-            var path = selections[0].getAttribute('data-foundation-collection-item-id') || '';
-            return /\.json$/i.test(path);
+            var item = selections[0];
+            var meta = item.querySelector('.foundation-collection-assets-meta');
+            if (meta && meta.getAttribute('data-foundation-collection-meta-type') !== 'asset') {
+                return false;
+            }
+            var mimeType = meta ? meta.getAttribute('data-asset-mimetype') : '';
+            var path = item.getAttribute('data-foundation-collection-item-id') || '';
+            return mimeType === 'application/json' || /\.json$/i.test(path);
         }
     });
 }(window));

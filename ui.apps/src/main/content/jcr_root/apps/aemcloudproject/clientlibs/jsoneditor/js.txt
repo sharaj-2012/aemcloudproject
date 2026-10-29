@@ -1,0 +1,4 @@
+#base=.
+vendor/jsdiff-9.0.0/diff.min.js
+vendor/diff2html-3.4.56/diff2html-ui-slim.min.js
+js/editor.js

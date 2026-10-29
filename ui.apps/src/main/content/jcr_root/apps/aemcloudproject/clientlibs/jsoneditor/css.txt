@@ -1,0 +1,3 @@
+#base=.
+vendor/diff2html-3.4.56/diff2html.min.css
+css/editor.css

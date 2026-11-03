@@ -1,4 +1,5 @@
 #base=.
 vendor/jsdiff-9.0.0/diff.min.js
 vendor/diff2html-3.4.56/diff2html-ui-slim.min.js
+vendor/lossless-json-4.3.2/lossless-json.js
 js/editor.js

@@ -14,7 +14,7 @@ Let authors edit JSON files stored in AEM Assets directly in the browser. The ed
 | # | Requirement | How it is met |
 |---|---|---|
 | 1 | "Edit JSON" toolbar action for a selected JSON file; editor page with metadata | Toolbar action in the classic Assets console. The editor header shows the **asset path only**, which the user confirmed is enough. Last modified time and user are deliberately not shown. |
-| 2 | Editable JSON with validation and clear errors; live read-only formatted preview | Left: `vanilla-jsoneditor` text mode, with errors shown as line, column and message. Right: `vanilla-jsoneditor` read-only tree view, updated as the user types. |
+| 2 | Editable JSON with validation and clear errors; live read-only formatted preview | Left: `vanilla-jsoneditor` text mode, with errors shown as line, column and message. Right: `vanilla-jsoneditor` tree view, updated as the user types; it is also editable through a right-click menu limited to **Insert** and **Remove** (user decision), and tree edits are written back into the text. |
 | 3 | Compare mode: side-by-side diff with highlights | `jsdiff` computes the diff and `diff2html` renders it side by side, with line and word highlights. |
 | 4 | Save back to the same asset with versioning, permission check, conflict handling | One POST servlet: it validates, checks permissions, creates a version and writes the original rendition. **Conflict policy: last save wins** (decision §8.1). Overwritten content is always kept as a version. |
 | 5 | Security notes, service user, testing steps | §9 security notes. **No service user** (decision §8.2, with the reasoning). §10 testing. |
@@ -33,12 +33,13 @@ Let authors edit JSON files stored in AEM Assets directly in the browser. The ed
 
 | Library | Verdict | Reason |
 |---|---|---|
-| `josdejong/svelte-jsoneditor` (as the framework-free `vanilla-jsoneditor` package) | **Reuse** for editing and preview | Maintained, ISC licence. Text mode gives line and column errors. Read-only tree mode is a good preview. Ships a single-file browser ES module (`standalone.js`), so no Svelte runtime and no build are needed. |
+| `josdejong/svelte-jsoneditor` (as the framework-free `vanilla-jsoneditor` package) | **Reuse** for editing and preview | Maintained, ISC licence. Text mode gives line and column errors. Its tree mode gives the preview and the Insert/Remove menu. Ships a single-file browser ES module (`standalone.js`), so no Svelte runtime and no build are needed. |
 | `josdejong/jsoneditor` | **Rejected** | The legacy predecessor, in maintenance mode, and its author recommends svelte-jsoneditor instead. |
 | Microsoft Monaco | **Rejected** | The Monaco 0.53.0 changelog deprecates the AMD build with no support. Its ESM build needs a bundler, which conflicts with the no-build constraint. Pinning 0.52.x would start a new feature on a dead end. |
+| `josdejong/lossless-json` | **Adopted** as the editors' JSON parser | MIT, same author. Keeps numbers exactly as written (large integers, `1.0`), so a tree edit never rounds values elsewhere in the file. UMD bundle, no build needed. |
 | `jsdiff` + `diff2html` *(safe alternative)* | **Adopted** for Compare | Both ship prebuilt browser (UMD) bundles that work with no build. jsdiff is BSD-3-Clause and diff2html is MIT. They are much smaller than Monaco and need no web workers. |
 
-All libraries are stored in the project, pinned to a version, and come with their licence files. **Nothing loads from a CDN.**
+All libraries are stored in the project, pinned to a version, and carry their licence in a banner at the top of each file. **Nothing loads from a CDN.**
 
 ## 5. Architecture
 
@@ -49,7 +50,7 @@ Assets console (/assets.html)
                                                  ├─ header: asset path
                                                  ├─ read-only banner   (rendercondition: NOT privilege rep:write)
                                                  ├─ [Format] [Compare] [Save]   (Save: rendercondition privilege rep:write)
-                                                 ├─ left: vanilla-jsoneditor (text)   right: vanilla-jsoneditor (tree, read-only)
+                                                 ├─ left: vanilla-jsoneditor (text)   right: vanilla-jsoneditor (tree; Insert/Remove menu)
                                                  └─ compare view: jsdiff + diff2html (side-by-side)
           load:  GET  <asset path>                       (AEM's own asset serving, no custom code)
           save:  POST <asset path>.jsoneditor.json       (JsonAssetSaveServlet)
@@ -94,18 +95,18 @@ Assets console (/assets.html)
 clientlibs/jsoneditor/
 ├── .content.xml          categories=[aemcloudproject.jsoneditor], allowProxy=true,
 │                         jsProcessor=[default:none,min:none], cssProcessor=[default:none,min:none]
-├── js.txt                vendor/jsdiff-<v>/diff.min.js, vendor/diff2html-<v>/diff2html-ui-slim.min.js, js/editor.js
+├── js.txt                vendor/jsdiff-<v>/diff.min.js, vendor/diff2html-<v>/diff2html-ui-slim.min.js, vendor/lossless-json-<v>/lossless-json.js, js/editor.js
 ├── css.txt               vendor/diff2html-<v>/diff2html.min.css, css/editor.css
 ├── js/editor.js          our code (plain script, no build)
 ├── css/editor.css
 ├── vendor/               classic UMD bundles, listed in js.txt / css.txt
-│   ├── jsdiff-<v>/diff.min.js + LICENSE
-│   └── diff2html-<v>/diff2html-ui-slim.min.js, diff2html.min.css + LICENSE
-├── resources/vendor/     ES module, served as a separate file (never concatenated)
-│   └── vanilla-jsoneditor-<v>/standalone.js + LICENSE.md
-└── VENDOR.md             name, version, source URL, licence, SHA-256 of every vendored file
+│   ├── jsdiff-<v>/diff.min.js
+│   ├── diff2html-<v>/diff2html-ui-slim.min.js, diff2html.min.css
+│   └── lossless-json-<v>/lossless-json.js
+└── resources/vendor/     ES module, served as a separate file (never concatenated)
+    └── vanilla-jsoneditor-<v>/standalone.js
 ```
-`<v>` is the latest stable release at implementation time (at least two weeks old), recorded in `VENDOR.md`.
+`<v>` is the latest stable release at implementation time (at least two weeks old): vanilla-jsoneditor 3.13.0, diff 9.0.0, diff2html 3.4.56, lossless-json 4.3.2. Each vendored file starts with a `/*! … */` banner holding the library name, version, source URL and its full licence text (the licences require the notice to travel with the code); there are no separate LICENSE files.
 - **Why the minifier is off:** the clientlib minifier can mangle the `import()` syntax that loads the editor library. Vendored files are already minified.
 - **Why vanilla-jsoneditor sits under `resources/`:** it is an ES module, and clientlib file concatenation would break it. `editor.js` loads it with `import('/etc.clientlibs/aemcloudproject/clientlibs/jsoneditor/resources/vendor/vanilla-jsoneditor-<v>/standalone.js')`.
 - Version numbers in the folder names make upgrades change the URL, so browsers never serve a stale cached copy.
@@ -114,7 +115,9 @@ clientlibs/jsoneditor/
 1. **Load.** The asset path comes from the URL suffix. It runs `fetch(<path>, {cache: 'no-store', credentials: 'same-origin'})`. A leading BOM is removed. The text becomes the **baseline**, which stays fixed while the page is open.
 2. **Editor (left).** `vanilla-jsoneditor` in text mode, with the editor's own menus turned off: transform, query, sort and mode switch. The raw text the user types is what gets saved.
 3. **Validation.** Errors appear as *"Line L, column C: message"*, at the first position where the text stops being valid JSON (a parser cannot locate a deleted character earlier in the file). The library's Auto repair is hidden with CSS (the library has no option to disable it) because it guesses at the structure and can produce valid but wrong JSON; Undo and Compare are the way to recover. Save is disabled while the text is invalid.
-4. **Preview (right).** A second `vanilla-jsoneditor` in read-only tree mode, debounced (about 300 ms). While the text is invalid, the preview keeps the last valid state and shows a "Preview out of date — fix errors" note.
+4. **Tree (right).** A second `vanilla-jsoneditor` in tree mode, updated from the text (debounced, about 300 ms). Both editors use lossless-json as their parser, so numbers keep their exact form.
+   - **Editing:** the right-click menu is reduced (via `onRenderContextMenu`) to **Remove**, **Insert before / Insert after** and the **Insert: Structure / Object / Array / Value** options. Insert buttons are matched by their `Insert:` tooltip because the library reuses the same names for its "Convert to:" buttons. A tree edit is written back into the text, re-indented to 2 spaces, keeping the file's trailing newline.
+   - **Locking:** the tree is read-only when the page is read-only, and while the text is invalid (it then keeps the last valid state and shows "Preview out of date — fix errors"), so a tree edit can never overwrite text that is still being fixed.
 5. **Compare.** It toggles a view rendered by `Diff2HtmlUI` (side-by-side, word-level highlights) from `Diff.createTwoFilesPatch('original', 'modified', baseline, current)`.
    - **Normalize formatting** toggle: re-indents both sides before diffing. It only changes the display, keeps key order, and leaves the saved text alone.
    - **Limits:** jsdiff `timeout`/`maxEditLength` and diff2html `diffMaxChanges`/`diffMaxLineLength`/`matchingMaxComparisons`. When a limit is hit, it shows "Too many differences to display".
@@ -183,7 +186,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 4. **Input limits.** There is no file size limit (user decision): very large files may make the browser editor slow and are read fully into server memory on save; only authors with write access can trigger this. Jackson's default nesting and string-length limits and strict UTF-8 decoding still apply.
 5. **XSS.** Our code never uses `innerHTML`. diff2html escapes file content, and its HTML only goes into the Compare container. A test with hostile content covers this (§10).
 6. **Author only.** The service requires an OSGi config that exists only in `config.author`, and the servlet depends on the service, so nothing is active on publish. The editor page and toolbar only exist in the author Assets console.
-7. **Supply chain.** Libraries are vendored and pinned. `VENDOR.md` records the version, source URL, licence and SHA-256 for each file. There is no CDN and no third-party network request at runtime. Upgrades go through a reviewed PR.
+7. **Supply chain.** Libraries are vendored and pinned; each file's banner records its version, source URL and licence. There is no CDN and no third-party network request at runtime. Upgrades go through a reviewed PR.
 8. **Recovery.** Every save that changes content creates a version first. Rollback uses the OOTB Timeline → Versions → Revert.
 9. **No content in logs.** The servlet logs errors (path and failure reason) but never file content. No separate audit log is kept, by decision.
 
@@ -212,7 +215,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 2. **Toolbar:** select `sample.json` → **Edit JSON** shows. Select `image.png` → hidden. Select two items → hidden. Check card, list and column views.
 3. **Editor:** opens with the asset path in the header; content loads; the preview shows the tree.
 4. **Validation:** delete a comma → "Line …, column …" error, Save disabled, preview marked out of date; no Auto repair button in the error bar or the line tooltip; Ctrl+Z restores the text.
-5. **Preview:** edit a value → the tree updates within about 300 ms.
+5. **Tree:** edit a value on the left → the tree updates within about 300 ms. Right-click a row → only Remove, Insert before and Insert after; choose Insert after → Insert Object / Array / Value; inserting or removing updates the text on the left; large integers and `1.0` are unchanged; while the text is invalid, right-click opens no menu.
 6. **Compare:** changes are highlighted side by side with word-level highlights. **Normalize formatting** hides whitespace-only changes.
 7. **Hostile content:** add `"x": "<img src=x onerror=alert(1)>"`, open Compare → no alert; the text appears literally.
 8. **Save:** success toast with a version label. **Timeline → Versions** lists `jsoneditor-…`, and **Revert** restores the old content.

@@ -10,15 +10,22 @@
     var EDITOR_MODULE_URL = '/etc.clientlibs/aemcloudproject/clientlibs/jsoneditor/resources/vendor/vanilla-jsoneditor-3.13.0/standalone.js';
     var CSRF_URL = '/libs/granite/csrf/token.json';
 
+    var PARSER = {parse: window.LosslessJSON.parse, stringify: window.LosslessJSON.stringify};
+    var TREE_MENU_BUTTONS = ['Remove', 'Insert before', 'Insert after'];
+    var TREE_MENU_INSERT_PREFIX = 'Insert:';
+
     var state = {
         baseline: '',
         current: '',
         valid: true,
         saving: false,
         comparing: false,
+        editable: false,
         left: null,
         preview: null,
-        previewTimer: null
+        previewTimer: null,
+        treeText: '',
+        treeReadOnly: true
     };
 
     function el(id) {
@@ -106,10 +113,23 @@
     function schedulePreview() {
         window.clearTimeout(state.previewTimer);
         state.previewTimer = window.setTimeout(function () {
-            if (state.valid && state.preview) {
-                state.preview.set({text: state.current});
+            if (state.valid && state.preview && state.current !== state.treeText) {
+                state.treeText = state.current;
+                state.preview.update({text: state.current});
             }
         }, PREVIEW_DELAY_MS);
+    }
+
+    /**
+     * The tree is editable only on an editable page while the text is valid,
+     * so a tree edit can never overwrite text that is still being fixed.
+     */
+    function updateTreeEditable() {
+        var readOnly = !state.editable || !state.valid;
+        if (state.preview && readOnly !== state.treeReadOnly) {
+            state.treeReadOnly = readOnly;
+            state.preview.updateProps({readOnly: readOnly});
+        }
     }
 
     function applyErrors(contentErrors) {
@@ -123,13 +143,63 @@
         if (state.valid) {
             schedulePreview();
         }
+        updateTreeEditable();
         updateButtons();
     }
 
     function onChange(content, previousContent, status) {
-        state.current = content.text !== undefined ? content.text : JSON.stringify(content.json, null, 2);
+        state.current = content.text !== undefined ? content.text : PARSER.stringify(content.json, null, 2);
         showStatus('');
         applyErrors(status && status.contentErrors);
+    }
+
+    /**
+     * Writes a tree edit (insert or remove) back into the text editor, keeping the file's trailing newline.
+     */
+    function onTreeChange(content) {
+        var text = content.text !== undefined ? content.text : PARSER.stringify(content.json, null, 2);
+        if (/\n$/.test(state.current) && !/\n$/.test(text)) {
+            text += '\n';
+        }
+        state.treeText = text;
+        state.current = text;
+        state.left.update({text: text});
+        showStatus('');
+        applyErrors(state.left.validate());
+    }
+
+    function isMenuSeparator(item) {
+        return item.type === 'separator';
+    }
+
+    /**
+     * Reduces the tree's context menu to the Insert entries and Remove. Insert buttons are matched by
+     * their "Insert:" tooltip because the library reuses the same names for its "Convert to:" buttons.
+     */
+    function limitTreeMenu(items) {
+        function keep(item) {
+            if (item.type === 'row' || item.type === 'column') {
+                var children = item.items.map(keep).filter(Boolean);
+                var hasAction = children.some(function (child) {
+                    return child.type !== 'label';
+                });
+                return hasAction ? Object.assign({}, item, {items: children}) : null;
+            }
+            if (isMenuSeparator(item)) {
+                return item;
+            }
+            if (item.type === 'label') {
+                return item.text === TREE_MENU_INSERT_PREFIX ? item : null;
+            }
+            var button = item.type === 'dropdown-button' ? item.main : item;
+            var isInsert = (button.title || '').indexOf(TREE_MENU_INSERT_PREFIX) === 0;
+            return isInsert || TREE_MENU_BUTTONS.indexOf(button.text) !== -1 ? item : null;
+        }
+        var kept = items.map(keep).filter(Boolean);
+        return kept.filter(function (item, index) {
+            return !isMenuSeparator(item)
+                || (index > 0 && index < kept.length - 1 && !isMenuSeparator(kept[index - 1]));
+        });
     }
 
     /**
@@ -350,12 +420,14 @@
             var createJSONEditor = results[1].createJSONEditor;
             state.baseline = text;
             state.current = text;
+            state.editable = !!el('jsoneditor-save');
             state.left = createJSONEditor({
                 target: el('jsoneditor-left'),
                 props: {
                     content: {text: text},
                     mode: 'text',
-                    readOnly: !el('jsoneditor-save'),
+                    parser: PARSER,
+                    readOnly: !state.editable,
                     askToFormat: false,
                     mainMenuBar: false,
                     navigationBar: false,
@@ -364,14 +436,19 @@
                 }
             });
             var errors = state.left.validate();
+            state.treeText = errors && errors.parseError ? '' : text;
+            state.treeReadOnly = true;
             state.preview = createJSONEditor({
                 target: el('jsoneditor-right'),
                 props: {
-                    content: {text: errors && errors.parseError ? '' : text},
+                    content: {text: state.treeText},
                     mode: 'tree',
+                    parser: PARSER,
                     readOnly: true,
                     mainMenuBar: false,
-                    navigationBar: false
+                    navigationBar: false,
+                    onChange: onTreeChange,
+                    onRenderContextMenu: limitTreeMenu
                 }
             });
             applyErrors(errors);

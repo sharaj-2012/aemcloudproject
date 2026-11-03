@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jsoneditor-harness",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-shashankraj-Documents-AEM-aemcloudproject/b6aedab2-e3f1-4c31-9b25-e29e195015a4/scratchpad/harness/server.py",
+        "8765",
+        "/Users/shashankraj/Documents/AEM/aemcloudproject/ui.apps/src/main/content/jcr_root/apps/aemcloudproject/clientlibs/jsoneditor",
+        "/Users/shashankraj/Documents/AEM/aemcloudproject/ui.apps/src/main/content/jcr_root/apps/aemcloudproject/gui/components/jsoneditor/jsoneditor.html"
+      ],
+      "port": 8765
+    }
+  ]
+}

@@ -4,9 +4,7 @@ import com.aemcloudproject.core.services.JsonAssetSaveService;
 import com.aemcloudproject.core.services.SaveResult;
 import com.aemcloudproject.core.services.SaveStatus;
 import com.day.cq.dam.api.Asset;
-import com.day.cq.dam.api.Rendition;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.Resource;
@@ -18,13 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.AccessDeniedException;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -34,9 +29,6 @@ import java.util.Optional;
 public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonAssetSaveServiceImpl.class);
-    private static final String DAM_ROOT = "/content/dam/";
-    private static final String JSON_MIME = "application/json";
-    private static final String ORIGINAL = "original";
     private static final String METADATA = "/jcr:content/metadata";
     private static final String LABEL_PREFIX = "jsoneditor-";
     private static final String VERSION_COMMENT = "Saved from JSON editor";
@@ -48,11 +40,11 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
 
     @Override
     public SaveResult save(Resource assetResource, byte[] content) {
-        Asset asset = assetResource.getPath().startsWith(DAM_ROOT) ? assetResource.adaptTo(Asset.class) : null;
+        Asset asset = JsonAssets.damAsset(assetResource);
         if (asset == null) {
             return SaveResult.of(SaveStatus.NOT_DAM_ASSET);
         }
-        if (!isJson(asset)) {
+        if (!JsonAssets.isJson(asset)) {
             return SaveResult.of(SaveStatus.NOT_JSON);
         }
         byte[] bytes = JsonValidator.stripBom(content);
@@ -64,7 +56,7 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
         if (!privileges.canEdit(resolver, asset.getPath())) {
             return SaveResult.of(SaveStatus.FORBIDDEN);
         }
-        if (Arrays.equals(bytes, currentContent(asset))) {
+        if (Arrays.equals(bytes, JsonAssets.readOriginal(asset))) {
             return SaveResult.of(SaveStatus.UNCHANGED);
         }
         String label = LABEL_PREFIX + LABEL_FORMAT.format(LocalDateTime.now(clock));
@@ -76,7 +68,7 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
         }
         try {
             asset.setBatchMode(true);
-            asset.addRendition(ORIGINAL, new ByteArrayInputStream(bytes), JSON_MIME);
+            asset.addRendition(JsonAssets.ORIGINAL, new ByteArrayInputStream(bytes), JsonAssets.JSON_MIME);
             updateMetadata(resolver, asset.getPath(), bytes);
             resolver.commit();
         } catch (Exception e) {
@@ -87,22 +79,6 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
                     : SaveResult.of(SaveStatus.SAVE_FAILED);
         }
         return SaveResult.saved(label);
-    }
-
-    private static boolean isJson(Asset asset) {
-        return asset.getName().toLowerCase(Locale.ROOT).endsWith(".json") || JSON_MIME.equals(asset.getMimeType());
-    }
-
-    private static byte[] currentContent(Asset asset) {
-        Rendition original = asset.getOriginal();
-        if (original == null) {
-            return null;
-        }
-        try (InputStream in = original.getStream()) {
-            return in == null ? null : JsonValidator.stripBom(IOUtils.toByteArray(in));
-        } catch (IOException e) {
-            return null;
-        }
     }
 
     private static void updateMetadata(ResourceResolver resolver, String assetPath, byte[] bytes) {

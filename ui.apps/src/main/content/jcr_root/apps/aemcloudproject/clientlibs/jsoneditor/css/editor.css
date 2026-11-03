@@ -48,7 +48,8 @@
     display: none;
 }
 
-#jsoneditor-diff {
+#jsoneditor-diff,
+.aemcloudproject-jsoneditor__diff {
     overflow-x: auto;
 }
 

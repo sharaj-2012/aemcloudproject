@@ -39,6 +39,7 @@
                         <!-- Common overlay roots -->
                                                 <filter><root>/apps/sling</root></filter>
                         <filter><root>/apps/cq</root></filter>
+                        <filter><root>/apps/cq/inbox/content/inbox/jcr:content/actions/selection</root></filter>
                         <filter><root>/apps/dam</root></filter>
                         <filter><root>/apps/dam/gui/content/assets/jcr:content/actions/selection/create/items</root></filter>
                         <filter><root>/apps/wcm</root></filter>

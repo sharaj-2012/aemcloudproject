@@ -249,3 +249,22 @@ These are integration assumptions the SDK API jar cannot prove. Each one is chec
 - Editing on publish, bulk editing, editing files that aren't JSON.
 - Restoring the original line-ending style (the editor saves `\n` line endings).
 - Automated front-end tests (there is no node build). A `ui.tests` browser test can be added later.
+
+## 13. Inbox: "View JSON changes" (added 2026-11-04)
+
+**Goal:** from the AEM Inbox (`/aem/inbox`), show what changed in a JSON asset that is the payload of a workflow item. The editor keeps saving directly; there is no approval step (user decision).
+
+**What "changes" means:** the asset's **most recent version** compared with its **current content**. Every editor save first stores the old content as a version, so this is the latest change. If the asset was changed without a new version, the diff covers everything since the last version.
+
+| Piece | Where | What it does |
+|---|---|---|
+| Inbox button | `/apps/cq/inbox/content/inbox/jcr:content/actions/selection/viewjsonchanges` (overlay) | `collection/action` "View JSON changes", one item selected, `relScope="none"`, custom action `aemcloudproject.inbox.viewjsonchanges` and active condition `aemcloudproject.inbox.jsonpayload`. |
+| Button script | clientlib `clientlibs/jsonchanges-inbox`, category `cq.inbox.gui.extensions` | Active only when the row's `data-payload-link` is `/assetdetails.html/content/dam/….json`; opens the changes page for that asset in a new tab. |
+| Changes page | `/mnt/overlay/aemcloudproject/gui/content/jsonchanges.html<asset path>` + component `aemcloudproject/gui/components/jsonchanges` + `js/changes.js` | Read-only. Summary ("Last changed by … on …; left: version … saved …; right: current content"), side-by-side diff with **Normalize formatting**, Close. Messages: "No earlier version to compare with.", "This asset is not a JSON file.", "Not a DAM asset path.". |
+| Shared diff code | `js/jsondiff.js` (`window.AemCloudProjectJsonDiff`) | `reindent` and the side-by-side `render`, used by both the editor's Compare and the changes page. |
+| Endpoint | `JsonAssetChangesServlet`: `GET <asset>.jsonchanges.json` → `JsonAssetChangesServiceImpl` | On the user's own session: `asset.getRevisions()`, newest by creation date, its original via `Revision.getRenditionPath("original")` (read from `jcr:content/jcr:data`, because files inside a version are frozen nodes). Returns `{status, path, current{content,date,user}, previous{content,label,date}}`; 400 `not_dam_asset`, 415 `not_json`. `Cache-Control: no-store`. |
+| Author only | `config.author/…JsonAssetChangesServiceImpl.cfg.json` (empty) | Service has `configurationPolicy = REQUIRE`; the servlet requires the service, so neither runs on publish. |
+
+**Decision — overlay of an internal area:** `/libs/cq/inbox/content/inbox` is marked `granite:InternalArea`, which Adobe documents as not to be overlaid. The user chose the overlay over the supported alternative (a `cq.inbox.gui.extensions` script that adds the button without touching `/libs`). **Risk:** an AEM update can change or move the Inbox action bar and break or hide the button, and Cloud Manager code-quality checks may flag the overlay. If that happens, switch to the extension-script approach; the endpoint, page and active-condition script stay as they are.
+
+**Verified on the local SDK:** button visible only for a JSON payload (hidden for an `.xlsx` payload and for items without a payload); click opens the changes page for the payload; diff shows the latest editor change; Normalize hides whitespace-only lines; unversioned asset and PNG show their messages; the editor's Compare still works on the shared diff code.

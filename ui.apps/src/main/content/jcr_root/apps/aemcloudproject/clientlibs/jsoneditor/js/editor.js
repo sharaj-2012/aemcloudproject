@@ -202,71 +202,9 @@
         });
     }
 
-    /**
-     * Pretty-prints JSON text with two-space indentation without parsing it,
-     * so number and string tokens are kept exactly as written.
-     */
-    function reindent(text) {
-        var out = '';
-        var indent = 0;
-        var inString = false;
-        var escaped = false;
-        var i;
-        var c;
-        var j;
-
-        function newline() {
-            out += '\n' + new Array(indent + 1).join('  ');
-        }
-
-        for (i = 0; i < text.length; i++) {
-            c = text.charAt(i);
-            if (inString) {
-                out += c;
-                if (escaped) {
-                    escaped = false;
-                } else if (c === '\\') {
-                    escaped = true;
-                } else if (c === '"') {
-                    inString = false;
-                }
-            } else if (c === '"') {
-                inString = true;
-                out += c;
-            } else if (/\s/.test(c)) {
-                continue;
-            } else if (c === '{' || c === '[') {
-                j = i + 1;
-                while (j < text.length && /\s/.test(text.charAt(j))) {
-                    j++;
-                }
-                if (text.charAt(j) === (c === '{' ? '}' : ']')) {
-                    out += c + text.charAt(j);
-                    i = j;
-                } else {
-                    out += c;
-                    indent++;
-                    newline();
-                }
-            } else if (c === '}' || c === ']') {
-                indent = Math.max(0, indent - 1);
-                newline();
-                out += c;
-            } else if (c === ',') {
-                out += ',';
-                newline();
-            } else if (c === ':') {
-                out += ': ';
-            } else {
-                out += c;
-            }
-        }
-        return out;
-    }
-
     function format() {
         if (state.valid && state.left) {
-            var formatted = reindent(state.current);
+            var formatted = window.AemCloudProjectJsonDiff.reindent(state.current);
             state.left.update({text: formatted});
             state.current = formatted;
             applyErrors(state.left.validate());
@@ -274,40 +212,10 @@
     }
 
     function renderCompare() {
-        var diffEl = el('jsoneditor-diff');
         var normalize = el('jsoneditor-normalize');
-        var before = state.baseline;
-        var after = state.current;
-        if (normalize && normalize.checked) {
-            before = reindent(before);
-            after = reindent(after);
-        }
-        diffEl.textContent = '';
-        setText('jsoneditor-compare-message', '');
-        if (before === after) {
-            setText('jsoneditor-compare-message', 'No differences.');
-            return;
-        }
         var name = assetPath().substring(assetPath().lastIndexOf('/') + 1);
-        var patch = window.Diff.createTwoFilesPatch(name, name, before, after, '', '', {
-            context: 3,
-            timeout: 3000,
-            maxEditLength: 20000
-        });
-        if (patch === undefined) {
-            setText('jsoneditor-compare-message', 'Too many differences to display');
-            return;
-        }
-        new window.Diff2HtmlUI(diffEl, patch, {
-            outputFormat: 'side-by-side',
-            drawFileList: false,
-            fileContentToggle: false,
-            matching: 'words',
-            diffMaxChanges: 5000,
-            diffMaxLineLength: 10000,
-            matchingMaxComparisons: 2500,
-            highlight: false
-        }).draw();
+        setText('jsoneditor-compare-message', window.AemCloudProjectJsonDiff.render(
+            el('jsoneditor-diff'), state.baseline, state.current, name, !!(normalize && normalize.checked)));
     }
 
     function toggleCompare() {

@@ -3,7 +3,7 @@
 The SCB CF bulk upload creates and updates content fragments for six models from one Excel workbook, with a dry run, a results table and a versioned report saved to DAM. Everything below is built, deployed on local AEM (port 4507) and committed; delete, publishing and Phase 2 validation are the open topics.
 
 > This brief describes the tool as demoed on 15 Oct 2026. The feedback from the demo was built on
-> 20 Oct; see [Demo feedback and changes](#demo-feedback-and-changes-20-oct) below. The other
+> 20 Oct, and the tool was made offer-listing-only on 12 Nov; see the two sections below. The other
 > documents describe the current behaviour.
 
 ## Demo feedback and changes (20 Oct)
@@ -20,6 +20,19 @@ The SCB CF bulk upload creates and updates content fragments for six models from
 | Pathfield for the DAM parent path | **Fragment folder** picker, pre-filled from OSGi (`/content/dam/aemcloudproject/cfs/offer-listing`); profile folders are relative to it (`offers`, `merchants`, …) |
 
 Side effect: with an empty sample sheet, new IDs now continue from the highest ID in the sheet **or in DAM**, so they no longer restart at 100001 / 1001.
+
+## Offer-listing only, and sample rows (12 Nov)
+
+The uploader is no longer generic: it is the offer-listing uploader.
+
+| Change | Detail |
+| --- | --- |
+| Models fixed in code | The six models (folder, title field, ID field, start ID, sort field, required fields, sheet order) are one Java enum, `ScbOfferListingModel`. The OSGi model profiles (`ScbModelProfileConfiguration`, `ScbModelProfile`, `ScbModelProfileImpl` and six cfg.json files) are gone. Required fields no longer come from the model's Required ticks |
+| Smaller OSGi config | `ScbCfBulkUploadConfiguration` keeps `reportFolder`, `fragmentReportFileName` (was `reportFileName`), `runResultsFileName` (was `runReportFileName`), `maxFileSizeMb`, `maxRows`. `fragmentRootPath` and `modelsPath` are removed |
+| Folder picked every time | No default folder. It must be named `offer-listing`; the server refuses any other folder for every action |
+| Buttons follow the folder | Dry run (also needs a workbook), Download sample sheet and Save report to DAM stay disabled until the picked path ends with `/offer-listing`. Final run keeps its dry-run rule |
+| Sample rows | The sample sheet has one grey row 2 per model with action `SAMPLE`, copied from the fragment with the highest ID (or the last one in folder order for venues and CTAs). The dropdown starts at row 3. The upload drops every `SAMPLE` row before any check |
+| Smaller code | Shared helpers for IDs, models, JSON and the folder parameter; UPDATE and DELETE share one fragment check; `#CLEAR` is no longer rejected (it would be stored as text); combined chip and badge CSS |
 
 ## Demo script
 
@@ -206,6 +219,7 @@ Suggested order after the demo: decide the deployment of models, close the data-
 
 - [CF Bulk Upload – Authoring Guide](02-authoring-guide.md): for authors, first time to everyday use.
 - [CF Bulk Upload – Delete Challenges](06-proposal-delete-challenges.md): decided and built 20 Oct.
+- [Input format (spec)](01-input-format.md), sections "The offer-listing folder", "Models" and "Sample rows": the 12 Nov change.
 - [CF Bulk Upload – Empty Cell Clears Field](05-decision-empty-cell-clears-field.md): decided and built.
 - [Input format (spec)](01-input-format.md): the contract the code implements.
 - [Test scenarios](03-test-scenarios.md): every scenario with its workbook rows and verified result.

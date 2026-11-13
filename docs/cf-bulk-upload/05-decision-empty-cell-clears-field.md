@@ -4,6 +4,8 @@ Proposal from the lead: on UPDATE, an empty cell empties the field, replacing th
 
 **Update, 14 Oct 2026:** decided and built with all six suggestions below (`#CLEAR` now fails the row; the Assets title is kept).
 
+**Update, 12 Nov 2026:** the `#CLEAR` check was removed to simplify the code; a `#CLEAR` typed in a cell is now stored as text like any other value.
+
 ## The change
 
 Only the empty-cell row changes; CREATE is unaffected, because an empty cell there already means an empty field.

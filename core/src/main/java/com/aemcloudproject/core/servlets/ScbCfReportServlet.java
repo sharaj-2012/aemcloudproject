@@ -2,8 +2,6 @@ package com.aemcloudproject.core.servlets;
 
 import com.aemcloudproject.core.services.ScbContentFragmentReportService;
 import com.aemcloudproject.core.utils.ScbCfBulkUploadUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.servlets.HttpConstants;
@@ -21,8 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Backend of the report card: GET downloads the empty sample sheet, POST ("Save report to DAM") saves
- * the report of every Content Fragment under the picked folder as a new, timestamped .xlsx in DAM.
+ * Backend of the report card for the picked offer-listing folder: GET downloads the sample sheet,
+ * POST ("Save report to DAM") saves the report of every Content Fragment as a new, timestamped .xlsx in DAM.
  */
 @Component(service = Servlet.class)
 @SlingServletResourceTypes(
@@ -35,25 +33,31 @@ public class ScbCfReportServlet extends SlingAllMethodsServlet {
     static final String RESOURCE_TYPE = "aemcloudproject/cfbulkupload/report";
     private static final Logger log = LoggerFactory.getLogger(ScbCfReportServlet.class);
 
-    private static final String PARAM_ROOT_PATH = "rootPath";
-    private static final String SAMPLE_FILE_NAME = "cf-bulk-upload-sample.xlsx";
+    private static final String SAMPLE_FILE_NAME = "scb-tgl-cf-bulk-upload-sample.xlsx";
     private static final String XLSX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     @Reference
     private transient ScbContentFragmentReportService reportService;
 
     /**
-     * Sends the empty sample workbook as a download named {@code cf-bulk-upload-sample.xlsx}.
+     * Sends the sample workbook of the folder in the {@code rootPath} parameter as a download named
+     * {@code scb-tgl-cf-bulk-upload-sample.xlsx}, or HTTP 400 and a message when the folder is not usable.
      *
-     * @param request  the request
+     * @param request  the request with the {@code rootPath} parameter
      * @param response the response the .xlsx is written to
      * @throws IOException if writing the response fails
      */
     @Override
     protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
+        String rootPath = ScbCfBulkUploadUtil.scbRootPath(request);
+        String problem = ScbCfBulkUploadUtil.scbCheckFolder(request.getResourceResolver(), rootPath);
+        if (problem != null) {
+            ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, scbError(problem));
+            return;
+        }
         response.setContentType(XLSX_MIME_TYPE);
         response.setHeader("Content-Disposition", "attachment; filename=\"" + SAMPLE_FILE_NAME + "\"");
-        reportService.scbWriteSample(request.getResourceResolver(), response.getOutputStream());
+        reportService.scbWriteSample(request.getResourceResolver(), rootPath, response.getOutputStream());
     }
 
     /**
@@ -67,28 +71,35 @@ public class ScbCfReportServlet extends SlingAllMethodsServlet {
      */
     @Override
     protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        String rootPath = StringUtils.removeEnd(StringUtils.trimToEmpty(request.getParameter(PARAM_ROOT_PATH)), "/");
+        String rootPath = ScbCfBulkUploadUtil.scbRootPath(request);
         log.info("CF report save of {} requested by {}", rootPath, request.getResourceResolver().getUserID());
-        Map<String, Object> body = new LinkedHashMap<>();
         String problem = ScbCfBulkUploadUtil.scbCheckFolder(request.getResourceResolver(), rootPath);
         if (problem != null) {
-            body.put("status", "error");
-            body.put("message", problem);
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        } else {
-            try {
-                body.put("path", reportService.scbSaveReport(request.getResourceResolver(), rootPath));
-                body.put("status", "ok");
-                response.setStatus(HttpServletResponse.SC_OK);
-            } catch (IOException | RuntimeException e) {
-                log.error("Could not save the CF report", e);
-                body.put("status", "error");
-                body.put("message", "Could not save the report: " + e.getMessage());
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
+            ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, scbError(problem));
+            return;
         }
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        new ObjectMapper().writeValue(response.getWriter(), body);
+        try {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("path", reportService.scbSaveReport(request.getResourceResolver(), rootPath));
+            body.put("status", "ok");
+            ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_OK, body);
+        } catch (IOException | RuntimeException e) {
+            log.error("Could not save the CF report", e);
+            ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    scbError("Could not save the report: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Builds an error reply.
+     *
+     * @param message the message shown to the author
+     * @return the keys status ({@code error}) and message
+     */
+    private Map<String, Object> scbError(String message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", "error");
+        body.put("message", message);
+        return body;
     }
 }

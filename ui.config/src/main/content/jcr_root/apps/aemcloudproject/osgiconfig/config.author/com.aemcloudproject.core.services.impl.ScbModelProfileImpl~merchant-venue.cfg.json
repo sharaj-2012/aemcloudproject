@@ -1,6 +1,0 @@
-{
-  "model": "merchant-venue",
-  "folder": "merchants/venues",
-  "titleField": "name",
-  "order": 1
-}

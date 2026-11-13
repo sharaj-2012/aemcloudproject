@@ -98,6 +98,13 @@ Import-Package: javax.annotation;version=0.0.0,*
 
 
         <!-- Testing -->
+        <!-- Full Apache POI for the CF bulk upload tests: the SDK API jar has only part of it. -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.4</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -117,6 +124,17 @@ Import-Package: javax.annotation;version=0.0.0,*
             <groupId>junit-addons</groupId>
             <artifactId>junit-addons</artifactId>
             <scope>test</scope>
+            <!-- Its Xerces 2.6.2 breaks the XML parsing of AEM Mocks; the JDK parser is used instead. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xercesImpl</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>xerces</groupId>
+                    <artifactId>xmlParserAPIs</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.wcm</groupId>

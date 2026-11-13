@@ -27,6 +27,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
     private static final String CREATE = "CREATE";
     private static final String UPDATE = "UPDATE";
     private static final String DELETE = "DELETE";
+    private static final String SAMPLE = "SAMPLE";
     private static final String CONTENT_PATH_PREFIX = "/content";
     private static final String IGNORED_SHEET_PREFIX = "_";
 
@@ -57,7 +58,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
 
                 for (int r = 1; r <= sheet.getLastRowNum(); r++) {
                     Map<String, Object> values = scbReadRow(sheet.getRow(r), headerByColumn, formatter);
-                    if (values.isEmpty()) {
+                    if (values.isEmpty() || SAMPLE.equalsIgnoreCase(String.valueOf(values.get(ACTION)))) {
                         continue;
                     }
                     if (values.containsKey(ACTION)) {

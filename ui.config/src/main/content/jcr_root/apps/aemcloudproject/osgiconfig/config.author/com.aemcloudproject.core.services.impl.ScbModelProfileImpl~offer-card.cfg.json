@@ -1,8 +1,0 @@
-{
-  "model": "offer-card",
-  "folder": "cards",
-  "titleField": "name",
-  "idField": "ID",
-  "startId": 1001,
-  "order": 4
-}

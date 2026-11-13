@@ -1,8 +1,0 @@
-{
-  "model": "category",
-  "folder": "categories",
-  "titleField": "name",
-  "idField": "ID",
-  "startId": 1001,
-  "order": 3
-}

@@ -8,7 +8,6 @@ import com.aemcloudproject.core.services.ScbWorkbookParserService;
 import com.aemcloudproject.core.utils.ScbCfBulkUploadUtil;
 import com.day.cq.dam.api.Asset;
 import com.day.cq.dam.api.Rendition;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
@@ -42,7 +41,7 @@ import java.util.Map;
 @Component(service = Servlet.class, configurationPid = ScbCfBulkUploadConfiguration.PID)
 @SlingServletResourceTypes(
         resourceTypes = ScbCfBulkUploadServlet.RESOURCE_TYPE,
-        methods = {HttpConstants.METHOD_GET, HttpConstants.METHOD_POST},
+        methods = HttpConstants.METHOD_POST,
         extensions = "json")
 public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
 
@@ -51,7 +50,6 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
     private static final Logger log = LoggerFactory.getLogger(ScbCfBulkUploadServlet.class);
 
     private static final String PARAM_FILE_PATH = "filePath";
-    private static final String PARAM_ROOT_PATH = "rootPath";
     private static final String PARAM_DRY_RUN = "dryRun";
     private static final String PARAM_FILE_VERSION = "fileVersion";
     private static final String XLSX_EXTENSION = ".xlsx";
@@ -67,35 +65,19 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
     @Reference
     private transient ScbContentFragmentReportService reportService;
 
-    private String defaultRootPath;
     private int maxFileSizeMb;
     private int maxRows;
 
     /**
-     * Reads the default fragment folder and the upload limits from the configuration.
+     * Reads the upload limits from the configuration.
      *
      * @param config the CF bulk upload configuration
      */
     @Activate
     @Modified
     protected void activate(ScbCfBulkUploadConfiguration config) {
-        defaultRootPath = StringUtils.removeEnd(config.fragmentRootPath(), "/");
         maxFileSizeMb = config.maxFileSizeMb();
         maxRows = config.maxRows();
-    }
-
-    /**
-     * Sends the folder the page pre-fills in its folder picker, as {@code {"rootPath": "..."}}.
-     *
-     * @param request  the request
-     * @param response the response the JSON is written to
-     * @throws IOException if writing the response fails
-     */
-    @Override
-    protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("rootPath", defaultRootPath);
-        scbWriteJson(response, HttpServletResponse.SC_OK, body);
     }
 
     /**
@@ -119,7 +101,7 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
             scbWriteError(response, "Select a workbook first.");
             return;
         }
-        String rootPath = StringUtils.removeEnd(StringUtils.trimToEmpty(request.getParameter(PARAM_ROOT_PATH)), "/");
+        String rootPath = ScbCfBulkUploadUtil.scbRootPath(request);
         String folderProblem = ScbCfBulkUploadUtil.scbCheckFolder(request.getResourceResolver(), rootPath);
         if (folderProblem != null) {
             scbWriteError(response, folderProblem);
@@ -176,7 +158,7 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
         if (!errors.isEmpty()) {
             body.put("status", "error");
             body.put("errors", errors);
-            scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, body);
+            ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, body);
             return;
         }
 
@@ -213,7 +195,7 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
             }
         }
         body.put("results", results);
-        scbWriteJson(response, HttpServletResponse.SC_OK, body);
+        ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_OK, body);
     }
 
     /**
@@ -227,21 +209,6 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", "error");
         body.put("message", message);
-        scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, body);
-    }
-
-    /**
-     * Writes a map as a UTF-8 JSON response with the given HTTP status.
-     *
-     * @param response the response to write to
-     * @param status   the HTTP status code
-     * @param body     the content to serialise
-     * @throws IOException if writing the response fails
-     */
-    private void scbWriteJson(SlingHttpServletResponse response, int status, Map<String, Object> body) throws IOException {
-        response.setStatus(status);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        new ObjectMapper().writeValue(response.getWriter(), body);
+        ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_BAD_REQUEST, body);
     }
 }

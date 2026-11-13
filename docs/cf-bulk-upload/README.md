@@ -7,10 +7,10 @@ Bulk Upload**.
 
 | Document | For | What it covers |
 | --- | --- | --- |
-| [01-input-format.md](01-input-format.md) | Developers | The spec: workbook format, actions (incl. DELETE), slug, profiles, IDs, clearing, required fields, field reference |
+| [01-input-format.md](01-input-format.md) | Developers | The spec: workbook format, actions (incl. DELETE), the offer-listing folder, the six models, sample rows, slug, IDs, clearing, required fields, field reference |
 | [02-authoring-guide.md](02-authoring-guide.md) | Authors | First-time guide: terms, quick start, worked example, cell formats, errors, checklist, FAQ |
-| [03-test-scenarios.md](03-test-scenarios.md) | Developers, testers | Fifteen scenarios with their workbook rows, expected results and when each was last verified |
-| [04-demo-brief.md](04-demo-brief.md) | Team, lead | The 15 Oct demo, the feedback from it and what changed, architecture, risks, open decisions, next steps |
+| [03-test-scenarios.md](03-test-scenarios.md) | Developers, testers | Seventeen scenarios with their workbook rows, expected results and when each was last verified |
+| [04-demo-brief.md](04-demo-brief.md) | Team, lead | The 15 Oct demo, the feedback from it and what changed (20 Oct), the offer-listing-only change (12 Nov), architecture, risks, open decisions, next steps |
 | [05-decision-empty-cell-clears-field.md](05-decision-empty-cell-clears-field.md) | Lead | Decided and built: an empty cell on UPDATE clears the field (`#CLEAR` retired) |
 | [06-proposal-delete-challenges.md](06-proposal-delete-challenges.md) | Lead | Decided and built: DELETE with its safeguards; the original challenges |
 

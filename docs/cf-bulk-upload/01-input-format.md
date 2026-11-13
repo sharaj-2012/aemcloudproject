@@ -5,7 +5,11 @@ all implement exactly what is described here — if behaviour and this doc disag
 
 **Source of truth:** `test-data/cf-bulk-upload/cf-import-combined.xlsx` — the only reference
 workbook. Its layout is the format; this doc spells out the rules behind it. Authors start from the
-empty sample sheet (**Download sample sheet** on the page), which has the same layout.
+sample sheet (**Download sample sheet** on the page), which has the same layout plus one example row
+per sheet (see [Sample rows](#sample-rows)).
+
+The uploader is built for **offer-listing** only: the six models, their folders, IDs and required
+fields are fixed in code (`ScbOfferListingModel`), not configured.
 
 ## File
 
@@ -19,13 +23,13 @@ empty sample sheet (**Download sample sheet** on the page), which has the same l
 
 ## Sheets — one per model
 
-- **The sheet name is the model name** — the model's node name under the conf root
-  (default `/conf/aemcloudproject/settings/dam/cfm/models`), e.g. `offer-detail`, `merchant-venue`.
+- **The sheet name is the model name** — the model's node name under
+  `/conf/aemcloudproject/settings/dam/cfm/models`, e.g. `offer-detail`, `merchant-venue`.
 - Sheets starting with `_` are ignored, so authors can keep notes in the file. The first sheet of the
-  sample and of a saved report, `_Guide`, uses this: the authoring rules, the limits and a generated
-  table of every model profile (folder, title and ID columns, required fields).
-- A sheet whose name isn't a model with a [model profile](#model-profiles) is reported as an
-  error and skipped; the other sheets still run.
+  sample and of a saved report, `_Guide`, uses this: the authoring rules, the limits and a table of
+  every model (folder, title and ID columns, required fields).
+- A sheet whose name isn't one of the [six models](#models) is reported as an error and skipped;
+  the other sheets still run.
 - **Sheet order and row order don't matter.** One workbook can create venues, merchants that
   reference those venues, and offers that reference those merchants. No more
   `01-venues.xlsx` … `06-offers.xlsx`.
@@ -59,6 +63,7 @@ Every sheet has an `action` column (any position) that says what each row does.
   to 5,001). In a workbook built by hand any case works: `create`, `Create`, `CREATE` are the same.
 - A row with a blank `action` is skipped: it is not checked, written or listed in the results.
   Its ID still counts when new IDs are generated (see [Generated IDs](#generated-ids)).
+- A row whose action is `SAMPLE` (any case) is dropped before anything else: see [Sample rows](#sample-rows).
 - If **no row** in a sheet has an action, the sheet gets one `SKIP` line in the results
   ("Sheet: no row has an action") and the other sheets carry on. `SKIP` is not a failure.
 - Any other value (e.g. `REMOVE`) is an error for that row, and the whole workbook is rejected.
@@ -66,7 +71,7 @@ Every sheet has an `action` column (any position) that says what each row does.
 ## Deleting
 
 - `DELETE` rows run **after** every `CREATE` and `UPDATE` row of the workbook, sheet by sheet in
-  **reverse** profile order (offers first, venues last). So an offer and the CTA it points to can be
+  **reverse** model order (offers first, venues last). So an offer and the CTA it points to can be
   deleted in one run, and an `UPDATE` that removes a reference runs before the delete it unblocks.
 - A fragment is **not deleted** (result `WARN`, with the reason) when:
   - another fragment under the picked folder stores its path, or a page or experience fragment
@@ -78,34 +83,48 @@ Every sheet has an `action` column (any position) that says what each row does.
 - In a dry run, an `UPDATE` that would remove a reference is not written, so the delete it unblocks
   still shows `WARN`; the final run deletes it.
 
-## Model profiles
+## The offer-listing folder
 
-The uploader is generic; what's specific to a model lives in OSGi config, not in the
-spreadsheet: one **SCB CF Model Profile** factory configuration per model, in
-`ui.config/.../osgiconfig/config.author/com.aemcloudproject.core.services.impl.ScbModelProfileImpl~<model>.cfg.json`.
-A sheet whose name matches no profile's `model` fails with "not a known CF model". To support a new
-model, add one such file — no code change. A profile says, per model:
+- Every action works on the **Fragment folder** the author picks on the page, every time; there is
+  no default. Each model's fragments are in a sub-folder of it (see [Models](#models)).
+- The folder must be under `/content/dam`, exist, and be **named `offer-listing`**, e.g.
+  `/content/dam/aemcloudproject/cfs/offer-listing`. Any other folder is refused with
+  "Pick an offer-listing folder, e.g. /content/dam/aemcloudproject/cfs/offer-listing." before
+  anything is read.
+- The page keeps **Dry run** (also needs a workbook), **Download sample sheet** and **Save report to
+  DAM** disabled until the picked path ends with `/offer-listing`; the server checks again.
 
-| Setting      | Meaning |
-|--------------|---------|
-| `model`      | Model node name under the models path — also the sheet name. |
-| `folder`     | Folder for this model's fragments, relative to the **fragment folder picked on the page** (pre-filled from `fragmentRootPath` in `ScbCfBulkUploadConfiguration`, default `/content/dam/aemcloudproject/cfs/offer-listing`). Created as `sling:OrderedFolder` if missing. |
-| `titleField` | Field whose value becomes the fragment's title. |
-| `idField`    | Numeric ID field filled automatically on `CREATE` (optional). |
-| `startId`    | First ID used when neither the sheet nor DAM has an ID yet. |
-| `sortField`  | Field a saved report sorts the model's sheet by, latest or highest first (optional; default: `idField`, smallest first). |
-| `order`      | Position of the model's sheet in the sample and report, lower first; deletes run in reverse order. |
+## Models
 
-Profiles for this project:
+The six models are fixed in `ScbOfferListingModel`. Their order is the sheet order of the sample and
+the report; deletes run in reverse order. Changing a folder, ID, sort or required field, or adding a
+model, is a code change.
 
-| Sheet / model      | `folder`           | `titleField`   | `idField`    | `startId` | `sortField`    | `order` |
-|--------------------|--------------------|----------------|--------------|-----------|----------------|---------|
-| `merchant-venue`   | `merchants/venues` | `name`         | —            | —         | —              | 1       |
-| `merchant-details` | `merchants`        | `merchantName` | `merchantID` | 100001    | —              | 2       |
-| `category`         | `categories`       | `name`         | `ID`         | 1001      | —              | 3       |
-| `offer-card`       | `cards`            | `name`         | `ID`         | 1001      | —              | 4       |
-| `offer-cta`        | `offer-cta`        | `label`        | —            | —         | —              | 5       |
-| `offer-detail`     | `offers`           | `offerTitle`   | `offerID`    | 100001    | `offerEndDate` | 6       |
+| Sheet / model      | Folder (under offer-listing) | Title field    | ID field     | Start ID | Report sorted by | Required |
+|--------------------|------------------------------|----------------|--------------|----------|------------------|----------|
+| `merchant-venue`   | `merchants/venues`           | `name`         | —            | —        | folder order     | — |
+| `merchant-details` | `merchants`                  | `merchantName` | `merchantID` | 100001   | ID               | `merchantID` |
+| `category`         | `categories`                 | `name`         | `ID`         | 1001     | ID               | `ID` |
+| `offer-card`       | `cards`                      | `name`         | `ID`         | 1001     | ID               | `ID` |
+| `offer-cta`        | `offer-cta`                  | `label`        | —            | —        | folder order     | — |
+| `offer-detail`     | `offers`                     | `offerTitle`   | `offerID`    | 100001   | `offerEndDate`, latest first | `offerID`, `offerTitle`, `offerImage`, `alternateText` |
+
+Folders are created as `sling:OrderedFolder` when missing. The field names, types and column order
+are still read from the models in `/conf`.
+
+## Sample rows
+
+- **Download sample sheet** gives `_Guide` and the six sheets with every column. Each sheet has one
+  example in **row 2**, copied from an existing fragment in the picked folder: the one with the
+  highest ID, or, for models without an ID, the last one in folder order. A model with no fragments
+  yet has no example row.
+- The example row's `action` is `SAMPLE` and the whole row is grey italic. The CREATE / UPDATE /
+  DELETE dropdown starts at row 3, so `SAMPLE` is never one of its values.
+- The upload drops every row whose action is `SAMPLE` (any case) before any check: it isn't
+  written, counted toward the row limit, or listed in the results. A sheet with only its example
+  row gets the usual `SKIP` line.
+- If an author overwrites `SAMPLE` with `UPDATE`, the row updates the fragment it was copied from
+  (same slug); `CREATE` fails with "already exists".
 
 ### Slug and title
 
@@ -114,7 +133,7 @@ Profiles for this project:
   so what the author types is exactly the path they get.
 - The slug is **only used for the path**; it is not stored in the fragment, and the models have no
   slug field.
-- **Fragment path** = picked folder + profile `folder` + slug. `CREATE` requires that path to
+- **Fragment path** = picked offer-listing folder + model folder + slug. `CREATE` requires that path to
   be free, `UPDATE` and `DELETE` require a fragment there. A different slug is a different fragment:
   a fragment can't be renamed through the upload.
 - **Title** = the `titleField` value; if that cell is empty on `CREATE`, the slug is used.
@@ -202,7 +221,6 @@ value, and a blank cell means "this field has no value". Or keep only the column
 | blank                         | field empty               | field **cleared** |
 | blank ID field (`idField`)    | ID [generated](#generated-ids) | ID **kept** |
 | column not in the sheet       | field empty               | field **not touched** |
-| `#CLEAR`                      | row fails: `#CLEAR is no longer used — leave the cell empty to clear the field` | same |
 
 - Only columns present in the sheet can clear fields, so a sheet with just `action`, `slug` and
   one more column changes that one column and nothing else.
@@ -213,8 +231,8 @@ value, and a blank cell means "this field has no value". Or keep only the column
 
 ### Required fields
 
-The CF model is the only source: a field is mandatory when *Required* is ticked for it in the
-model editor (read from the model's dialog definition). Nothing is configured in OSGi.
+The required fields are fixed per model in `ScbOfferListingModel` (see [Models](#models)); they match
+the fields ticked *Required* in the model editor.
 
 - `CREATE`: every required field must have a value, otherwise the row fails with
   `offerTitle: required` (all missing fields in one message). A missing column counts as empty.
@@ -223,7 +241,7 @@ model editor (read from the model's dialog definition). Nothing is configured in
   the row fails with `offerTitle: required`. A required column left out of the sheet is fine, and a
   blank ID field keeps the current ID.
 - The `slug` column must be present in the sheet and filled on every row with an action.
-- The sample and report show `slug` and the required fields as red bold headers, from the same model flags.
+- The sample and report show `slug` and the required fields as red bold headers.
 
 ## Behaviour summary
 
@@ -235,10 +253,13 @@ model editor (read from the model's dialog definition). Nothing is configured in
   without writing anything.
 - **Final run** writes. It is enabled only after a dry run of the same workbook and folder with no
   `FAIL` rows, and the server refuses it when the workbook changed in DAM after that dry run.
-- Each final run saves a results report, `cf-upload-run-<yyyy-MM-dd-HH-mm-ss>.xlsx`, in the report
+- Each final run saves its results as `cf-upload-run-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the report
   folder (`reportFolder`, default `/content/dam/aemcloudproject/reports`).
 - **Save report to DAM** saves every fragment under the picked folder as
   `offer-listing-report-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the same folder; each save is a new file.
+- The OSGi config `ScbCfBulkUploadConfiguration` has five settings: `reportFolder`,
+  `fragmentReportFileName` (`offer-listing-report`), `runResultsFileName` (`cf-upload-run`),
+  `maxFileSizeMb` and `maxRows`.
 - The run happens in the request; the page shows a spinner until the results come back.
 
 ## Out of scope for v1

@@ -14,8 +14,9 @@ public interface ScbWorkbookParserService {
 
     /**
      * Reads every sheet and checks its headers and action column. Sheets whose name starts with
-     * {@code _} (such as the report's {@code _Guide}) are ignored. Blank rows are skipped;
-     * rows with a blank action are kept (their IDs count for ID generation) but not checked.
+     * {@code _} (such as {@code _Guide}) are ignored. Blank rows and the sample sheet's example rows
+     * (action {@code SAMPLE}, any case) are skipped; rows with a blank action are kept (their IDs count
+     * for ID generation) but not checked.
      *
      * @param file   the .xlsx content
      * @param errors receives every problem found

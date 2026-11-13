@@ -1,11 +1,17 @@
 /*
- * SCB CF bulk upload page: posts the selected workbook path to ScbCfBulkUploadServlet and shows
+ * SCB TGL Content Fragment Bulk Upload page: posts the selected workbook path to ScbCfBulkUploadServlet and shows
  * the reply. Uses jQuery ajax so granite.csrf.standalone adds the CSRF token.
  *
- * Flow:
+ * Flow (the page shows the folder and "Get a workbook" side by side, then "Run your workbook",
+ * then "How the Excel works"; each section's text says when its buttons work):
  *   page loads
- *     -> scbPrefillFolder(): GET .../upload.json -> {"rootPath": "/content/dam/.../offer-listing"} fills the
- *        Fragment folder picker when it is empty
+ *     -> Dry run, Final run, Download sample sheet and Save report to DAM are all disabled;
+ *        "Run your workbook" says "Runs against: no folder picked yet"
+ *   author picks the offer-listing folder (picked every time, no default) and the workbook
+ *     -> scbUpdateButtons(): folder ends with /offer-listing -> "✓ Folder ready", Download sample sheet and
+ *        Save report to DAM enabled; plus a workbook picked -> Dry run enabled. Any other folder ->
+ *        "⚠ This folder can't be used …". "Runs against:" shows the picked folder.
+ *        The servlets check the folder again.
  *   author clicks "Dry run" (or presses Enter)
  *     -> browser fires "submit" on <form class="scb-cf-bulk-upload">
  *     -> scbSubmitCfBulkUpload(): checks a file and a folder are picked
@@ -20,7 +26,8 @@
  *     -> scbSendUpload(): POST ...&dryRun=false&fileVersion=... (the server refuses it if the file changed)
  *     -> HTTP 200: banner with a link to the saved run report, counts, table; Final run disabled again
  *   author clicks "Download sample sheet"
- *     -> plain link to .../report.xlsx; the browser downloads cf-bulk-upload-sample.xlsx
+ *     -> scbDownloadSample(): GET .../report.xlsx?rootPath=... ; the browser saves scb-tgl-cf-bulk-upload-sample.xlsx
+ *        (one grey SAMPLE example row per sheet), or a red error line appears under the buttons
  *   author clicks "Save report to DAM"
  *     -> scbSaveReport(): button disabled ("Saving report…"), "[spinner] Saving the report… 12 s"
  *        under it; POSTs the picked folder to .../report.json, which builds the report and saves it in DAM;
@@ -39,10 +46,17 @@
     var ROOT_PATH_FIELD = "foundation-autocomplete[name='rootPath']";   // the fragment folder picker
     var SUBMIT_SELECTOR = ".scb-cf-bulk-upload__submit";                // the Dry run button
     var FINAL_RUN_SELECTOR = ".scb-cf-bulk-upload__final-run";          // the Final run button
-    var RESULT_SELECTOR = ".scb-cf-bulk-upload__result";                // the area under the two cards
+    var RESULT_SELECTOR = ".scb-cf-bulk-upload__result";                // the area under Run your workbook
 
+    var SAMPLE_BUTTON = ".scb-cf-bulk-upload__sample";                 // the Download sample sheet button
     var REPORT_BUTTON = ".scb-cf-bulk-upload__report";                 // the Save report to DAM button
-    var REPORT_STATUS = ".scb-cf-bulk-upload__report-status";           // the line under it
+    var REPORT_STATUS = ".scb-cf-bulk-upload__report-status";           // the line under them
+
+    var FOLDER_STATUS = ".scb-cf-bulk-upload__folder-status";           // ✓ Folder ready / ⚠ ... under the picker
+    var RUN_FOLDER = ".scb-cf-bulk-upload__run-folder";                 // "Runs against: ..." in Run your workbook
+
+    // The picked Fragment folder must end with this, e.g. /content/dam/aemcloudproject/cfs/offer-listing.
+    var OFFER_LISTING_SUFFIX = "/offer-listing";
 
     // Save report to DAM button labels: idle / while the report is being saved.
     var LABEL_REPORT = "Save report to DAM";
@@ -51,6 +65,10 @@
     // The last dry run without failures: { filePath, rootPath, fileVersion }, or null.
     // Final run is enabled only while the picked file and folder still match it.
     var lastDryRun = null;
+
+    // true while a dry or final run request is running, or the report is being saved.
+    var runBusy = false;
+    var reportBusy = false;
 
     // Table / CSV columns: header text -> key in each result object from the servlet.
     var COLUMNS = [
@@ -63,7 +81,7 @@
     ];
 
     /**
-     * The area under the cards where status, errors and results are shown.
+     * The area under "Run your workbook" where status, errors and results are shown.
      * Output: the <div class="scb-cf-bulk-upload__result"> element.
      */
     function scbResultBox() {
@@ -82,29 +100,69 @@
     }
 
     /**
-     * Enables Final run only when the last clean dry run used the workbook and folder picked now.
+     * Enables each button only when it can be used:
+     *   Download sample sheet, Save report to DAM: the folder ends with /offer-listing
+     *   Dry run:   also a workbook is picked
+     *   Final run: the last clean dry run used the workbook and folder picked now
+     * and none of them while a run (or, for Save report, a save) is in progress.
+     * Also refreshes the folder status under the picker and the "Runs against:" line.
      * Input:  form
-     * Output: nothing returned; the Final run button is enabled or disabled.
+     * Output: nothing returned; the four buttons are enabled or disabled.
      */
-    function scbUpdateFinalRun(form) {
-        form.querySelector(FINAL_RUN_SELECTOR).disabled = !lastDryRun
-            || lastDryRun.filePath !== scbFieldValue(form, FILE_PATH_FIELD)
-            || lastDryRun.rootPath !== scbFieldValue(form, ROOT_PATH_FIELD);
+    function scbUpdateButtons(form) {
+        var filePath = scbFieldValue(form, FILE_PATH_FIELD);
+        var rootPath = scbFieldValue(form, ROOT_PATH_FIELD);
+        var folderOk = rootPath.length > OFFER_LISTING_SUFFIX.length
+            && rootPath.slice(-OFFER_LISTING_SUFFIX.length) === OFFER_LISTING_SUFFIX;
+        var submit = form.querySelector(SUBMIT_SELECTOR);
+        var finalRun = form.querySelector(FINAL_RUN_SELECTOR);
+        submit.disabled = runBusy || !filePath || !folderOk;
+        finalRun.disabled = runBusy || !lastDryRun
+            || lastDryRun.filePath !== filePath || lastDryRun.rootPath !== rootPath;
+        document.querySelector(SAMPLE_BUTTON).disabled = !folderOk;
+        document.querySelector(REPORT_BUTTON).disabled = reportBusy || !folderOk;
+
+        scbFolderStatus(rootPath, folderOk);
+        document.querySelector(RUN_FOLDER).textContent = "Runs against: "
+            + (folderOk ? rootPath : "no offer-listing folder picked yet");
     }
 
     /**
-     * Enables or disables the buttons while a request is running.
+     * Shows under the folder picker whether the picked folder can be used.
+     * Input:  rootPath e.g. "/content/dam/aemcloudproject/cfs/offer-listing" ("" when nothing is picked),
+     *         folderOk true when it ends with /offer-listing
+     * Output: nothing returned; the line shows
+     *           nothing picked -> (empty)
+     *           folderOk       -> "✓ Folder ready"
+     *           otherwise      -> "⚠ This folder can't be used. Pick the folder whose name ends with offer-listing."
+     */
+    function scbFolderStatus(rootPath, folderOk) {
+        var status = document.querySelector(FOLDER_STATUS);
+        var base = FOLDER_STATUS.substring(1);
+        status.textContent = "";
+        status.className = base;
+        if (!rootPath) {
+            return;
+        }
+        status.classList.add(base + (folderOk ? "--ok" : "--error"));
+        var icon = new Coral.Icon();
+        icon.icon = folderOk ? "checkCircle" : "alert";
+        icon.size = "S";
+        status.appendChild(icon);
+        var label = document.createElement("span");
+        label.textContent = folderOk ? "Folder ready"
+            : "This folder can't be used. Pick the folder whose name ends with offer-listing.";
+        status.appendChild(label);
+    }
+
+    /**
+     * Marks a dry or final run as running or finished.
      * Input:  form, busy (true = request running)
-     * Output: nothing returned; both buttons are disabled (busy), or Dry run is enabled again and
-     *         Final run follows scbUpdateFinalRun.
+     * Output: nothing returned; Dry run and Final run are disabled while busy, then follow scbUpdateButtons.
      */
     function scbSetBusy(form, busy) {
-        form.querySelector(SUBMIT_SELECTOR).disabled = busy;
-        if (busy) {
-            form.querySelector(FINAL_RUN_SELECTOR).disabled = true;
-        } else {
-            scbUpdateFinalRun(form);
-        }
+        runBusy = busy;
+        scbUpdateButtons(form);
     }
 
     /**
@@ -432,51 +490,58 @@
     }
 
     /**
-     * Starts a dry or final run after checking that a workbook and a folder are picked.
-     *
-     * Input:  form, dryRun true (Dry run button / Enter) or false (Final run button)
-     * Output: nothing returned.
-     *   - no file picked   -> red alert "Select a workbook first"
-     *   - no folder picked -> red alert "Select the fragment folder first"
-     *   - both picked      -> scbSendUpload(...) straight away (no confirm dialog)
-     */
-    function scbRun(form, dryRun) {
-        var filePath = scbFieldValue(form, FILE_PATH_FIELD);
-        var rootPath = scbFieldValue(form, ROOT_PATH_FIELD);
-        // Same messages as the servlet gives, without a round trip to AEM.
-        if (!filePath) {
-            scbShowAlert("error", "Select a workbook first", "");
-            return;
-        }
-        if (!rootPath) {
-            scbShowAlert("error", "Select the fragment folder first", "");
-            return;
-        }
-        scbSendUpload(form, filePath, rootPath, dryRun);
-    }
-
-    /**
-     * Runs when the form is submitted (Dry run clicked or Enter pressed): starts a dry run.
+     * Runs when the form is submitted (Dry run clicked or Enter pressed): starts a dry run, unless
+     * Dry run is disabled (no workbook, or the folder isn't an offer-listing folder).
      * Input:  event - the browser's submit event; event.currentTarget is the <form>
      */
     function scbSubmitCfBulkUpload(event) {
         // Stop the browser's normal form submit, which would navigate away from the page.
         event.preventDefault();
-        scbRun(event.currentTarget, true);
+        var form = event.currentTarget;
+        if (!form.querySelector(SUBMIT_SELECTOR).disabled) {
+            scbSendUpload(form, scbFieldValue(form, FILE_PATH_FIELD), scbFieldValue(form, ROOT_PATH_FIELD), true);
+        }
     }
 
     /**
-     * Fills the Fragment folder picker with the configured default when it is empty.
-     * GET .../upload.json -> {"rootPath": "/content/dam/aemcloudproject/cfs/offer-listing"}
-     * Input:  form
+     * Runs when "Download sample sheet" is clicked: downloads the sample of the picked folder.
+     * The file is fetched by the page (not a plain link), so a folder the server rejects shows its
+     * message under the buttons instead of an error page.
+     *
+     * Input:  button - the Download sample sheet button (its data-sample-url is
+     *                  /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.xlsx)
+     * Output: nothing returned. On the page:
+     *   while waiting: line "[spinner] Preparing the sample sheet…"
+     *   HTTP 200:      the browser saves scb-tgl-cf-bulk-upload-sample.xlsx; the line is cleared
+     *   HTTP 400:      line "⚠ No folder found at /content/dam/.../offer-listing." (the servlet's message)
      */
-    function scbPrefillFolder(form) {
-        $.getJSON(form.getAttribute("action")).done(function (data) {
-            var field = form.querySelector(ROOT_PATH_FIELD);
-            if (field && !field.value && data.rootPath) {
-                field.value = data.rootPath;
-            }
-        });
+    function scbDownloadSample(button) {
+        var rootPath = scbFieldValue(document.querySelector(FORM_SELECTOR), ROOT_PATH_FIELD);
+        scbReportStatus("busy", "Preparing the sample sheet…");
+        window.fetch(button.dataset.sampleUrl + "?rootPath=" + encodeURIComponent(rootPath), { credentials: "same-origin" })
+            .then(function (response) {
+                if (!response.ok) {
+                    return response.json().then(function (data) {
+                        throw new Error(data && data.message ? data.message : "Request failed (HTTP " + response.status + ").");
+                    });
+                }
+                return response.blob();
+            })
+            .then(function (blob) {
+                // A temporary link with the download attribute makes the browser save the file.
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement("a");
+                link.href = url;
+                link.download = "scb-tgl-cf-bulk-upload-sample.xlsx";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                document.querySelector(REPORT_STATUS).textContent = "";
+            })
+            .catch(function (error) {
+                scbReportStatus("error", error.message);
+            });
     }
 
     /**
@@ -513,7 +578,6 @@
      * Input:  button - the Save report to DAM button (its data-report-url is
      *                  /apps/aemcloudproject/cfbulkupload/content/cfbulkupload/report.json)
      * Output: nothing returned. On the page:
-     *   no folder picked: line "⚠ Select the fragment folder first."
      *   while waiting: button disabled, label "Saving report…", line "[spinner] Saving the report… 12 s"
      *   HTTP 200:      line "✔ Saved /content/dam/.../offer-listing-report-2026-10-20-14-05-33.xlsx  Open in Assets"
      *   HTTP 400/500:  line "⚠ ..." (the servlet's message)
@@ -521,13 +585,11 @@
      */
     function scbSaveReport(button) {
         var started = Date.now();
-        var rootPath = scbFieldValue(document.querySelector(FORM_SELECTOR), ROOT_PATH_FIELD);
-        if (!rootPath) {
-            scbReportStatus("error", "Select the fragment folder first.");
-            return;
-        }
+        var form = document.querySelector(FORM_SELECTOR);
+        var rootPath = scbFieldValue(form, ROOT_PATH_FIELD);
 
-        button.disabled = true;
+        reportBusy = true;
+        scbUpdateButtons(form);
         button.label.textContent = LABEL_REPORT_BUSY;
         var label = scbReportStatus("busy", "Saving the report… 0 s");
         // Every second: "Saving the report… 1 s", "… 2 s", ...
@@ -557,7 +619,8 @@
         }).always(function () {
             // Runs last in every case: stop the timer, give the button back.
             window.clearInterval(timer);
-            button.disabled = false;
+            reportBusy = false;
+            scbUpdateButtons(form);
             button.label.textContent = LABEL_REPORT;
         });
     }
@@ -570,21 +633,26 @@
     $(document).on("click", FINAL_RUN_SELECTOR, function (event) {
         var form = event.currentTarget.closest(FORM_SELECTOR);
         if (lastDryRun) {
-            scbRun(form, false);
+            scbSendUpload(form, scbFieldValue(form, FILE_PATH_FIELD), scbFieldValue(form, ROOT_PATH_FIELD), false);
         }
     });
 
-    // Picking another workbook or folder disables Final run until a new dry run passes.
+    // Picking a workbook or folder enables or disables the buttons (scbUpdateButtons).
     $(document).on("change", FILE_PATH_FIELD + ", " + ROOT_PATH_FIELD, function (event) {
-        scbUpdateFinalRun(event.currentTarget.closest(FORM_SELECTOR));
+        scbUpdateButtons(event.currentTarget.closest(FORM_SELECTOR));
     });
 
-    // Pre-fill the folder picker once the page (and our form) is ready.
-    $(document).on("foundation-contentloaded", function () {
+    // Page ready: set the folder status and the "Runs against:" line.
+    $(function () {
         var form = document.querySelector(FORM_SELECTOR);
         if (form) {
-            scbPrefillFolder(form);
+            scbUpdateButtons(form);
         }
+    });
+
+    // "Download sample sheet" button -> scbDownloadSample.
+    $(document).on("click", SAMPLE_BUTTON, function (event) {
+        scbDownloadSample(event.currentTarget);
     });
 
     // "Save report to DAM" button -> scbSaveReport.

@@ -1,8 +1,0 @@
-{
-  "model": "merchant-details",
-  "folder": "merchants",
-  "titleField": "merchantName",
-  "idField": "merchantID",
-  "startId": 100001,
-  "order": 2
-}

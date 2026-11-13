@@ -16,10 +16,10 @@ You fill an Excel workbook, upload it to DAM, and the tool creates, updates or d
 | Slug | The fragment's short technical name, e.g. `summer-sale`, in the `slug` column. It becomes the last part of the fragment's path and must be unique in its folder. It is only used for the path, not stored in the fragment |
 | Reference | A field that points to another fragment or an image by its full path, e.g. an offer pointing to its CTA |
 | Action | What a row should do: `CREATE` a new fragment, `UPDATE` or `DELETE` an existing one |
-| Fragment folder | The DAM folder you pick on the page; each model has its own sub-folder under it |
+| Fragment folder | The `offer-listing` folder you pick on the page every time; each model has its own sub-folder under it |
 | Dry run | A test run: every row is checked, nothing is written |
 | Final run | The run that actually creates, updates and deletes fragments. Enabled only after a dry run with no failures |
-| Sample sheet | An empty workbook with every sheet and column, to author in |
+| Sample sheet | A workbook with every sheet and column, to author in; row 2 of each sheet is a grey example copied from an existing fragment, marked `SAMPLE`, and is never uploaded |
 | Report | An Excel file with every existing fragment, in exactly the layout the upload expects; useful for UPDATE and DELETE |
 | DAM | AEM Assets, where the workbooks, the reports and the fragments are stored |
 
@@ -31,7 +31,7 @@ You need AEM author access with rights to the folders below, and Excel.
 | --- | --- |
 | The upload page | AEM → **Tools** (hammer icon) → **SCB Tools** → **Content Fragment Bulk Upload** |
 | Folder for workbooks you upload | `/content/dam/aemcloudproject/imports` |
-| Fragment folder (pre-filled on the page) | `/content/dam/aemcloudproject/cfs/offer-listing` (see Sheets, folders and names) |
+| Fragment folder (pick it on the page every time) | `/content/dam/aemcloudproject/cfs/offer-listing` (see Sheets, folders and names) |
 | Saved reports and run reports | `/content/dam/aemcloudproject/reports`, one new dated file each time |
 
 - **Permissions:** you need to upload files to the imports folder, to create, modify and delete content in the fragment folders, and to create files in the reports folder. If an upload fails with "could not be written", ask the AEM team to check your rights.
@@ -42,8 +42,8 @@ You need AEM author access with rights to the folders below, and Excel.
 
 Start from the sample sheet, check with a dry run, then do the final run.
 
-1. In AEM, open **Tools → SCB Tools → Content Fragment Bulk Upload**.
-2. Click **Download sample sheet**. You get `cf-bulk-upload-sample.xlsx`: one sheet per model with all the column names and no rows.
+1. In AEM, open **Tools → SCB Tools → Content Fragment Bulk Upload** and pick the **Fragment folder**: the `offer-listing` folder, e.g. `/content/dam/aemcloudproject/cfs/offer-listing`. All buttons stay greyed out until you do.
+2. Click **Download sample sheet**. You get `cf-bulk-upload-sample.xlsx`: one sheet per model with all the column names and, in row 2, a grey example copied from an existing fragment (action `SAMPLE`). The example is never uploaded; leave it or delete it.
    - To change or delete existing fragments, you can instead click **Save report to DAM**: every fragment under the fragment folder is saved as a new dated file in the reports folder. Click **Open in Assets** and **Download** it.
 3. Fill the workbook:
    - to add a fragment, add a row in the right sheet, pick `CREATE` in **action** and fill its cells;
@@ -51,7 +51,7 @@ Start from the sample sheet, check with a dry run, then do the final run.
    - to delete a fragment, pick `DELETE` and put its slug in **slug**;
    - leave the action empty on rows you don't want to touch.
 4. Upload the workbook to DAM, into **/content/dam/aemcloudproject/imports**.
-5. On the upload page, pick the workbook, check the **Fragment folder** and click **Dry run**. Nothing is written; you see what would happen to each row.
+5. On the upload page, pick the workbook (the **Fragment folder** must still be the `offer-listing` folder) and click **Dry run**. Nothing is written; you see what would happen to each row.
 6. Fix any **Fail** rows in Excel, upload the file again and repeat the dry run until it has no failures. **Final run** is enabled only then.
 7. Click **Final run**. The fragments are created, updated or deleted, and a run report is saved in the reports folder.
 8. Publish the changed fragments in AEM when you're ready. The upload never publishes anything.
@@ -60,7 +60,7 @@ Start from the sample sheet, check with a dry run, then do the final run.
 
 Goal: add a new offer for the restaurant "Spice Garden", with its venue, a booking CTA, and the existing category `dining`. One workbook, one upload.
 
-**Step 1: get the workbook.** Click **Download sample sheet**. You only fill the sheets you need; the others stay empty and are skipped.
+**Step 1: get the workbook.** Pick the `offer-listing` folder on the page and click **Download sample sheet**. Add your rows below the grey `SAMPLE` example rows. You only fill the sheets you need; the others keep only their example row and are skipped.
 
 **Step 2: add the venue** (sheet `merchant-venue`)
 
@@ -144,7 +144,7 @@ A DELETE row only removes a fragment that nothing else depends on.
 
 The sheet decides the sub-folder; the slug decides the fragment's name, and with it its path.
 
-All folders below are under the **Fragment folder** you pick on the page, by default **/content/dam/aemcloudproject/cfs/offer-listing/**.
+All folders below are under the **Fragment folder** you pick on the page. It must be a folder named **offer-listing**, e.g. **/content/dam/aemcloudproject/cfs/offer-listing/**; any other folder is refused.
 
 | Sheet | Folder | Title column | ID column |
 | --- | --- | --- | --- |
@@ -206,7 +206,7 @@ Type each value the way its field expects; the Field reference at the end says w
 - UPDATE: an empty cell **clears** that field. Either keep only the columns you change, or start from a fresh saved report so the cells already hold the current values; delete a value to clear it.
 - Exception: an empty ID cell on UPDATE keeps the current ID.
 - A column you leave out of the sheet is never touched. To change just one field, a sheet with `action`, `slug` and that field is enough.
-- `#CLEAR` is no longer used; typing it fails the row. Leave the cell empty instead.
+- `#CLEAR` has no special meaning any more: typed in a cell it is stored as text. Leave the cell empty to clear a field.
 - The results show which fields a row clears, in the dry run too: `…/book-now (cleared: deeplink)`.
 
 ## IDs and required fields
@@ -227,14 +227,15 @@ Leave the ID empty on new rows and the upload numbers them for you; required fie
 
 | Sheet | Required |
 | --- | --- |
-| every sheet | `slug` |
+| every sheet | the slug column (column B, e.g. `offerSlug`) |
 | `merchant-details` | `merchantID` |
 | `category` | `ID` |
-| `offer-detail` | `offerID`, `offerTitle` |
+| `offer-card` | `ID` |
+| `offer-detail` | `offerID`, `offerTitle`, `offerImage`, `alternateText` |
 
 - CREATE: every required field needs a value, otherwise the row fails with e.g. `offerTitle: required`. An automatic ID counts as filled.
 - UPDATE: a required column in the sheet can't be left empty, because an empty cell would clear it; the row fails with `offerTitle: required`. An empty ID cell keeps the current ID.
-- Required fields come from the content fragment model. When a field is made required in the model, the upload enforces it from then on.
+- The required fields are fixed in the upload and match the fields marked required in the models. If a model's required fields ever change, the upload has to be changed too.
 
 ## Running an upload and reading the results
 
@@ -242,7 +243,7 @@ A dry run and a final run run exactly the same checks; only the final run writes
 
 **Dry run and final run**
 
-- **Dry run**: every row is checked, nothing is written. The results start with "Dry run: nothing was written." (yellow) or, when rows failed, "Dry run: 3 rows failed. Nothing was written." (red).
+- **Dry run** is enabled once a workbook and the `offer-listing` folder are picked. Every row is checked, nothing is written. The results start with "Dry run: nothing was written." (yellow) or, when rows failed, "Dry run: 3 rows failed. Nothing was written." (red).
 - **Final run** is enabled only after a dry run of the same workbook and fragment folder with no **Fail** rows. Picking another workbook or folder disables it again. Rows marked **Warn** don't block it.
 - If you upload a new version of the workbook after the dry run, the final run is refused with "The workbook changed after the dry run. Run the dry run again."
 - The final run writes straight away; there's no confirmation step. Each row is saved on its own: a failing row is skipped and never stops or undoes the other rows.
@@ -280,7 +281,7 @@ Most failures are a typo in a header, a slug or a value; the message says which.
 | Message | Fix |
 | --- | --- |
 | `Select a workbook first.` | Pick a file in the Workbook field |
-| `Select the fragment folder first.` / `No folder found at …` / `… is not a DAM folder.` | Pick an existing folder under `/content/dam` in the Fragment folder field |
+| `Select the fragment folder first.` / `Pick an offer-listing folder, e.g. …` / `No folder found at …` / `… is not a DAM folder.` | Pick the existing `offer-listing` folder in the Fragment folder field |
 | `No file found at …` / `… is not a DAM asset.` | Pick the workbook itself, not a folder |
 | `… is not an .xlsx file.` / `The file is not a valid .xlsx workbook.` | Save as Excel Workbook (.xlsx) and upload again |
 | `… has no original file yet. Wait for DAM processing to finish.` | Wait a minute after uploading, then run again |
@@ -306,7 +307,6 @@ Most failures are a typo in a header, a slug or a value; the message says which.
 | `slug: "Book Now" must be lowercase letters, digits, - or _` | Use e.g. `book-now`. An empty slug, or a missing `slug` column, shows the same message: check both |
 | `promoCode: not a field of model offer-detail` | Fix the header spelling (case-sensitive) or remove the column |
 | `offerTitle: required` | Fill the required field on CREATE |
-| `offerTnc: #CLEAR is no longer used — leave the cell empty to clear the field` | Leave the cell empty to clear the field |
 | `Fragment: already exists at …` | Use UPDATE, or a new slug for a new fragment |
 | `Fragment: not found at …` | Check the slug, the sheet and the fragment folder, or use CREATE |
 | `Fragment: uses model …, not …` | That path belongs to another model; check the sheet and slug |
@@ -351,7 +351,7 @@ Tick these off every time before you click Final run.
 
 - [ ] Every row I want to change has `CREATE`, `UPDATE` or `DELETE`; every other row has an empty action.
 - [ ] New slugs are lowercase with `-` or `_` only, and not already used in that folder; UPDATE and DELETE slugs match existing fragments.
-- [ ] The fragment folder on the page is the one I mean.
+- [ ] The fragment folder on the page is the `offer-listing` folder I mean.
 - [ ] Required (red) columns are filled on CREATE rows; ID cells on new rows are empty.
 - [ ] Dates are typed as text; references are full `/content/...` paths; `offerCta` has one path.
 - [ ] On UPDATE rows, I only emptied cells I really want cleared.
@@ -363,6 +363,10 @@ Tick these off every time before you click Final run.
 **Does the upload publish anything?** No. It only creates, changes and deletes fragments on author. Publish them in AEM when you're ready.
 
 **Can I delete fragments with it?** Yes, with `DELETE`, as long as nothing references the fragment and it isn't published. Otherwise the row shows Warn and the fragment stays.
+
+**Why are Dry run, Download sample sheet and Save report to DAM greyed out?** They need the Fragment folder to be an `offer-listing` folder, and Dry run also needs a workbook. Pick them and the buttons turn on.
+
+**What is the grey SAMPLE row in the sample sheet?** An example copied from an existing fragment (the one with the highest ID, or the latest one for venues and CTAs), so you can see how each column is filled. Its action is `SAMPLE`, so the upload always skips it. Leave it or delete it.
 
 **Why is Final run greyed out?** It needs a dry run of the same workbook and fragment folder with no Fail rows. Run the dry run (again) after fixing the failures or changing the file or folder.
 
@@ -462,4 +466,4 @@ Every column per sheet, as defined in the models today; **bold** = required. Eve
 | preview | Yes / no |  |
 | cache | Yes / no |  |
 
-If a model changes in AEM (a field added, renamed or made required), the upload follows it automatically; a new **Download sample sheet** shows the current columns.
+If a field is added to or renamed in a model, the upload follows it automatically and a new **Download sample sheet** shows the current columns. Making a field required, or adding a model, needs a change to the upload itself.

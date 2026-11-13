@@ -1,83 +1,207 @@
 /* Page content area (granite:class on the "content" node): uses the full browser width,
-   with a margin on each side, so the cards and results table span the whole page. */
+   with a margin on each side, so the sections and results table span the whole page. */
 .scb-cf-bulk-upload__page {
     padding: 24px 32px;
 }
 
-/* Page heading "SCB CF bulk upload". */
+/* Page heading "SCB TGL Content Fragment Bulk Upload" and the sentence under it. */
 .scb-cf-bulk-upload__title {
-    margin: 0 0 16px;
+    margin: 0 0 4px;
 }
 
-/* The two cards side by side across the full width: Upload (wider) | Report (narrower).
-   Both cards stretch to the same height (grid default). Stacked below 900px. */
-.scb-cf-bulk-upload__cards {
+.scb-cf-bulk-upload__intro {
+    display: block;
+    color: #6e6e6e;
+    margin-bottom: 16px;
+}
+
+/* The form: the two top sections, How the Excel works, then Run your workbook, one under the other. */
+.scb-cf-bulk-upload__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Offer-listing folder (left) and Get a workbook (right), same height; stacked below 1000px. */
+.scb-cf-bulk-upload__top {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
 }
 
-@media (max-width: 900px) {
-    .scb-cf-bulk-upload__cards {
+@media (max-width: 1000px) {
+    .scb-cf-bulk-upload__top {
         grid-template-columns: minmax(0, 1fr);
     }
 }
 
-/* One card: white box, light border, rounded corners. */
-.scb-cf-bulk-upload__card {
+/* One section: white box, light border, rounded corners. */
+.scb-cf-bulk-upload__section {
     background: #ffffff;
     border: 1px solid #e1e1e1;
     border-radius: 8px;
     padding: 16px 20px;
 }
 
-.scb-cf-bulk-upload__card-heading {
-    margin: 0 0 4px;
+.scb-cf-bulk-upload__heading {
+    margin: 0 0 12px;
 }
 
-/* One-line description under each card heading. */
-.scb-cf-bulk-upload__card-text {
+.scb-cf-bulk-upload__text {
     display: block;
-    color: #6e6e6e;
-    margin-bottom: 12px;
-}
-
-/* "How it works" accordion: a little space around it, each rule on its own line. */
-.scb-cf-bulk-upload__help {
-    margin: 4px 0 12px;
-}
-
-.scb-cf-bulk-upload__help-item {
-    display: block;
-    margin-bottom: 6px;
-}
-
-/* "Dry run" and "Final run" buttons: right-aligned at the bottom of the card, Final run at the far right. */
-.scb-cf-bulk-upload__submit,
-.scb-cf-bulk-upload__final-run {
-    float: right;
-    margin-left: 8px;
-}
-
-/* "Download sample sheet" and "Save report to DAM": side by side, or the second one wrapped flush left
-   (Coral's own margin between adjacent buttons is removed). */
-.scb-cf-bulk-upload__sample {
-    margin-right: 8px;
+    color: #4b4b4b;
     margin-bottom: 8px;
 }
 
-.scb-cf-bulk-upload__card .scb-cf-bulk-upload__report {
-    margin-left: 0;
+/* An explanation with a bold lead-in: "What it is  The folder that holds ...". */
+.scb-cf-bulk-upload__para {
+    color: #4b4b4b;
+    margin-bottom: 10px;
+    line-height: 1.45;
 }
 
-/* Clearfix: the form (and so the card) grows to contain the floated button. */
-.scb-cf-bulk-upload::after {
-    content: "";
+.scb-cf-bulk-upload__term {
     display: block;
-    clear: both;
+    font-weight: bold;
+    color: #2c2c2c;
 }
 
-/* Line under "Save report to DAM" (scbReportStatus): [spinner] Saving the report… 12 s / ✔ Saved … Open in Assets / ⚠ error. */
+/* Line under the folder picker (scbFolderStatus): ✓ Folder ready / ⚠ This folder can't be used … */
+.scb-cf-bulk-upload__folder-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.scb-cf-bulk-upload__folder-status:empty {
+    display: none;
+}
+
+.scb-cf-bulk-upload__folder-status--ok {
+    color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__folder-status--error {
+    color: #b42318;
+}
+
+/* Get a workbook: one block per file: label on top, then button | "What you get: ...". */
+.scb-cf-bulk-upload__option {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    align-items: start;
+    gap: 6px 12px;
+    padding: 10px 0;
+    border-top: 1px solid #ececec;
+}
+
+@media (max-width: 1300px) {
+    .scb-cf-bulk-upload__option {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.scb-cf-bulk-upload__option-label {
+    grid-column: 1 / -1;
+    font-weight: bold;
+}
+
+/* Coral gives a button next to another one a left margin; the option grid spaces them instead. */
+.scb-cf-bulk-upload__option .scb-cf-bulk-upload__sample,
+.scb-cf-bulk-upload__option .scb-cf-bulk-upload__report {
+    margin: 0;
+    justify-self: start;
+}
+
+.scb-cf-bulk-upload__option-text {
+    color: #6e6e6e;
+    line-height: 1.45;
+}
+
+/* "Why are the buttons greyed out?" under the two blocks. */
+.scb-cf-bulk-upload__when {
+    border-top: 1px solid #ececec;
+    padding-top: 10px;
+    margin-bottom: 0;
+}
+
+/* Run your workbook: imports link, "Runs against: ..." line, buttons. */
+.scb-cf-bulk-upload__imports-link {
+    margin: 0 0 8px;
+}
+
+.scb-cf-bulk-upload__run-folder {
+    font-size: 13px;
+    color: #4b4b4b;
+    margin-bottom: 4px;
+}
+
+.scb-cf-bulk-upload__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+}
+
+.scb-cf-bulk-upload__actions .coral3-Button,
+.scb-cf-bulk-upload__actions button {
+    margin: 0;
+}
+
+/* How the Excel works (accordion, closed by default): bulleted rules, then CREATE | UPDATE | DELETE cards (stacked below 1000px). */
+.scb-cf-bulk-upload__guide {
+    padding: 4px 8px;
+}
+
+/* The "How the Excel works" accordion title, as large as the section headings. */
+.scb-cf-bulk-upload__help coral-accordion-item-label {
+    font-size: 18px;
+}
+
+.scb-cf-bulk-upload__rules {
+    margin-bottom: 12px;
+}
+
+.scb-cf-bulk-upload__rule {
+    display: block;
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 6px;
+    line-height: 1.45;
+}
+
+.scb-cf-bulk-upload__rule::before {
+    content: "•";
+    position: absolute;
+    left: 2px;
+}
+
+.scb-cf-bulk-upload__cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 1000px) {
+    .scb-cf-bulk-upload__cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.scb-cf-bulk-upload__card {
+    background: #f8f8f8;
+    border: 1px solid #e1e1e1;
+    border-radius: 6px;
+    padding: 12px 14px;
+}
+
+.scb-cf-bulk-upload__card-heading {
+    margin: 0 0 8px;
+}
+
+/* Get a workbook: line under the blocks (scbReportStatus): [spinner] Saving the report… 12 s / ✔ Saved … Open in Assets / ⚠ error. */
 .scb-cf-bulk-upload__report-status {
     display: flex;
     align-items: center;
@@ -106,7 +230,7 @@
     color: #b42318;
 }
 
-/* Area under the cards: spinner, alerts, or banner + counts + table (filled by cf-bulk-upload.js). */
+/* Area under Run your workbook: spinner, alerts, or banner + counts + table (filled by cf-bulk-upload.js). */
 .scb-cf-bulk-upload__result {
     margin-top: 24px;
 }
@@ -141,26 +265,6 @@
     border-radius: 4px;
     padding: 3px 10px;
     font-weight: bold;
-}
-
-.scb-cf-bulk-upload__chip--fail {
-    background: #fdecea;
-    color: #b42318;
-}
-
-.scb-cf-bulk-upload__chip--pass {
-    background: #e8f5e9;
-    color: #1e6b2b;
-}
-
-.scb-cf-bulk-upload__chip--warn {
-    background: #fff4e5;
-    color: #8a4b00;
-}
-
-.scb-cf-bulk-upload__chip--skip {
-    background: #eeeeee;
-    color: #4b4b4b;
 }
 
 .scb-cf-bulk-upload__total {
@@ -211,7 +315,7 @@
     word-break: break-word;
 }
 
-/* Result column badges: green Pass, red Fail, amber Warn, grey Skip. */
+/* Result column badges; their colours are shared with the chips (below). */
 .scb-cf-bulk-upload__badge {
     display: inline-block;
     border-radius: 4px;
@@ -220,21 +324,26 @@
     font-weight: bold;
 }
 
-.scb-cf-bulk-upload__badge--pass {
-    background: #e8f5e9;
-    color: #1e6b2b;
-}
-
+/* Colours shared by the count chips and the Result badges: red Fail, green Pass, amber Warn, grey Skip. */
+.scb-cf-bulk-upload__chip--fail,
 .scb-cf-bulk-upload__badge--fail {
     background: #fdecea;
     color: #b42318;
 }
 
+.scb-cf-bulk-upload__chip--pass,
+.scb-cf-bulk-upload__badge--pass {
+    background: #e8f5e9;
+    color: #1e6b2b;
+}
+
+.scb-cf-bulk-upload__chip--warn,
 .scb-cf-bulk-upload__badge--warn {
     background: #fff4e5;
     color: #8a4b00;
 }
 
+.scb-cf-bulk-upload__chip--skip,
 .scb-cf-bulk-upload__badge--skip {
     background: #eeeeee;
     color: #4b4b4b;

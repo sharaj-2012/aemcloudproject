@@ -14,41 +14,49 @@ right headers, and upload them to `/content/dam/aemcloudproject/imports`.
 - **Before:** works on an instance with no fragments under `offer-listing`.
 - **After:** needs the fragments from scenario 3 (final run of `demo-offers-fixed.xlsx`).
 
-The fragment folder on the page is `/content/dam/aemcloudproject/cfs/offer-listing` (the default);
-all paths below are under it (shown as `…`).
+Pick the fragment folder `/content/dam/aemcloudproject/cfs/offer-listing` on the page every time (there
+is no default); all paths below are under it (shown as `…`).
 
 ## Summary
 
 | # | Scenario | Workbook | When | Expected result | Verified |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Sample sheet | Download sample sheet | Any | `_Guide` + 6 header-only sheets, `slug` and required headers red, action dropdown | 20 Oct, 8080 |
+| 1 | Sample sheet | Download sample sheet | Any | `_Guide` + 6 sheets, `slug` and required headers red; one grey `SAMPLE` row per model that has fragments; dropdown below it | 12 Nov, 8080 |
 | 2 | Create a full set, with two mistakes | `demo-offers.xlsx` (dry run) | Before | 6 Pass with generated IDs, 2 Fail; Final run stays disabled | 20 Oct, 8080 (equivalent rows) |
-| 3 | Create a full set | `demo-offers-fixed.xlsx` (dry run, then final run) | Before | 8 Pass; fragments created; run report saved | 20 Oct, 8080 (equivalent rows) |
+| 3 | Create a full set | `demo-offers-fixed.xlsx` (dry run, then final run) | Before | 8 Pass; fragments created; run report saved | 12 Nov, 8080 (equivalent rows) |
 | 4 | Whole workbook rejected | `demo-workbook-errors.xlsx` | Any | Red alert listing all 3 problems; nothing checked or written | *to re-run* |
-| 5 | Wrong file or folder picked | the `imports` folder / a non-Excel file / a bad folder | Any | "is not a DAM asset" / "is not an .xlsx file" / "No folder found at …" | 20 Oct, 8080 (folder) |
+| 5 | Wrong file or folder picked | the `imports` folder / a non-Excel file / a folder not named offer-listing / a missing folder | Any | "is not a DAM asset" / "is not an .xlsx file" / "Pick an offer-listing folder…" / "No folder found at …" | 12 Nov, 8080 (folder) |
 | 6 | CREATE twice | `demo-offers-fixed.xlsx` again | After | Every row Fail: "already exists" | *to re-run* |
 | 7 | Update, clear, partial columns, `_Notes` | `demo-updates.xlsx` | After | 3 Pass with `(cleared: …)`, 1 Skip | *to re-run* |
-| 8 | Row errors; the rest still runs | `demo-row-errors.xlsx` | After | 1 Pass + 10 Fail, each with its own message | *to re-run* |
-| 9 | Report with data | Save report to DAM | After | New dated file; one row per fragment; offers by end date, latest first | 20 Oct, 8080 |
+| 8 | Row errors; the rest still runs | `demo-row-errors.xlsx` | After | 1 Pass + 9 Fail, each with its own message | *to re-run* |
+| 9 | Report with data | Save report to DAM | After | New dated file; one row per fragment; offers by end date, latest first; no `SAMPLE` rows | 12 Nov, 8080 |
 | 10 | Re-upload the report unchanged | the saved report | After | `_Guide` ignored, every sheet Skip, status ok | *to re-run* |
-| 11 | Final run gate | any clean workbook | Any | Final run enabled only after a clean dry run of the same file and folder | 20 Oct, 8080 |
+| 11 | Final run gate | any clean workbook | Any | Final run enabled only after a clean dry run of the same file and folder | 12 Nov, 8080 |
 | 12 | Workbook changed after the dry run | re-upload after the dry run | Any | Final run refused: "The workbook changed after the dry run…" | 20 Oct, 8080 |
-| 13 | DELETE left in place | `demo-deletes.xlsx` | After | Warn for referenced / published fragments, Fail for a missing one | 20 Oct, 8080 (equivalent rows) |
+| 13 | DELETE left in place | `demo-deletes.xlsx` | After | Warn for referenced / published fragments, Fail for a missing one | 12 Nov, 8080 (referenced, missing); 20 Oct (published, page) |
 | 14 | Delete an offer and its CTA together | `demo-delete-chain.xlsx` | After | Both Pass, in dry run and final run | 20 Oct, 8080 (equivalent rows) |
-| 15 | IDs continue from DAM | sample with one new offer | After | New offer gets the highest existing `offerID` + 1 | 20 Oct, 8080 |
+| 15 | IDs continue from DAM | sample with one new offer | After | New offer gets the highest existing `offerID` + 1 | 12 Nov, 8080 |
+| 16 | Buttons follow the picked folder | the page | Any | Dry run, Download sample sheet and Save report to DAM enabled only for an `offer-listing` folder (Dry run also needs a workbook) | 12 Nov, 8080 |
+| 17 | Upload the sample sheet | the downloaded sample, unchanged, then with rows added | After | `SAMPLE` rows never processed: every sheet Skip; added rows run normally | 12 Nov, 8080 |
 
-Suggested demo order: 1 → 2 → 3 → 11 → 7 → 13 → 9 (about 15 minutes).
+Suggested demo order: 16 → 1 → 2 → 3 → 11 → 17 → 7 → 13 → 9 (about 15 minutes).
 
 ## 1. Sample sheet
 
-**Steps:** on the upload page click **Download sample sheet**.
+**Steps:** pick the offer-listing folder, then click **Download sample sheet**.
 
-**Expected:**
+**Expected (Before, no fragments yet):**
 - The browser downloads `cf-bulk-upload-sample.xlsx`, opening on `_Guide`.
 - Sheets: `_Guide`, `merchant-venue`, `merchant-details`, `category`, `offer-card`, `offer-cta`,
   `offer-detail`; the six model sheets have only a header row: `action`, `slug`, then the model fields.
-- Red headers: `slug` on every sheet; `merchantID`; `ID` (category); `offerID`, `offerTitle`.
+- Red headers: the slug column on every sheet (column B); `merchantID`; `ID` (category, offer-card); `offerID`, `offerTitle`, `offerImage`, `alternateText`.
 - The action column (A2:A5001) has a dropdown with CREATE, UPDATE, DELETE; empty is allowed.
+
+**Expected (After scenario 3):**
+- Each sheet has one grey italic row 2 with action `SAMPLE`, copied from a fragment: the highest ID
+  for merchant-details (spice-garden), category (dining), offer-card (platinum-card) and offer-detail
+  (lunch-special, offerID 100003); the last one in folder order for merchant-venue and offer-cta.
+- The dropdown covers A3:A5002, so `SAMPLE` is not one of its values.
 
 ## 2. Create a full set, with two mistakes
 
@@ -119,9 +127,9 @@ Sheet "offer-card": has no action column.
 | --- | --- |
 | The `imports` folder itself as the workbook | `/content/dam/aemcloudproject/imports is not a DAM asset.` |
 | Any image or PDF (upload one to `imports` first; the path browser starts there) | `… is not an .xlsx file.` |
-| No workbook | `Select a workbook first.` |
-| No fragment folder | `Select the fragment folder first.` |
-| A fragment folder that doesn't exist, e.g. typed `/content/dam/nope` | `No folder found at /content/dam/nope.` |
+| A fragment folder not named offer-listing, e.g. `/content/dam/aemcloudproject/cfs` or `…/offer-listing/offers` | Buttons stay disabled; the server answers `Pick an offer-listing folder, e.g. /content/dam/aemcloudproject/cfs/offer-listing.` |
+| An offer-listing folder that doesn't exist, e.g. typed `/content/dam/nope/offer-listing` | `No folder found at /content/dam/nope/offer-listing.` (under the buttons for the sample and report, in the results area for a run) |
+| No workbook or no folder | The buttons stay disabled; the server answers `Select a workbook first.` / `Select the fragment folder first.` |
 
 ## 6. CREATE twice
 
@@ -169,7 +177,6 @@ field (and is listed); an empty ID on UPDATE keeps the ID; columns left out are 
 | offer-detail | CREATE bad-boolean, `hotPromo` maybe | not yes/no |
 | offer-detail | CREATE bad-date, `offerStartDate` 01/11/2026 | not a date |
 | offer-detail | CREATE two-ctas, `offerCta` with two paths on two lines | single reference |
-| offer-detail | UPDATE festive-bundle, `offerTnc` #CLEAR | retired token |
 | category | CREATE shopping with an extra column `promoCode` X1 | column not in the model |
 | offers | CREATE wrong-sheet | sheet name not a model |
 
@@ -187,7 +194,6 @@ offer-detail  6 bad-number                 CREATE FAIL offerID: "10001a" is not 
 offer-detail  7 bad-boolean                CREATE FAIL hotPromo: "maybe" must be true/false, 1/0 or yes/no
 offer-detail  8 bad-date                   CREATE FAIL offerStartDate: "01/11/2026" is not a date (use e.g. 2026-10-01T00:00:00.000+05:30)
 offer-detail  9 two-ctas                   CREATE FAIL offerCta: takes one value, but the cell has several lines
-offer-detail 10 festive-bundle             UPDATE FAIL offerTnc: #CLEAR is no longer used — leave the cell empty to clear the field
 category      2 shopping                   CREATE FAIL promoCode: not a field of model category
 offers        – –                          –      FAIL Sheet: "offers" is not a known CF model
 ```
@@ -267,7 +273,7 @@ merchant-venue 2 spice-garden-orchard    DELETE WARN Not deleted: referenced by 
 | offer-cta | DELETE | the CTA |
 | offer-detail | DELETE | the one offer that uses it |
 
-**Expected:** the offer row runs first (offer-detail is last in profile order, so first for
+**Expected:** the offer row runs first (offer-detail is last in model order, so first for
 deletes); both Pass with `(to be deleted)` in the dry run and `(deleted)` in the final run. The
 same works for a merchant and its venue.
 
@@ -278,6 +284,31 @@ same works for a merchant and its venue.
 
 **Expected:** `…/offers/<slug> (offerID 100004)`: the highest existing `offerID` in DAM + 1, even
 though the sheet has no other rows.
+
+## 16. Buttons follow the picked folder
+
+**Steps:** open the page, then pick in turn: nothing; `/content/dam/aemcloudproject/cfs`;
+`…/offer-listing` without a workbook; a workbook; `…/offer-listing/offers`; `…/offer-listing` again.
+
+**Expected:**
+
+| Picked | Dry run | Final run | Download sample sheet | Save report to DAM |
+| --- | --- | --- | --- | --- |
+| nothing (page load) | off | off | off | off |
+| `/content/dam/aemcloudproject/cfs` | off | off | off | off |
+| `…/offer-listing`, no workbook | off | off | **on** | **on** |
+| `…/offer-listing` and a workbook | **on** | off | **on** | **on** |
+| `…/offer-listing/offers` | off | off | off | off |
+
+## 17. Upload the sample sheet
+
+**Steps:** after scenario 3, download the sample sheet and dry-run it unchanged. Then add rows below
+the example rows (e.g. a CREATE offer, an UPDATE venue, a DELETE CTA, and a row with the action typed
+as lowercase `sample` and an invalid slug) and dry-run it again.
+
+**Expected:** unchanged: every sheet `SKIP Sheet: no row has an action (CREATE, UPDATE or DELETE)`.
+With rows added: only the added rows appear (rows 3 onwards); the lowercase `sample` row is skipped
+like the grey ones, invalid slug and all; the new offer gets the next `offerID`.
 
 ## Clean-up after testing
 

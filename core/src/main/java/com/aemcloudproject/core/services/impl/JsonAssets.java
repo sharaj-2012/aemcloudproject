@@ -5,6 +5,8 @@ import com.day.cq.dam.api.Rendition;
 import org.apache.commons.io.IOUtils;
 import org.apache.jackrabbit.JcrConstants;
 import org.apache.sling.api.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +20,7 @@ final class JsonAssets {
     static final String JSON_MIME = "application/json";
     static final String ORIGINAL = "original";
 
+    private static final Logger LOG = LoggerFactory.getLogger(JsonAssets.class);
     private static final String DAM_ROOT = "/content/dam/";
 
     private JsonAssets() {
@@ -51,6 +54,7 @@ final class JsonAssets {
         try (InputStream in = original.getStream()) {
             return in == null ? null : JsonValidator.stripBom(IOUtils.toByteArray(in));
         } catch (IOException e) {
+            LOG.error("Could not read the original rendition of {}", asset.getPath(), e);
             return null;
         }
     }
@@ -70,6 +74,7 @@ final class JsonAssets {
         try (InputStream in = stream) {
             return JsonValidator.stripBom(IOUtils.toByteArray(in));
         } catch (IOException e) {
+            LOG.error("Could not read file {}", file.getPath(), e);
             return null;
         }
     }

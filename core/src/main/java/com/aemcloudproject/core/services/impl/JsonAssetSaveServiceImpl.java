@@ -4,7 +4,6 @@ import com.aemcloudproject.core.services.JsonAssetSaveService;
 import com.aemcloudproject.core.services.SaveResult;
 import com.aemcloudproject.core.services.SaveStatus;
 import com.day.cq.dam.api.Asset;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.Resource;
@@ -83,10 +82,11 @@ public class JsonAssetSaveServiceImpl implements JsonAssetSaveService {
 
     private static void updateMetadata(ResourceResolver resolver, String assetPath, byte[] bytes) {
         Resource metadata = resolver.getResource(assetPath + METADATA);
-        ModifiableValueMap properties = metadata == null ? null : metadata.adaptTo(ModifiableValueMap.class);
-        if (properties != null) {
-            properties.put("dam:size", (long) bytes.length);
-            properties.put("dam:sha1", DigestUtils.sha1Hex(bytes));
+        if (metadata != null) {
+            ModifiableValueMap properties = metadata.adaptTo(ModifiableValueMap.class);
+            if (properties != null) {
+                properties.put("dam:size", (long) bytes.length);
+            }
         }
     }
 }

@@ -157,7 +157,7 @@ All steps run in one request, on the logged-in user's own session.
 | 4 | The user holds `rep:write` on the asset, `jcr:content`, `jcr:content/metadata` and `jcr:content/renditions/original`, and `jcr:versionManagement` on the asset, checked with `AccessControlManager.hasPrivileges`. This only gives a clearer error; Oak still enforces permissions at commit. | **403** `forbidden` |
 | 5 | Read the current original rendition and compare it byte-for-byte with the new content (after the BOM is removed) | Identical → **200** `unchanged`, no version created, stop |
 | 6 | `asset.createRevision("jsoneditor-" + yyyyMMddHHmmssSSS, "Saved from JSON editor")`. This snapshots the **old** content; the API saves the session itself, and nothing is pending at this point. | Exception → **500** `version_failed`, nothing written |
-| 7 | `asset.setBatchMode(true)`; `asset.addRendition("original", newBytes, "application/json")`; set `jcr:content/metadata/dam:size` and `dam:sha1` (SHA-1 hex of the new bytes, so duplicate detection stays correct). `jcr:lastModified`/`jcr:lastModifiedBy` are updated by the rendition write; verify on SDK (§11) and set them explicitly if not. | — |
+| 7 | `asset.setBatchMode(true)`; `asset.addRendition("original", newBytes, "application/json")`; set `jcr:content/metadata/dam:size`. `dam:sha1` is deliberately **not** updated (user decision, avoids the SonarQube SHA-1 finding): it keeps the fingerprint of the content from before the first edit, so AEM duplicate detection compares against old content until the asset is reprocessed. `jcr:lastModified`/`jcr:lastModifiedBy` are updated by the rendition write; verify on SDK (§11) and set them explicitly if not. | — |
 | 8 | `resourceResolver.commit()` | Any exception in steps 7–8 → `resourceResolver.revert()`. If the cause is `AccessDeniedException` → **403**, otherwise **500** `save_failed`. Never retried automatically. |
 | 9 | Success | **200** `saved` with `versionLabel` |
 
@@ -198,7 +198,7 @@ No last-modified or user metadata is fetched (user decision), which removes the 
 - **Content type:** a non-`application/json` POST → 415 `wrong_content_type`; `application/json; charset=UTF-8` passes.
 - **Permissions:** missing privileges → 403 and nothing written. The privilege check sits behind a small package-private method so tests can stub it, because AEM Mocks has no ACL support.
 - **Unchanged:** identical content → 200 `unchanged`; `createRevision` never called.
-- **Success:** Mockito `InOrder`: `createRevision` → `setBatchMode(true)` → `addRendition("original", …)` → `commit()`; `dam:size` and `dam:sha1` updated; 200 with the version label. A Mockito `Asset` is used here because AEM Mocks does not implement `createRevision`.
+- **Success:** Mockito `InOrder`: `createRevision` → `setBatchMode(true)` → `addRendition("original", …)` → `commit()`; `dam:size` updated and `dam:sha1` left unchanged; 200 with the version label. A Mockito `Asset` is used here because AEM Mocks does not implement `createRevision`.
 - **Failures:** `createRevision` throws → 500 and no `addRendition`; `commit` throws `PersistenceException` → `revert()` and 500; cause `AccessDeniedException` → 403.
 - **Servlet:** maps service results to status and JSON body; `Content-Type` header set.
 

@@ -70,6 +70,9 @@
     var runBusy = false;
     var reportBusy = false;
 
+    // Result -> badge colour class: PASS green, WARN amber, SKIP grey; anything else (FAIL) red.
+    var RESULT_KINDS = { PASS: "pass", WARN: "warn", SKIP: "skip" };
+
     // Table / CSV columns: header text -> key in each result object from the servlet.
     var COLUMNS = [
         { title: "Sheet", key: "sheet" },
@@ -89,6 +92,17 @@
     }
 
     /**
+     * The message for a failed request.
+     * Input:  data   - the servlet's JSON reply, e.g. {"status":"error","message":"No folder found at …"},
+     *                  or undefined when the reply was not JSON
+     *         status - the HTTP status, e.g. 500
+     * Output: data.message, or "Request failed (HTTP 500)." when there is none
+     */
+    function scbErrorMessage(data, status) {
+        return (data || {}).message || "Request failed (HTTP " + status + ").";
+    }
+
+    /**
      * Reads a path field of the form.
      * Input:  form, selector (FILE_PATH_FIELD or ROOT_PATH_FIELD)
      * Output: the trimmed path without a trailing "/", e.g. "/content/dam/aemcloudproject/cfs/offer-listing",
@@ -96,7 +110,8 @@
      */
     function scbFieldValue(form, selector) {
         var field = form.querySelector(selector);
-        return field && field.value ? field.value.trim().replace(/\/$/, "") : "";
+        var value = field ? field.value : "";
+        return value ? value.trim().replace(/\/$/, "") : "";
     }
 
     /**
@@ -373,7 +388,7 @@
                 var value = result[column.key];
                 if (column.key === "result") {
                     // PASS -> green "Pass", WARN -> amber "Warn", SKIP -> grey "Skip", FAIL -> red "Fail"
-                    var kind = value === "PASS" ? "pass" : value === "WARN" ? "warn" : value === "SKIP" ? "skip" : "fail";
+                    var kind = RESULT_KINDS[value] || "fail";
                     var badge = document.createElement("span");
                     badge.className = "scb-cf-bulk-upload__badge scb-cf-bulk-upload__badge--" + kind;
                     badge.textContent = kind.charAt(0).toUpperCase() + kind.slice(1);
@@ -415,7 +430,7 @@
         link.download = "upload-results-" + new Date().toISOString().substring(0, 10) + ".csv";   // e.g. 2026-10-08
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
         URL.revokeObjectURL(url);       // free the memory held by the blob
     }
 
@@ -432,7 +447,7 @@
         var text = value === null || value === undefined ? "" : String(value);
         // Every field is wrapped in quotes, so commas and line breaks inside stay in one cell;
         // a quote inside the text is written twice, as CSV requires.
-        return "\"" + text.replace(/"/g, "\"\"") + "\"";
+        return "\"" + text.replaceAll("\"", "\"\"") + "\"";
     }
 
     /**
@@ -477,11 +492,11 @@
         }).fail(function (xhr) {
             // HTTP 400 from the servlet carries {"status":"error","errors":[...]} or
             // {"status":"error","message":"..."} in responseJSON.
-            var data = xhr.responseJSON;
-            if (data && data.errors) {
+            var data = xhr.responseJSON || {};
+            if (data.errors) {
                 scbShowAlert("error", "Fix these problems in the workbook", data.errors.join("\n"));
             } else {
-                scbShowAlert("error", data && data.message ? data.message : "Request failed (HTTP " + xhr.status + ").", "");
+                scbShowAlert("error", scbErrorMessage(data, xhr.status), "");
             }
         }).always(function () {
             // Runs after done or fail: re-enable Dry run; Final run only after a clean dry run.
@@ -522,7 +537,7 @@
             .then(function (response) {
                 if (!response.ok) {
                     return response.json().then(function (data) {
-                        throw new Error(data && data.message ? data.message : "Request failed (HTTP " + response.status + ").");
+                        throw new Error(scbErrorMessage(data, response.status));
                     });
                 }
                 return response.blob();
@@ -535,7 +550,7 @@
                 link.download = "scb-tgl-cf-bulk-upload-sample.xlsx";
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
+                link.remove();
                 URL.revokeObjectURL(url);
                 document.querySelector(REPORT_STATUS).textContent = "";
             })
@@ -613,9 +628,7 @@
             saved.appendChild(document.createTextNode(" "));
             saved.appendChild(link);
         }).fail(function (xhr) {
-            var data = xhr.responseJSON;
-            scbReportStatus("error", data && data.message ? data.message
-                : "Request failed (HTTP " + xhr.status + ").");
+            scbReportStatus("error", scbErrorMessage(xhr.responseJSON, xhr.status));
         }).always(function () {
             // Runs last in every case: stop the timer, give the button back.
             window.clearInterval(timer);
@@ -661,4 +674,4 @@
     });
 
 // Granite.$ is the jQuery that AEM's Granite UI pages load; CSRF is patched into it.
-})(window, document, Granite.$);
+})(globalThis, document, Granite.$);

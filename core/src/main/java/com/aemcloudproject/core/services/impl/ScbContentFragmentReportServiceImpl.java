@@ -284,11 +284,11 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             wrapStyle.setWrapText(true);
 
             scbWriteGuideSheet(workbook, headerStyle);
+            ScbStyles styles = new ScbStyles(headerStyle, requiredHeaderStyle, sample ? sampleStyle : wrapStyle);
             for (ScbOfferListingModel model : ScbOfferListingModel.values()) {
                 List<ContentFragment> fragments = fragmentsByModel.getOrDefault(model.getModelPath(),
                         Collections.emptyList());
-                scbWriteSheet(workbook, resolver, model, fragments, sample, headerStyle, requiredHeaderStyle,
-                        sample ? sampleStyle : wrapStyle);
+                scbWriteSheet(workbook, resolver, model, fragments, sample, styles);
             }
             workbook.setActiveSheet(0);
             workbook.write(out);
@@ -396,13 +396,13 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
      * @param model               the model
      * @param fragments           the model's fragments in folder order, possibly none
      * @param sample              {@code true} for the sample sheet
-     * @param headerStyle         style for normal headers
-     * @param requiredHeaderStyle style for required headers
-     * @param valueStyle          style for multi-line cells, or for every cell of the sample row
+     * @param styles              the header, required header and value styles
      */
     private void scbWriteSheet(XSSFWorkbook workbook, ResourceResolver resolver, ScbOfferListingModel model,
-                               List<ContentFragment> fragments, boolean sample, CellStyle headerStyle,
-                               CellStyle requiredHeaderStyle, CellStyle valueStyle) {
+                               List<ContentFragment> fragments, boolean sample, ScbStyles styles) {
+        CellStyle headerStyle = styles.header;
+        CellStyle requiredHeaderStyle = styles.requiredHeader;
+        CellStyle valueStyle = styles.value;
         Sheet sheet = workbook.createSheet(model.getModel());
         List<String> fields = scbFieldNames(resolver, model);
 
@@ -600,5 +600,22 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
         Cell cell = header.createCell(column);
         cell.setCellValue(text);
         cell.setCellStyle(headerStyle);
+    }
+
+    /**
+     * The cell styles of a model sheet: normal headers, required headers (red) and values (multi-line
+     * cells in a report, every cell of the grey sample row).
+     */
+    private static final class ScbStyles {
+
+        private final CellStyle header;
+        private final CellStyle requiredHeader;
+        private final CellStyle value;
+
+        private ScbStyles(CellStyle header, CellStyle requiredHeader, CellStyle value) {
+            this.header = header;
+            this.requiredHeader = requiredHeader;
+            this.value = value;
+        }
     }
 }

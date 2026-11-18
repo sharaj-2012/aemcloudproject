@@ -97,39 +97,14 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
     @Override
     protected void doPost(SlingHttpServletRequest request, SlingHttpServletResponse response) throws IOException {
         String filePath = StringUtils.trimToEmpty(request.getParameter(PARAM_FILE_PATH));
-        if (filePath.isEmpty()) {
-            scbWriteError(response, "Select a workbook first.");
-            return;
-        }
         String rootPath = ScbCfBulkUploadUtil.scbRootPath(request);
-        String folderProblem = ScbCfBulkUploadUtil.scbCheckFolder(request.getResourceResolver(), rootPath);
-        if (folderProblem != null) {
-            scbWriteError(response, folderProblem);
+        String problem = scbCheckFile(request, filePath, rootPath);
+        if (problem != null) {
+            scbWriteError(response, problem);
             return;
         }
-
-        Resource resource = request.getResourceResolver().getResource(filePath);
-        if (resource == null) {
-            scbWriteError(response, "No file found at " + filePath + ".");
-            return;
-        }
-
-        Asset asset = resource.adaptTo(Asset.class);
-        if (asset == null) {
-            scbWriteError(response, filePath + " is not a DAM asset.");
-            return;
-        }
-
-        if (!StringUtils.endsWithIgnoreCase(asset.getName(), XLSX_EXTENSION)) {
-            scbWriteError(response, filePath + " is not an .xlsx file.");
-            return;
-        }
-
+        Asset asset = request.getResourceResolver().getResource(filePath).adaptTo(Asset.class);
         Rendition original = asset.getOriginal();
-        if (original == null) {
-            scbWriteError(response, filePath + " has no original file yet. Wait for DAM processing to finish.");
-            return;
-        }
 
         boolean dryRun = !"false".equalsIgnoreCase(request.getParameter(PARAM_DRY_RUN));
         String fileVersion = String.valueOf(asset.getLastModified());
@@ -196,6 +171,40 @@ public class ScbCfBulkUploadServlet extends SlingAllMethodsServlet {
         }
         body.put("results", results);
         ScbCfBulkUploadUtil.scbWriteJson(response, HttpServletResponse.SC_OK, body);
+    }
+
+    /**
+     * Checks the workbook and the picked folder before the workbook is read: a workbook is picked, the
+     * folder is an offer-listing folder, and the workbook is a DAM .xlsx asset with an original file.
+     *
+     * @param request  the request, for the author's resource resolver
+     * @param filePath the workbook path, empty when none is picked
+     * @param rootPath the picked offer-listing folder
+     * @return the problem shown to the author, or {@code null} when the workbook can be read
+     */
+    private String scbCheckFile(SlingHttpServletRequest request, String filePath, String rootPath) {
+        if (filePath.isEmpty()) {
+            return "Select a workbook first.";
+        }
+        String folderProblem = ScbCfBulkUploadUtil.scbCheckFolder(request.getResourceResolver(), rootPath);
+        if (folderProblem != null) {
+            return folderProblem;
+        }
+        Resource resource = request.getResourceResolver().getResource(filePath);
+        if (resource == null) {
+            return "No file found at " + filePath + ".";
+        }
+        Asset asset = resource.adaptTo(Asset.class);
+        if (asset == null) {
+            return filePath + " is not a DAM asset.";
+        }
+        if (!StringUtils.endsWithIgnoreCase(asset.getName(), XLSX_EXTENSION)) {
+            return filePath + " is not an .xlsx file.";
+        }
+        if (asset.getOriginal() == null) {
+            return filePath + " has no original file yet. Wait for DAM processing to finish.";
+        }
+        return null;
     }
 
     /**

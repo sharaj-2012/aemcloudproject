@@ -2,6 +2,7 @@ package com.aemcloudproject.core.services.impl;
 
 import com.aemcloudproject.core.dto.ScbSheetData;
 import com.aemcloudproject.core.services.ScbWorkbookParserService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -93,7 +94,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
             if (header.isEmpty()) {
                 continue;
             }
-            if (header.matches(".*\\s.*")) {
+            if (StringUtils.containsWhitespace(header)) {
                 errors.add("Sheet \"" + sheet.getSheetName() + "\", column "
                         + CellReference.convertNumToColString(cell.getColumnIndex())
                         + ": header \"" + header + "\" must be a single word.");

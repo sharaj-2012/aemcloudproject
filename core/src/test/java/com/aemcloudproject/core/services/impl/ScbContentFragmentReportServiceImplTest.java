@@ -85,13 +85,12 @@ class ScbContentFragmentReportServiceImplTest {
     }
 
     @Test
-    void sampleFromAnEmptyFolderHasHeadersOnlyWithRequiredHeadersInRed() throws Exception {
+    void sampleHeadersShowRequiredFieldsInRed() throws Exception {
         try (XSSFWorkbook workbook = scbSample()) {
             Sheet sheet = workbook.getSheet("offer-detail");
             assertIterableEquals(Arrays.asList("action", "offerSlug", "offerTitle", "offerID", "offerEndDate",
                     "featured", "priority", "score", "offerCards", "offerCta", "offerImage", "alternateText"),
                     scbRowText(sheet.getRow(0)));
-            assertEquals(0, sheet.getLastRowNum());
             assertFalse(scbIsRed(workbook, sheet.getRow(0).getCell(0)));
             assertTrue(scbIsRed(workbook, sheet.getRow(0).getCell(1)));
             assertTrue(scbIsRed(workbook, sheet.getRow(0).getCell(2)));
@@ -99,38 +98,31 @@ class ScbContentFragmentReportServiceImplTest {
             assertFalse(scbIsRed(workbook, sheet.getRow(0).getCell(4)));
             assertTrue(scbIsRed(workbook, sheet.getRow(0).getCell(10)));
             assertTrue(scbIsRed(workbook, sheet.getRow(0).getCell(11)));
-            assertEquals(1, scbDropdownFirstRow(workbook.getSheet("offer-detail")));
         }
     }
 
     @Test
-    void sampleRowIsTheHighestIdOrTheLastFragmentGreyAndNotInTheDropdown() throws Exception {
-        scbFragment(context, ScbOfferListingModel.OFFER_DETAIL, "o-low", "offerID", "100002", "offerTitle", "Low");
-        scbFragment(context, ScbOfferListingModel.OFFER_DETAIL, "o-high", "offerID", "100009", "offerTitle", "High",
-                "featured", true, "priority", 4L, "offerCards", new String[] {"/content/dam/a", "/content/dam/b"});
-        scbFragment(context, ScbOfferListingModel.OFFER_DETAIL, "o-none", "offerTitle", "No ID");
+    void sampleRowHasFixedExampleValuesGreyAndNotInTheDropdown() throws Exception {
+        scbFragment(context, ScbOfferListingModel.OFFER_DETAIL, "o-high", "offerID", "100009", "offerTitle", "High");
         scbFragment(context, ScbOfferListingModel.MERCHANT_VENUE, "v-first", "name", "First");
-        scbFragment(context, ScbOfferListingModel.MERCHANT_VENUE, "v-second", "name", "Second");
 
         try (XSSFWorkbook workbook = scbSample()) {
             Sheet offers = workbook.getSheet("offer-detail");
             assertEquals(1, offers.getLastRowNum());
             Row sample = offers.getRow(1);
-            assertEquals("SAMPLE", sample.getCell(0).getStringCellValue());
-            assertEquals("o-high", sample.getCell(1).getStringCellValue());
-            assertEquals("High", sample.getCell(2).getStringCellValue());
-            assertEquals("100009", sample.getCell(3).getStringCellValue());
-            assertTrue(sample.getCell(5).getBooleanCellValue());
-            assertEquals(4d, sample.getCell(6).getNumericCellValue());
-            assertEquals("/content/dam/a\n/content/dam/b", sample.getCell(8).getStringCellValue());
+            assertIterableEquals(Arrays.asList("SAMPLE", "weekend-dinner-deal", "Weekend dinner deal: 25% off",
+                    "100001", "2026-12-31T23:59:59.000+05:30", "", "", "",
+                    ROOT + "/cards/platinum\n" + ROOT + "/cards/gold", ROOT + "/offer-cta/apply-now",
+                    "/content/dam/aemcloudproject/offers/dinner-deal.jpg", "Couple dining at Spice Garden"),
+                    scbRowText(sample));
             Font font = workbook.getFontAt(sample.getCell(0).getCellStyle().getFontIndex());
             assertTrue(font.getItalic());
             assertEquals(IndexedColors.GREY_50_PERCENT.getIndex(), font.getColor());
             assertEquals(2, scbDropdownFirstRow(workbook.getSheet("offer-detail")));
 
-            Row venue = workbook.getSheet("merchant-venue").getRow(1);
-            assertEquals("v-second", venue.getCell(1).getStringCellValue());
-            assertEquals(0, workbook.getSheet("category").getLastRowNum());
+            assertEquals("spice-garden-orchard", workbook.getSheet("merchant-venue").getRow(1).getCell(1)
+                    .getStringCellValue());
+            assertEquals(1, workbook.getSheet("category").getLastRowNum());
         }
     }
 

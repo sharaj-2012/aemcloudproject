@@ -53,9 +53,10 @@ Suggested demo order: 16 → 1 → 2 → 3 → 11 → 17 → 7 → 13 → 9 (abo
 - The action column (A2:A5001) has a dropdown with CREATE, UPDATE, DELETE; empty is allowed.
 
 **Expected (After scenario 3):**
-- Each sheet has one grey italic row 2 with action `SAMPLE`, copied from a fragment: the highest ID
-  for merchant-details (spice-garden), category (dining), offer-card (platinum-card) and offer-detail
-  (lunch-special, offerID 100003); the last one in folder order for merchant-venue and offer-cta.
+- Each sheet has one grey italic row 2 with action `SAMPLE` and every cell filled with the fixed
+  example values (merchant-venue spice-garden-orchard, merchant-details spice-garden, category dining,
+  offer-card platinum, offer-cta apply-now, offer-detail weekend-dinner-deal); references point under
+  the picked folder. Existing fragments make no difference, and an empty folder gives the same row.
 - The dropdown covers A3:A5002, so `SAMPLE` is not one of its values.
 
 ## 2. Create a full set, with two mistakes

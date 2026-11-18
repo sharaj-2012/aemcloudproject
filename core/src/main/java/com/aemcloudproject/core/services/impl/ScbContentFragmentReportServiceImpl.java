@@ -42,8 +42,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -60,6 +62,76 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
 
     private static final String ACTION = "action";
     private static final String SAMPLE = "SAMPLE";
+    private static final String FOLDER_MARK = "{offer-listing}";
+    private static final Map<ScbOfferListingModel, Map<String, String>> SAMPLE_ROWS =
+            new EnumMap<>(ScbOfferListingModel.class);
+
+    static {
+        SAMPLE_ROWS.put(ScbOfferListingModel.MERCHANT_VENUE, scbSampleValues(
+                "merchantVenueSlug", "spice-garden-orchard",
+                "name", "Spice Garden – Orchard",
+                "address", "12 Marina Boulevard\nSingapore 018982",
+                "latitude", "1.2789",
+                "longitude", "103.8536",
+                "telephone", "+65 6123 4567",
+                "ophr", "Mon–Sun 11:00–22:00",
+                "fax", "+65 6123 4568"));
+        SAMPLE_ROWS.put(ScbOfferListingModel.MERCHANT_DETAILS, scbSampleValues(
+                "merchantSlug", "spice-garden",
+                "merchantID", "100001",
+                "merchantName", "Spice Garden",
+                "merchantLogo", "true",
+                "merchantVenues", FOLDER_MARK + "/merchants/venues/spice-garden-orchard"));
+        SAMPLE_ROWS.put(ScbOfferListingModel.CATEGORY, scbSampleValues(
+                "offerCategorySlug", "dining",
+                "ID", "1001",
+                "name", "Dining",
+                "slug", "Dining",
+                "categoryIconPath", "/content/dam/aemcloudproject/icons/dining.svg",
+                "parent", FOLDER_MARK + "/categories/lifestyle"));
+        SAMPLE_ROWS.put(ScbOfferListingModel.OFFER_CARD, scbSampleValues(
+                "offerCardSlug", "platinum",
+                "ID", "1001",
+                "name", "Platinum Credit Card",
+                "slug", "Platinum Credit Card",
+                "logo", "/content/dam/aemcloudproject/cards/platinum.png",
+                "parent", FOLDER_MARK + "/cards/credit-cards"));
+        SAMPLE_ROWS.put(ScbOfferListingModel.OFFER_CTA, scbSampleValues(
+                "offerCtaSlug", "apply-now",
+                "label", "Apply now",
+                "url", "/content/aemcloudproject/us/en/apply",
+                "deeplink", "/content/aemcloudproject/us/en/app/apply"));
+        SAMPLE_ROWS.put(ScbOfferListingModel.OFFER_DETAIL, scbSampleValues(
+                "offerSlug", "weekend-dinner-deal",
+                "offerID", "100001",
+                "offerTitle", "Weekend dinner deal: 25% off",
+                "offerSummary", "25% off your bill every Friday and Saturday.",
+                "offerDescription", "Enjoy 25% off your total bill.\nDine-in only.",
+                "offerImage", "/content/dam/aemcloudproject/offers/dinner-deal.jpg",
+                "alternateText", "Couple dining at Spice Garden",
+                "hotPromo", "true",
+                "offerStartDate", "2026-12-01T00:00:00.000+05:30",
+                "offerEndDate", "2026-12-31T23:59:59.000+05:30",
+                "offerURL", "/content/aemcloudproject/us/en/offers/weekend-dinner-deal",
+                "offerLabel", "25% off",
+                "offerEmail", "offers@spicegarden.example",
+                "offerTnc", "Valid Fridays and Saturdays.\nNot valid with other offers.",
+                "offerType", "Dining",
+                "offerPromoCodes", "DINE25",
+                "offerBadge", "New",
+                "offerTags", "dining, weekend",
+                "offerLocation", "Orchard",
+                "offerLocationType", "In-store",
+                "offerCategories", FOLDER_MARK + "/categories/dining",
+                "offerMerchants", FOLDER_MARK + "/merchants/spice-garden",
+                "offerCards", FOLDER_MARK + "/cards/platinum\n" + FOLDER_MARK + "/cards/gold",
+                "offerCta", FOLDER_MARK + "/offer-cta/apply-now",
+                "offerOrigin", "Partner",
+                "brCode", "BR-100001",
+                "qrCode", "QR-100001",
+                "preview", "false",
+                "cache", "true"));
+    }
     private static final String[] ACTIONS = {"CREATE", "UPDATE", "DELETE"};
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final String GUIDE_SHEET = "_Guide";
@@ -82,7 +154,7 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
         "- Row 1 holds the column names. Keep them exactly as they are (case-sensitive, no spaces).",
         "- You may delete columns you don't need, except action and the sheet's slug column (e.g. offerSlug).",
         "- Sheets whose name starts with _ (like this one) are ignored by the upload.",
-        "- In the sample sheet, row 2 (action SAMPLE, grey) is an example copied from an existing fragment and is never uploaded. Leave it or delete it.",
+        "- In the sample sheet, row 2 (action SAMPLE, grey) is a made-up example showing the format of each column and is never uploaded. Leave it or delete it.",
         "",
         "## The action column",
         "- Pick a value from the dropdown. An empty action means the row is ignored.",
@@ -253,7 +325,8 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
 
     /**
      * Writes the upload workbook: {@code _Guide} first, then one sheet per model in model order. A report
-     * has one row per fragment under the folder; a sample has one grey {@code SAMPLE} example row instead.
+     * has one row per fragment under the folder; a sample has one grey {@code SAMPLE} example row instead,
+     * from fixed example values, and does not read the folder's fragments.
      *
      * @param resolver the author's resource resolver
      * @param rootPath the picked offer-listing folder
@@ -265,7 +338,7 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             throws IOException {
         Map<String, List<ContentFragment>> fragmentsByModel = new HashMap<>();
         Resource folder = resolver.getResource(rootPath);
-        if (folder != null) {
+        if (!sample && folder != null) {
             for (Resource asset : ScbCfBulkUploadUtil.scbFindFragments(folder)) {
                 ContentFragment fragment = asset.adaptTo(ContentFragment.class);
                 String modelPath = ScbCfBulkUploadUtil.scbModelOf(asset);
@@ -288,7 +361,8 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             for (ScbOfferListingModel model : ScbOfferListingModel.values()) {
                 List<ContentFragment> fragments = fragmentsByModel.getOrDefault(model.getModelPath(),
                         Collections.emptyList());
-                scbWriteSheet(workbook, resolver, model, fragments, sample, styles);
+                scbWriteSheet(workbook, resolver, model, fragments, sample ? scbSampleRow(model, rootPath) : null,
+                        styles);
             }
             workbook.setActiveSheet(0);
             workbook.write(out);
@@ -387,71 +461,80 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     /**
      * Writes one sheet named after the model: a header row with the action and slug columns and the
      * model fields (slug and required fields in red bold), then, for a report, one row per fragment
-     * sorted by {@link #scbSort}, or, for a sample, one {@code SAMPLE} row copied from the fragment with
-     * the highest ID (the last fragment in folder order when the model has no ID). The action column
+     * sorted by {@link #scbSort}, or, for a sample, the grey {@code SAMPLE} example row. The action column
      * gets a CREATE / UPDATE / DELETE dropdown from the first row an author fills.
      *
-     * @param workbook            the workbook to add the sheet to
-     * @param resolver            the author's resource resolver
-     * @param model               the model
-     * @param fragments           the model's fragments in folder order, possibly none
-     * @param sample              {@code true} for the sample sheet
-     * @param styles              the header, required header and value styles
+     * @param workbook  the workbook to add the sheet to
+     * @param resolver  the author's resource resolver
+     * @param model     the model
+     * @param fragments the model's fragments in folder order, possibly none; not used for a sample
+     * @param sampleRow the sample values keyed by column, or {@code null} for a report
+     * @param styles    the header, required header and value styles
      */
     private void scbWriteSheet(XSSFWorkbook workbook, ResourceResolver resolver, ScbOfferListingModel model,
-                               List<ContentFragment> fragments, boolean sample, ScbStyles styles) {
-        CellStyle headerStyle = styles.header;
-        CellStyle requiredHeaderStyle = styles.requiredHeader;
-        CellStyle valueStyle = styles.value;
+                               List<ContentFragment> fragments, Map<String, String> sampleRow, ScbStyles styles) {
         Sheet sheet = workbook.createSheet(model.getModel());
         List<String> fields = scbFieldNames(resolver, model);
 
         Row header = sheet.createRow(0);
-        scbHeaderCell(header, 0, ACTION, headerStyle);
-        scbHeaderCell(header, 1, model.getSlugColumn(), requiredHeaderStyle);
+        scbHeaderCell(header, 0, ACTION, styles.header);
+        scbHeaderCell(header, 1, model.getSlugColumn(), styles.requiredHeader);
         for (int f = 0; f < fields.size(); f++) {
             String field = fields.get(f);
             scbHeaderCell(header, f + 2, field,
-                    model.getRequiredFields().contains(field) ? requiredHeaderStyle : headerStyle);
+                    model.getRequiredFields().contains(field) ? styles.requiredHeader : styles.header);
         }
 
-        List<ContentFragment> rows = sample ? scbSampleFragment(fragments, model) : scbSort(fragments, model);
-        int rowIndex = 1;
-        for (ContentFragment fragment : rows) {
-            Row row = sheet.createRow(rowIndex++);
-            if (sample) {
-                row.createCell(0).setCellValue(SAMPLE);
-            }
-            row.createCell(1).setCellValue(fragment.getName());
+        if (sampleRow != null) {
+            Row row = sheet.createRow(1);
+            row.createCell(0).setCellValue(SAMPLE);
+            row.createCell(1).setCellValue(sampleRow.getOrDefault(model.getSlugColumn(), ""));
             for (int f = 0; f < fields.size(); f++) {
-                ContentElement element = fragment.getElement(fields.get(f));
-                scbWriteCell(row.createCell(f + 2), element == null ? null : element.getValue().getValue(), valueStyle);
+                row.createCell(f + 2).setCellValue(sampleRow.getOrDefault(fields.get(f), ""));
             }
-            if (sample) {
-                row.forEach(cell -> cell.setCellStyle(valueStyle));
+            row.forEach(cell -> cell.setCellStyle(styles.value));
+            scbAddActionDropdown(sheet, 2);
+        } else {
+            int rowIndex = 1;
+            for (ContentFragment fragment : scbSort(fragments, model)) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(1).setCellValue(fragment.getName());
+                for (int f = 0; f < fields.size(); f++) {
+                    ContentElement element = fragment.getElement(fields.get(f));
+                    scbWriteCell(row.createCell(f + 2), element == null ? null : element.getValue().getValue(),
+                            styles.value);
+                }
             }
+            scbAddActionDropdown(sheet, 1);
         }
-        scbAddActionDropdown(sheet, sample ? rowIndex : 1);
         sheet.createFreezePane(0, 1);
     }
 
     /**
-     * Picks the fragment copied into the sample sheet.
+     * Returns a model's sample values with fragment references under the picked folder.
      *
-     * @param fragments the model's fragments in folder order
-     * @param model     the model
-     * @return the fragment with the highest ID, or the last one when the model has no ID field; empty when
-     *         there are no fragments
+     * @param model    the model
+     * @param rootPath the picked offer-listing folder
+     * @return the sample values keyed by column (slug column and fields)
      */
-    private List<ContentFragment> scbSampleFragment(List<ContentFragment> fragments, ScbOfferListingModel model) {
-        if (fragments.isEmpty()) {
-            return Collections.emptyList();
+    private static Map<String, String> scbSampleRow(ScbOfferListingModel model, String rootPath) {
+        Map<String, String> values = new LinkedHashMap<>();
+        SAMPLE_ROWS.get(model).forEach((column, value) -> values.put(column, value.replace(FOLDER_MARK, rootPath)));
+        return values;
+    }
+
+    /**
+     * Builds one model's sample values.
+     *
+     * @param columnsAndValues column names and example values, alternating
+     * @return the values keyed by column
+     */
+    private static Map<String, String> scbSampleValues(String... columnsAndValues) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (int i = 0; i < columnsAndValues.length; i += 2) {
+            values.put(columnsAndValues[i], columnsAndValues[i + 1]);
         }
-        if (model.getIdField() == null) {
-            return Collections.singletonList(fragments.get(fragments.size() - 1));
-        }
-        return Collections.singletonList(Collections.max(fragments,
-                Comparator.comparingLong(fragment -> scbIdValue(fragment, model.getIdField(), Long.MIN_VALUE))));
+        return values;
     }
 
     /**

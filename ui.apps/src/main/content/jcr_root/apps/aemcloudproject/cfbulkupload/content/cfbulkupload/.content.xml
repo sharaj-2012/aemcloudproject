@@ -199,7 +199,7 @@
                                             <get
                                                 jcr:primaryType="nt:unstructured"
                                                 sling:resourceType="granite/ui/components/coral/foundation/text"
-                                                text="What you get: scb-tgl-cf-bulk-upload-sample.xlsx, saved to your computer. It has a _Guide sheet and one sheet per kind of fragment with the right columns (red header = required) and an action dropdown. Each sheet has one grey SAMPLE row copied from the newest fragment of that kind, so you can see real values; it is never uploaded. No other existing content is in it."
+                                                text="What you get: scb-tgl-cf-bulk-upload-sample.xlsx, saved to your computer. It has a _Guide sheet and one sheet per kind of fragment with the right columns (red header = required) and an action dropdown. Each sheet has one grey SAMPLE row of example values showing how each column is filled; it is never uploaded. No existing content is in it."
                                                 granite:class="scb-cf-bulk-upload__option-text"/>
                                         </items>
                                     </sampleOption>

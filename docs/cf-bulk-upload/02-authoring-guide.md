@@ -19,7 +19,7 @@ You fill an Excel workbook, upload it to DAM, and the tool creates, updates or d
 | Fragment folder | The `offer-listing` folder you pick on the page every time; each model has its own sub-folder under it |
 | Dry run | A test run: every row is checked, nothing is written |
 | Final run | The run that actually creates, updates and deletes fragments. Enabled only after a dry run with no failures |
-| Sample sheet | A workbook with every sheet and column, to author in; row 2 of each sheet is a grey example copied from an existing fragment, marked `SAMPLE`, and is never uploaded |
+| Sample sheet | A workbook with every sheet and column, to author in; row 2 of each sheet is a grey example with every column filled, marked `SAMPLE`, and is never uploaded |
 | Report | An Excel file with every existing fragment, in exactly the layout the upload expects; useful for UPDATE and DELETE |
 | DAM | AEM Assets, where the workbooks, the reports and the fragments are stored |
 
@@ -44,7 +44,7 @@ You need AEM author access with rights to the folders below, and Excel.
 Start from the sample sheet, check with a dry run, then do the final run.
 
 1. In AEM, open **Tools → SCB Tools → Content Fragment Bulk Upload** and pick the **Fragment folder**: the `offer-listing` folder, e.g. `/content/dam/aemcloudproject/cfs/offer-listing`. All buttons stay greyed out until you do.
-2. Click **Download sample sheet**. You get `cf-bulk-upload-sample.xlsx`: one sheet per model with all the column names and, in row 2, a grey example copied from an existing fragment (action `SAMPLE`). The example is never uploaded; leave it or delete it.
+2. Click **Download sample sheet**. You get `scb-tgl-cf-bulk-upload-sample.xlsx`: one sheet per model with all the column names and, in row 2, a grey example row with every column filled (action `SAMPLE`). The example is never uploaded; leave it or delete it.
    - To change or delete existing fragments, you can instead click **Save report to DAM**: every fragment under the fragment folder is saved as a new dated file in the reports folder. Click **Open in Assets** and **Download** it.
 3. Fill the workbook:
    - to add a fragment, add a row in the right sheet, pick `CREATE` in **action** and fill its cells;
@@ -367,7 +367,7 @@ Tick these off every time before you click Final run.
 
 **Why are Dry run, Download sample sheet and Save report to DAM greyed out?** They need the Fragment folder to be an `offer-listing` folder, and Dry run also needs a workbook. Pick them and the buttons turn on.
 
-**What is the grey SAMPLE row in the sample sheet?** An example copied from an existing fragment (the one with the highest ID, or the latest one for venues and CTAs), so you can see how each column is filled. Its action is `SAMPLE`, so the upload always skips it. Leave it or delete it.
+**What is the grey SAMPLE row in the sample sheet?** A made-up example with every column filled (e.g. the offer "Weekend dinner deal: 25% off"), so you can see how each column is filled. Its action is `SAMPLE`, so the upload always skips it. Leave it or delete it.
 
 **Why is Final run greyed out?** It needs a dry run of the same workbook and fragment folder with no Fail rows. Run the dry run (again) after fixing the failures or changing the file or folder.
 

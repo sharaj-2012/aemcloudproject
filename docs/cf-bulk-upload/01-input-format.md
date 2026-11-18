@@ -115,16 +115,18 @@ are still read from the models in `/conf`.
 ## Sample rows
 
 - **Download sample sheet** gives `_Guide` and the six sheets with every column. Each sheet has one
-  example in **row 2**, copied from an existing fragment in the picked folder: the one with the
-  highest ID, or, for models without an ID, the last one in folder order. A model with no fragments
-  yet has no example row.
+  example in **row 2** with fixed example values for every field (e.g. offer-detail
+  `weekend-dinner-deal`, "Weekend dinner deal: 25% off"); fragment references point under the
+  picked folder. Existing fragments are not read. The values are kept in
+  `ScbContentFragmentReportServiceImpl`; a field added to a model later shows an empty cell until a
+  value is added there.
 - The example row's `action` is `SAMPLE` and the whole row is grey italic. The CREATE / UPDATE /
   DELETE dropdown starts at row 3, so `SAMPLE` is never one of its values.
 - The upload drops every row whose action is `SAMPLE` (any case) before any check: it isn't
   written, counted toward the row limit, or listed in the results. A sheet with only its example
   row gets the usual `SKIP` line.
-- If an author overwrites `SAMPLE` with `UPDATE`, the row updates the fragment it was copied from
-  (same slug); `CREATE` fails with "already exists".
+- If an author overwrites `SAMPLE` with `CREATE`, the example fragment is created (e.g.
+  `offers/weekend-dinner-deal`) unless one with that slug exists; with `UPDATE` it fails unless one does.
 
 ### Slug and title
 

@@ -15,8 +15,8 @@ public interface ScbContentFragmentReportService {
 
     /**
      * Writes the sample workbook: the {@code _Guide} sheet and one sheet per model with the header row
-     * (action, the model's slug column and every model field), one grey {@code SAMPLE} example row copied from an existing
-     * fragment of the folder (none when the model has no fragments) and the action dropdown below it.
+     * (action, the model's slug column and every model field), one grey {@code SAMPLE} row of fixed example
+     * values (fragment references point under the folder) and the action dropdown below it.
      *
      * @param resolver the author's resource resolver
      * @param rootPath the picked offer-listing folder

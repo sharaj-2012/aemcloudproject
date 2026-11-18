@@ -1,5 +1,6 @@
 {
-  "reportFolder": "/content/dam/aemcloudproject/reports",
+  "fragmentReportFolder": "/content/dam/aemcloudproject/reports/offer-listing",
+  "runResultsFolder": "/content/dam/aemcloudproject/reports/upload-runs",
   "fragmentReportFileName": "offer-listing-report",
   "runResultsFileName": "cf-upload-run",
   "maxFileSizeMb": 10,

@@ -101,6 +101,7 @@ node/
 # Tests
 coverage/
 reports/
+!ui.content/src/main/content/jcr_root/content/dam/aemcloudproject/reports/
 
 # Others
 dispatcher/src/conf.d/variables/default.vars

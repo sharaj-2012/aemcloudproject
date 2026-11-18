@@ -185,7 +185,7 @@ class ScbCfBulkUploadServletTest {
         assertNull(body.get("fileVersion"));
         assertEquals("Apply", ScbOfferListingTestContent.scbMaster(context, ROOT + "/offer-cta/apply").get("label"));
         String reportPath = (String) body.get("reportPath");
-        assertTrue(reportPath.startsWith("/content/dam/aemcloudproject/reports/cf-upload-run-"), reportPath);
+        assertTrue(reportPath.startsWith("/content/dam/aemcloudproject/reports/upload-runs/cf-upload-run-"), reportPath);
         assertNotNull(context.resourceResolver().getResource(reportPath).adaptTo(Asset.class));
     }
 

@@ -32,7 +32,8 @@ You need AEM author access with rights to the folders below, and Excel.
 | The upload page | AEM → **Tools** (hammer icon) → **SCB Tools** → **Content Fragment Bulk Upload** |
 | Folder for workbooks you upload | `/content/dam/aemcloudproject/imports` |
 | Fragment folder (pick it on the page every time) | `/content/dam/aemcloudproject/cfs/offer-listing` (see Sheets, folders and names) |
-| Saved reports and run reports | `/content/dam/aemcloudproject/reports`, one new dated file each time |
+| Saved reports | `/content/dam/aemcloudproject/reports/offer-listing`, one new dated file each time |
+| Run reports (one per final run) | `/content/dam/aemcloudproject/reports/upload-runs`, one new dated file each time |
 
 - **Permissions:** you need to upload files to the imports folder, to create, modify and delete content in the fragment folders, and to create files in the reports folder. If an upload fails with "could not be written", ask the AEM team to check your rights.
 - **Excel:** any recent version. Keep the file as `.xlsx`; don't save it as `.xls` or `.csv`.

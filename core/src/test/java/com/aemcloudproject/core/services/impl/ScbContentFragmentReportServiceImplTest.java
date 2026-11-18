@@ -51,7 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(AemContextExtension.class)
 class ScbContentFragmentReportServiceImplTest {
 
-    private static final String REPORTS = "/content/dam/test/reports";
+    private static final String REPORTS = "/content/dam/test/reports/offer-listing";
+    private static final String RUNS = "/content/dam/test/reports/upload-runs";
     private static final int MAX_ROWS = 1234;
 
     private final AemContext context = AppAemContext.newAemContext();
@@ -63,7 +64,8 @@ class ScbContentFragmentReportServiceImplTest {
     void setUp() throws Exception {
         ScbOfferListingTestContent.scbSetUp(context);
         Map<String, Object> config = new HashMap<>();
-        config.put("reportFolder", REPORTS + "/");
+        config.put("fragmentReportFolder", REPORTS + "/");
+        config.put("runResultsFolder", RUNS);
         config.put("fragmentReportFileName", "test-report");
         config.put("runResultsFileName", "test-run");
         config.put("maxFileSizeMb", 7);
@@ -201,7 +203,7 @@ class ScbContentFragmentReportServiceImplTest {
         String path = reportService.scbSaveRunReport(context.resourceResolver(),
                 "/content/dam/imports/book.xlsx", ROOT, results);
 
-        assertTrue(path.matches(REPORTS + "/test-run-.*\\.xlsx"), path);
+        assertTrue(path.matches(RUNS + "/test-run-.*\\.xlsx"), path);
         try (XSSFWorkbook workbook = scbReport(path)) {
             XSSFSheet sheet = workbook.getSheet("Results");
             assertIterableEquals(Arrays.asList("Workbook", "/content/dam/imports/book.xlsx"), scbRowText(sheet.getRow(0)));

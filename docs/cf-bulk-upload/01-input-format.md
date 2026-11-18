@@ -253,11 +253,14 @@ the fields ticked *Required* in the model editor.
   without writing anything.
 - **Final run** writes. It is enabled only after a dry run of the same workbook and folder with no
   `FAIL` rows, and the server refuses it when the workbook changed in DAM after that dry run.
-- Each final run saves its results as `cf-upload-run-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the report
-  folder (`reportFolder`, default `/content/dam/aemcloudproject/reports`).
+- Each final run saves its results as `cf-upload-run-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the run results
+  folder (`runResultsFolder`, default `/content/dam/aemcloudproject/reports/upload-runs`).
 - **Save report to DAM** saves every fragment under the picked folder as
-  `offer-listing-report-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the same folder; each save is a new file.
-- The OSGi config `ScbCfBulkUploadConfiguration` has five settings: `reportFolder`,
+  `offer-listing-report-<yyyy-MM-dd-HH-mm-ss>.xlsx` in the fragment report folder (`fragmentReportFolder`,
+  default `/content/dam/aemcloudproject/reports/offer-listing`); each save is a new file.
+- Both folders are in ui.content (filter `mode="merge"`: created when missing, never overwritten), and the
+  upload also creates a missing folder when it saves.
+- The OSGi config `ScbCfBulkUploadConfiguration` has six settings: `fragmentReportFolder`, `runResultsFolder`,
   `fragmentReportFileName` (`offer-listing-report`), `runResultsFileName` (`cf-upload-run`),
   `maxFileSizeMb` and `maxRows`.
 - The run happens in the request; the page shows a spinner until the results come back.

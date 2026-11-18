@@ -7,19 +7,27 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * OSGi configuration with the report folder, report file names and upload limits of the CF bulk upload.
  * Shared by the upload servlet and the report service through {@link #PID}.
  */
-@ObjectClassDefinition(name = "SCB TGL Content Fragment Bulk Upload", description = "Report folder, report file names and limits for the CF bulk upload")
+@ObjectClassDefinition(name = "SCB TGL Content Fragment Bulk Upload", description = "Report folders, report file names and limits for the CF bulk upload")
 public @interface ScbCfBulkUploadConfiguration {
 
     /** Configuration PID shared by both components; also the name of the cfg.json file. */
     String PID = "com.aemcloudproject.core.config.ScbCfBulkUploadConfiguration";
 
     /**
-     * DAM folder the fragment report and the run results go to; created if missing.
+     * DAM folder the fragment report saved with Save report to DAM goes to; created if missing.
      *
-     * @return the report folder
+     * @return the fragment report folder
      */
-    @AttributeDefinition(name = "Report folder", description = "DAM folder the fragment report and the run results are saved in")
-    String reportFolder() default "/content/dam/aemcloudproject/reports";
+    @AttributeDefinition(name = "Fragment report folder", description = "DAM folder Save report to DAM saves the fragment report in")
+    String fragmentReportFolder() default "/content/dam/aemcloudproject/reports/offer-listing";
+
+    /**
+     * DAM folder the results of each final run go to; created if missing.
+     *
+     * @return the run results folder
+     */
+    @AttributeDefinition(name = "Run results folder", description = "DAM folder the results of each final run are saved in")
+    String runResultsFolder() default "/content/dam/aemcloudproject/reports/upload-runs";
 
     /**
      * File name prefix of the fragment report saved with Save report to DAM; the date, time and {@code .xlsx} are added.

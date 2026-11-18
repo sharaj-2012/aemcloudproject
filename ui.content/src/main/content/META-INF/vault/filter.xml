@@ -8,5 +8,7 @@
         <include pattern="/content/dam/aemcloudproject/jcr:content(/.*)?"/>
     </filter>
     <filter root="/content/dam/aemcloudproject/asset.jpg" mode="merge"/>
+    <!-- CF bulk upload report folders: created when missing; existing folders and the files in them are never changed. -->
+    <filter root="/content/dam/aemcloudproject/reports" mode="merge"/>
     <filter root="/content/experience-fragments/aemcloudproject" mode="merge"/>
 </workspaceFilter>

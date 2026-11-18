@@ -77,7 +77,7 @@ class ScbCfReportServletTest {
         Map<String, Object> body = scbBody();
         assertEquals("ok", body.get("status"));
         String path = (String) body.get("path");
-        assertTrue(path.startsWith("/content/dam/aemcloudproject/reports/offer-listing-report-"), path);
+        assertTrue(path.startsWith("/content/dam/aemcloudproject/reports/offer-listing/offer-listing-report-"), path);
         assertNotNull(context.resourceResolver().getResource(path).adaptTo(Asset.class));
     }
 

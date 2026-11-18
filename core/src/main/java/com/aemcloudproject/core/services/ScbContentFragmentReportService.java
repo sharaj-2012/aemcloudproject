@@ -27,7 +27,7 @@ public interface ScbContentFragmentReportService {
 
     /**
      * Writes every fragment under the folder, one sheet per model in the upload layout, and saves the
-     * workbook in the configured report folder under a new name with the date and time.
+     * workbook in the configured fragment report folder under a new name with the date and time.
      *
      * @param resolver the author's resource resolver
      * @param rootPath the folder whose fragments are exported, including its sub-folders
@@ -37,7 +37,7 @@ public interface ScbContentFragmentReportService {
     String scbSaveReport(ResourceResolver resolver, String rootPath) throws IOException;
 
     /**
-     * Saves the results of a final run in the configured report folder under a new name with the date and time.
+     * Saves the results of a final run in the configured run results folder under a new name with the date and time.
      *
      * @param resolver the author's resource resolver
      * @param filePath the uploaded workbook

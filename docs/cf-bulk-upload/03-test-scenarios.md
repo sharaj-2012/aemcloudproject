@@ -101,7 +101,7 @@ offer-detail     4 lunch-special              CREATE FAIL offerTitle: required
 
 **Expected:** 8 Pass; offers numbered 100001, 100002, 100003; the fragments appear in their
 folders in Assets; no slug field in the fragments. Green banner "Final run done." with a link to
-`/content/dam/aemcloudproject/reports/cf-upload-run-<date>-<time>.xlsx` (Results sheet: workbook,
+`/content/dam/aemcloudproject/reports/upload-runs/cf-upload-run-<date>-<time>.xlsx` (Results sheet: workbook,
 folder, user, time, then the 8 rows). Final run is disabled again.
 
 ## 4. Whole workbook rejected
@@ -208,7 +208,7 @@ Note: a column that is present but empty clears that field on UPDATE. The valid 
 the name suffix.
 
 **Expected:**
-- "Saved /content/dam/aemcloudproject/reports/offer-listing-report-<date>-<time>.xlsx"; a second
+- "Saved /content/dam/aemcloudproject/reports/offer-listing/offer-listing-report-<date>-<time>.xlsx"; a second
   save is a new file (`…-2.xlsx` within the same second). No versions are created.
 - One row per fragment (venue 1, merchant 1, category 1, card 1, CTA 1, offers 3), with the slug
   column holding each fragment's node name.

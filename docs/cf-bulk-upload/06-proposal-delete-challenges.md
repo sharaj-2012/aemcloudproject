@@ -15,7 +15,7 @@ After the demo, DELETE was agreed and built as a real delete with these safeguar
 | 5 | Safeguard: dry run first | Final run is enabled only after a dry run with no failures; no extra checkbox or OSGi switch |
 | 6 | Who may delete | AEM permissions of the author running the upload; no extra group |
 | 8 | Order | Deletes run after all CREATE / UPDATE rows, sheets in reverse model order (offers first, venues last); a fragment deleted earlier in the run no longer counts as a reference |
-| 9 | Audit trail | Each final run saves a results report in `/content/dam/aemcloudproject/reports` |
+| 9 | Audit trail | Each final run saves a results report in `/content/dam/aemcloudproject/reports/upload-runs` |
 | 10 | Language copies | Out of scope |
 | 11 | Speed | References inside the picked folder are read once per upload |
 

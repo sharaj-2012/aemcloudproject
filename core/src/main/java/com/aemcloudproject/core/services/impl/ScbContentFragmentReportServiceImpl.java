@@ -122,12 +122,13 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
 
     private int maxFileSizeMb;
     private int maxRows;
-    private String reportFolder;
+    private String fragmentReportFolder;
+    private String runResultsFolder;
     private String fragmentReportFileName;
     private String runResultsFileName;
 
     /**
-     * Reads the limits, report folder and file name prefixes from the configuration.
+     * Reads the limits, report folders and file name prefixes from the configuration.
      *
      * @param config the CF bulk upload configuration
      */
@@ -136,7 +137,8 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     protected void activate(ScbCfBulkUploadConfiguration config) {
         maxFileSizeMb = config.maxFileSizeMb();
         maxRows = config.maxRows();
-        reportFolder = StringUtils.removeEnd(config.reportFolder(), "/");
+        fragmentReportFolder = StringUtils.removeEnd(config.fragmentReportFolder(), "/");
+        runResultsFolder = StringUtils.removeEnd(config.runResultsFolder(), "/");
         fragmentReportFileName = config.fragmentReportFileName();
         runResultsFileName = config.runResultsFileName();
     }
@@ -156,7 +158,7 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
     public String scbSaveReport(ResourceResolver resolver, String rootPath) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         scbWriteWorkbook(resolver, rootPath, false, buffer);
-        return scbSaveFile(resolver, fragmentReportFileName, buffer.toByteArray());
+        return scbSaveFile(resolver, fragmentReportFolder, fragmentReportFileName, buffer.toByteArray());
     }
 
     /**
@@ -208,33 +210,34 @@ public class ScbContentFragmentReportServiceImpl implements ScbContentFragmentRe
             }
             workbook.write(buffer);
         }
-        return scbSaveFile(resolver, runResultsFileName, buffer.toByteArray());
+        return scbSaveFile(resolver, runResultsFolder, runResultsFileName, buffer.toByteArray());
     }
 
     /**
-     * Saves an .xlsx in the report folder as {@code <prefix>-<yyyy-MM-dd-HH-mm-ss>.xlsx} with the DAM
-     * {@link AssetManager}, adding {@code -2}, {@code -3}, ... if that name is taken. A missing report
-     * folder is created.
+     * Saves an .xlsx in a folder as {@code <prefix>-<yyyy-MM-dd-HH-mm-ss>.xlsx} with the DAM
+     * {@link AssetManager}, adding {@code -2}, {@code -3}, ... if that name is taken. A missing folder is created.
      *
      * @param resolver the author's resource resolver
+     * @param folder   the DAM folder
      * @param prefix   the file name prefix
      * @param content  the .xlsx bytes
      * @return the path of the saved file
      * @throws IOException if the file cannot be saved
      */
-    private String scbSaveFile(ResourceResolver resolver, String prefix, byte[] content) throws IOException {
+    private String scbSaveFile(ResourceResolver resolver, String folder, String prefix, byte[] content)
+            throws IOException {
         AssetManager assetManager = resolver.adaptTo(AssetManager.class);
         if (assetManager == null) {
             throw new IOException("the DAM asset manager is not available");
         }
-        String baseName = reportFolder + "/" + prefix + "-" + LocalDateTime.now().format(FILE_TIME_FORMAT);
+        String baseName = folder + "/" + prefix + "-" + LocalDateTime.now().format(FILE_TIME_FORMAT);
         String assetPath = baseName + ".xlsx";
         for (int n = 2; resolver.getResource(assetPath) != null; n++) {
             assetPath = baseName + "-" + n + ".xlsx";
         }
         try {
-            if (resolver.getResource(reportFolder) == null) {
-                ScbCfBulkUploadUtil.scbGetOrCreateFolder(resolver, reportFolder);
+            if (resolver.getResource(folder) == null) {
+                ScbCfBulkUploadUtil.scbGetOrCreateFolder(resolver, folder);
                 resolver.commit();
             }
             Asset saved = assetManager.createAsset(assetPath, new ByteArrayInputStream(content), XLSX_MIME_TYPE, true);

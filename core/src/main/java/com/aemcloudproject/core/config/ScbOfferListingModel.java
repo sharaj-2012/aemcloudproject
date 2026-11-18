@@ -11,14 +11,14 @@ import java.util.Set;
  */
 public enum ScbOfferListingModel {
 
-    MERCHANT_VENUE("merchant-venue", "merchants/venues", "merchantVenueSlug", "name", null, 0, null),
-    MERCHANT_DETAILS("merchant-details", "merchants", "merchantSlug", "merchantName", "merchantID", 100001, null,
+    MERCHANT_VENUE("merchant-venue", "merchants/venues", "merchantVenueSlug", "name", null, null),
+    MERCHANT_DETAILS("merchant-details", "merchants", "merchantSlug", "merchantName", id("merchantID", 100001), null,
             "merchantID"),
-    CATEGORY("category", "categories", "offerCategorySlug", "name", "ID", 1001, null, "ID"),
-    OFFER_CARD("offer-card", "cards", "offerCardSlug", "name", "ID", 1001, null, "ID"),
-    OFFER_CTA("offer-cta", "offer-cta", "offerCtaSlug", "label", null, 0, null),
-    OFFER_DETAIL("offer-detail", "offers", "offerSlug", "offerTitle", "offerID", 100001, "offerEndDate", "offerID",
-            "offerTitle", "offerImage", "alternateText");
+    CATEGORY("category", "categories", "offerCategorySlug", "name", id("ID", 1001), null, "ID"),
+    OFFER_CARD("offer-card", "cards", "offerCardSlug", "name", id("ID", 1001), null, "ID"),
+    OFFER_CTA("offer-cta", "offer-cta", "offerCtaSlug", "label", null, null),
+    OFFER_DETAIL("offer-detail", "offers", "offerSlug", "offerTitle", id("offerID", 100001), "offerEndDate",
+            "offerID", "offerTitle", "offerImage", "alternateText");
 
     /** Folder holding the Content Fragment models. */
     public static final String MODELS_PATH = "/conf/aemcloudproject/settings/dam/cfm/models";
@@ -32,14 +32,14 @@ public enum ScbOfferListingModel {
     private final String sortField;
     private final Set<String> requiredFields;
 
-    ScbOfferListingModel(String model, String folder, String slugColumn, String titleField, String idField,
-                         long startId, String sortField, String... requiredFields) {
+    ScbOfferListingModel(String model, String folder, String slugColumn, String titleField, ScbIdField id,
+                         String sortField, String... requiredFields) {
         this.model = model;
         this.folder = folder;
         this.slugColumn = slugColumn;
         this.titleField = titleField;
-        this.idField = idField;
-        this.startId = startId;
+        this.idField = id == null ? null : id.field;
+        this.startId = id == null ? 0 : id.startId;
         this.sortField = sortField;
         this.requiredFields = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(requiredFields)));
     }
@@ -134,5 +134,30 @@ public enum ScbOfferListingModel {
      */
     public Set<String> getRequiredFields() {
         return requiredFields;
+    }
+
+    /**
+     * Describes a model's numeric ID field.
+     *
+     * @param field   the ID field, e.g. {@code offerID}
+     * @param startId the first ID used when neither the sheet nor DAM has an ID yet
+     * @return the ID field and its start ID
+     */
+    private static ScbIdField id(String field, long startId) {
+        return new ScbIdField(field, startId);
+    }
+
+    /**
+     * A numeric ID field and the first ID it gets.
+     */
+    private static final class ScbIdField {
+
+        private final String field;
+        private final long startId;
+
+        private ScbIdField(String field, long startId) {
+            this.field = field;
+            this.startId = startId;
+        }
     }
 }

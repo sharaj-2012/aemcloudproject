@@ -99,7 +99,8 @@
      * Output: data.message, or "Request failed (HTTP 500)." when there is none
      */
     function scbErrorMessage(data, status) {
-        return (data || {}).message || "Request failed (HTTP " + status + ").";
+        var message = data ? data.message : "";
+        return message || "Request failed (HTTP " + status + ").";
     }
 
     /**

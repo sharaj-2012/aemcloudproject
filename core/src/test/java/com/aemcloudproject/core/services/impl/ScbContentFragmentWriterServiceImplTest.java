@@ -488,9 +488,7 @@ class ScbContentFragmentWriterServiceImplTest {
     }
 
     private void scbSheet(String name, String... headers) {
-        ScbSheetData data = new ScbSheetData();
-        data.getHeaders().addAll(Arrays.asList(headers));
-        sheets.put(name, data);
+        sheets.put(name, new ScbSheetData(Arrays.asList(headers)));
     }
 
     private void scbRow(String sheet, int rowNumber, Object... values) {
@@ -498,7 +496,14 @@ class ScbContentFragmentWriterServiceImplTest {
         for (int i = 0; i < values.length; i += 2) {
             row.put((String) values[i], values[i + 1]);
         }
-        sheets.get(sheet).getRows().add(row);
-        sheets.get(sheet).getRowNumbers().add(rowNumber);
+        sheets.get(sheet).addRow(rowNumber, row);
     }
 }
+
+//Intentional. The tool runs with the author's own session, so it can only write what the author could already write in the CF editor, which doesn't sanitise on save either. Output is filtered where it's rendered (HTL context='html' / headless consumer). Noted in the scbSetFields Javadoc.
+//
+//scbModelOf returns the model path, which two callers need (the "uses model X, not Y" error and the report's grouping by model). The ContentFragmentUtils helpers return a boolean, so they can't replace it.
+//
+//        Parsing uses java.time throughout. Calendar is used only because the CF API's date fields need it, and the conversion is in one place: the last line of scbParseDate.
+//
+//        Author-only, and every write uses the user's own session, so users can only change fragments they can already edit in DAM. If the page should be limited to a group, we can add a repoinit ACL. Please confirm which group.

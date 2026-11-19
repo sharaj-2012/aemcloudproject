@@ -47,10 +47,8 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
                 if (sheet.getSheetName().startsWith(IGNORED_SHEET_PREFIX)) {
                     continue;
                 }
-                ScbSheetData data = new ScbSheetData();
-
                 Map<Integer, String> headerByColumn = scbReadHeaders(sheet, formatter, errors);
-                data.getHeaders().addAll(headerByColumn.values());
+                ScbSheetData data = new ScbSheetData(headerByColumn.values());
 
                 boolean hasActionColumn = headerByColumn.containsValue(ACTION);
                 if (!headerByColumn.isEmpty() && !hasActionColumn) {
@@ -65,8 +63,7 @@ public class ScbWorkbookParserServiceImpl implements ScbWorkbookParserService {
                     if (values.containsKey(ACTION)) {
                         scbCheckAction(sheet.getSheetName(), r + 1, values, errors);
                     }
-                    data.getRows().add(values);
-                    data.getRowNumbers().add(r + 1);
+                    data.addRow(r + 1, values);
                 }
                 sheets.put(sheet.getSheetName(), data);
             }

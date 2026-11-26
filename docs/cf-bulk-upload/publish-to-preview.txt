@@ -1,0 +1,145 @@
+QA TEST SCENARIOS – PREVIEW URL DIALOG (SCB Request for Activation)
+Build: branch feature/new-workflow-icon, commit 6e41aca ("preview link added")
+
+WHAT IS BEING TESTED
+When "Request for Activation" is started from any SCB entry point, a dialog shows the Preview URL of the selected item(s) with copy options. Nothing else should change.
+Entry points:
+- Page editor: Page Information menu > Request for Activation
+- Experience Fragment editor: Page Information menu > Request for Activation
+- Sites console: select pages > SCB Workflows > Request for Activation
+- Experience Fragments console: select fragments > SCB Workflows > Request for Activation
+- Assets console: select assets > SCB Workflows > Request for Activation
+Not in scope: publishing to Preview itself (the URL is shown even if the item is not on Preview yet) and the workflow approval steps.
+
+BEFORE YOU START
+- Use an AEM Cloud dev environment with the Preview tier enabled. (The local SDK shows http://localhost:4503/... instead.)
+- Deploy commit 6e41aca and clear the browser cache.
+- Users: one author in workflow-users with read/write on the test content, and one author without workflow rights.
+- Content: 3 pages, 1 page with a hyphen and digits in its name, 2 Experience Fragments, 3 images, 1 PDF, 1 folder with 2 images, and 1 asset checked out by another user.
+- Browsers: latest Chrome, Edge and Firefox.
+- Note the environment's Preview domain. Every expected URL starts with it and should match the URL Manage Publication shows for the same item.
+- After each run, terminate the started workflows in Tools > Workflow > Instances.
+
+1. PREVIEW URL IS SHOWN
+
+Page editor – one page
+Steps: Open a page in the editor > Page Information > Request for Activation > enter a title > Start.
+Expected: The page reloads and "Workflow Started" appears. Then a "Preview URL" dialog shows one link (Preview domain + page path ending in .html), a copy icon next to it, and "Copy Links" and "Done" buttons. A workflow instance exists for the page.
+
+Link opens in a new tab
+Steps: Start Request for Activation from the page editor, then click the link in the dialog.
+Expected: The URL opens in a new tab. The page renders if it is on Preview; otherwise Preview shows 404 (expected).
+
+Done closes the dialog in the editor
+Steps: Start Request for Activation from the page editor, then click Done.
+Expected: The dialog closes and the editor is still usable.
+
+Dialog can't be closed by accident
+Steps: With the dialog open, click outside it, then press Esc.
+Expected: The dialog stays open. Only Done closes it.
+
+Experience Fragment editor
+Steps: Open an Experience Fragment variation > Page Information > Request for Activation > Start.
+Expected: One Preview URL for that variation, ending in .html.
+
+Sites console – one page
+Steps: Select one page > SCB Workflows > Request for Activation > start the workflow in the wizard.
+Expected: "Preview URL" dialog with one link. After Done, the browser returns to the Sites console.
+
+Sites console – several pages
+Steps: Select three pages > SCB Workflows > Request for Activation > start.
+Expected: "Preview URLs" dialog with three rows, one per page. After Done, back to the console. The workflow was started for all three pages.
+
+Experience Fragments console
+Steps: Select one fragment and start Request for Activation; repeat with two fragments.
+Expected: One row, then two rows. Done returns to the console.
+
+Assets console – one asset
+Steps: Select one image > SCB Workflows > Request for Activation > Start.
+Expected: "Preview URL" dialog with the asset's Preview link. The browser stays on the Assets console.
+
+Assets console – several assets
+Steps: Select three images and one PDF > SCB Workflows > Request for Activation > Start (confirm the count prompt if shown).
+Expected: "Preview URLs" dialog with four rows.
+
+Assets console – a folder
+Steps: Select the folder with two images > SCB Workflows > Request for Activation > Start > confirm the prompt.
+Expected: Two rows, one per asset. No row for the folder itself.
+
+Assets console – count prompt cancelled
+Steps: Select several assets, start Request for Activation, then close the count prompt without proceeding. Then start Request for Activation on a single asset.
+Expected: The first time, no workflow starts and no dialog appears. The second time, exactly one dialog appears.
+
+2. COPYING THE LINKS (paste into Notepad to check)
+
+Copy one link
+Steps: In any Preview dialog, click the copy icon next to a link.
+Expected: Toast "Link copied!". The pasted text is exactly that URL.
+
+Copy all links
+Steps: Start Request for Activation for three pages in the Sites console, then click Copy Links.
+Expected: Toast "Links copied!". The paste has the three URLs, one per line, in the same order as the dialog.
+
+Copy Links with a single URL
+Steps: In a dialog with one link, click Copy Links.
+Expected: Toast "Links copied!". The paste is that one URL.
+
+Dialog stays open after copying
+Steps: Copy a link, then look at the dialog.
+Expected: The dialog is still open. Nothing changes until Done is clicked.
+
+Browser blocks the clipboard
+Steps: In Chrome, block clipboard access for the AEM site, then click a copy icon.
+Expected: Either the copy still works (toast "Link copied!") or a red toast says "The browser blocked copying." No script error.
+
+Copying each row in turn
+Steps: In a dialog with several links, copy each row one by one, pasting after each.
+Expected: Each paste matches its row, and a toast appears every time.
+
+3. ERRORS AND EDGE CASES
+
+Request for Deactivation shows no dialog
+Steps: Start Request for Deactivation from the page editor, the Sites console and the Assets console.
+Expected: The workflow starts as before. No Preview dialog appears.
+
+No Preview domain configured
+Steps: On an environment with no Preview domain in the Externalizer (a developer sets this up), start Request for Activation from the page editor.
+Expected: A Warning dialog: "Unable to generate the Preview URL. Check that the Preview service is configured." Only Done is shown.
+
+Preview URL service fails
+Steps: In Chrome DevTools, block previewUrl.json, then start Request for Activation for one page in the Sites console.
+Expected: A Warning dialog: "The Preview URL could not be loaded." After Done, the browser still returns to the Sites console, and the workflow was started.
+
+Workflow fails to start
+Steps: In Chrome DevTools, block requests to /var/workflow/instances, then start Request for Activation from the page editor.
+Expected: An error "The workflow failed to start..." appears. No Preview dialog and no workflow instance.
+
+Author without workflow rights
+Steps: Log in as the author without workflow rights. Check the editor's Page Information menu and the SCB Workflows menus in Sites and Assets.
+Expected: Request for Activation is not offered (or is refused). No Preview dialog.
+
+Checked-out asset
+Steps: In Assets, select the asset checked out by another user and open SCB Workflows.
+Expected: Request for Activation is restricted, the same as AEM's own Create > Workflow for a checked-out asset.
+
+Unusual names
+Steps: Start Request for Activation for the page with a hyphen and digits in its name, and for an asset with a space in its name.
+Expected: Each link opens the right item and matches the URL Manage Publication shows.
+
+Item not yet on Preview
+Steps: Start Request for Activation for a page never published to Preview, then open the link.
+Expected: The URL is still shown (by design). Preview shows 404 until the page is published there.
+
+4. REGRESSION (AEM's own features must work as before)
+
+- Editor > Page Information > Start Workflow (AEM's own item) > Request for Activation: starts as before, no SCB Preview dialog.
+- Sites console > Create > Workflow > Request for Activation: normal AEM flow, no SCB Preview dialog.
+- Assets console > Create > Workflow > Request for Activation: normal AEM flow, no SCB Preview dialog.
+- Manage Publication > destination Preview: AEM's own Preview dialog appears once, no second dialog.
+- Quick Publish: publishes as before, no Preview dialog.
+- Workflow payload: in Tools > Workflow > Instances, each workflow's payload is exactly the selected item(s), and the approval task reaches the administrators' Inbox.
+- No script errors: with Chrome DevTools > Console open, using the editor and the consoles shows no new errors mentioning SCB or PreviewUrls.
+
+SIGN-OFF
+For each scenario record: Pass / Fail / Blocked / Not run, the browser, a defect link for a Fail, and the reason for a Blocked.
+Tester: ____  Environment: ____  Commit tested: 6e41aca  Date: ____  Result: Go / No-go

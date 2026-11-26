@@ -1,0 +1,167 @@
+SCB TGL Content Fragment Bulk Upload – QA test cases
+
+Before you start
+- Use the author environment, logged in as a user who can edit the offer-listing folder and the DAM reports folders.
+- Open: Tools > SCB Commons > SCB TGL Content Fragment Bulk Upload
+- Use an offer-listing folder that already has some venues, merchants, categories, cards, CTAs and offers.
+- Upload each test workbook to DAM first, then pick it on the page.
+
+
+PAGE AND BUTTONS
+
+1. Open the page
+   Result: Dry run, Final run, Download sample sheet and Save report to DAM are all disabled. "Runs against: no folder picked yet" is shown.
+
+2. Pick a folder that does not end in /offer-listing
+   Result: "⚠ This folder can't be used …" is shown and all buttons stay disabled.
+
+3. Pick an offer-listing folder
+   Result: "✓ Folder ready" is shown. Download sample sheet and Save report to DAM are enabled. "Runs against:" shows the folder. Dry run stays disabled.
+
+4. Pick a folder and a workbook
+   Result: Dry run is enabled. Final run stays disabled.
+
+5. Click "How the Excel works"
+   Result: The section opens and closes.
+
+
+SAMPLE SHEET
+
+6. Click Download sample sheet
+   Result: scb-tgl-cf-bulk-upload-sample.xlsx downloads. It has a _Guide sheet and 6 sheets: merchant-venue, merchant-details, category, offer-card, offer-cta, offer-detail.
+
+7. Open the sample
+   Result: Required headers are red (merchantID, ID, offerID, offerTitle, offerImage, alternateText and each sheet's slug column). Row 2 is a grey SAMPLE row with every cell filled. The action column has a CREATE / UPDATE / DELETE dropdown from row 3 down.
+
+8. Check the reference paths in the sample row (e.g. offerCards, offerCta)
+   Result: They point under the picked folder.
+
+9. Upload the sample unchanged and run a dry run
+   Result: SAMPLE rows are ignored. Each sheet shows Skip: "Sheet: no row has an action (CREATE, UPDATE or DELETE)".
+
+
+SAVE REPORT
+
+10. Click Save report to DAM
+    Result: The button shows "Saving report…", then "✔ Saved …/offer-listing-report-<date-time>.xlsx" with an "Open in Assets" link. The file is in the reports/offer-listing folder.
+
+11. Open the saved report
+    Result: One sheet per model, listing every fragment under the folder (sub-folders included), sorted by ID.
+
+12. Set UPDATE on one report row without changing anything, then run a dry run
+    Result: The row passes.
+
+
+DRY RUN
+
+13. Dry run a workbook with valid CREATE, UPDATE and DELETE rows
+    Result: "Dry run: nothing was written." Nothing changes in DAM. The results table shows fail / warn / pass counts, with failures first. Final run is enabled.
+
+14. Dry run a workbook where at least one row fails
+    Result: Final run stays disabled.
+
+15. After a passing dry run, pick a different workbook or folder
+    Result: Final run is disabled again.
+
+16. After a passing dry run, upload a changed workbook to the same DAM path and click Final run
+    Result: "The workbook changed after the dry run. Run the dry run again."
+
+17. Click Download CSV on the results
+    Result: A CSV of the results table downloads.
+
+
+FINAL RUN
+
+18. Final run with CREATE rows
+    Result: Fragments are created in their model folder (e.g. <offer-listing>/offers/<slug>) with the sheet's values. The banner links to the run report (cf-upload-run-<date-time>.xlsx in the reports/upload-runs folder).
+
+19. CREATE with an empty ID cell
+    Result: The next free ID is used (highest existing + 1; the first one is 100001 for offers and merchants, 1001 for categories and cards). It is shown in the result details.
+
+20. UPDATE a row with some cells left blank
+    Result: Filled cells are updated. A blank cell clears that field (except the ID). Fields whose column isn't in the sheet keep their value.
+
+21. DELETE a fragment that is not used anywhere and not published
+    Result: Pass, "(deleted)". The fragment is gone from DAM.
+
+22. DELETE a fragment that another fragment or a page uses
+    Result: Warn: "Not deleted: referenced by … (remove the references first)". The fragment stays.
+
+23. DELETE a published fragment
+    Result: Warn: "Not deleted: still published (unpublish it first)".
+
+24. DELETE an offer and the CTA it uses, in the same workbook
+    Result: Both are deleted (offers are deleted before CTAs).
+
+25. Run a workbook where some rows fail and some are valid
+    Result: Valid rows are saved and failing rows are not. Each row is handled on its own.
+
+26. Type the action in lowercase ("create")
+    Result: Accepted, same as CREATE.
+
+
+FILE AND SHEET ERRORS
+
+27. Pick a file that isn't .xlsx (e.g. .csv or .pdf)
+    Result: "<path> is not an .xlsx file."
+
+28. Pick a .xlsx that isn't a real workbook (e.g. a renamed .txt)
+    Result: "The file is not a valid .xlsx workbook."
+
+29. Pick a workbook larger than 10 MB
+    Result: "The workbook is X MB; the limit is 10 MB."
+
+30. Pick a workbook with more than 5,000 action rows
+    Result: "The workbook has N rows to process; the limit is 5,000. Split it into smaller files."
+
+31. Use a header with a space (e.g. "offer title")
+    Result: Sheet "<sheet>", column <X>: header "offer title" must be a single word.
+
+32. Remove the action column from a sheet
+    Result: Sheet "<sheet>": has no action column.
+
+33. Use an invalid action (e.g. "ADD")
+    Result: Sheet "<sheet>", row <n>: action "ADD" must be CREATE, UPDATE or DELETE.
+
+34. Rename a sheet to an unknown name (e.g. "offers")
+    Result: Fail: Sheet: "offers" is not a known CF model
+
+35. Add a sheet whose name starts with "_"
+    Result: The sheet is ignored.
+
+
+ROW ERRORS (shown as Fail in the results table)
+
+36. Add a column that isn't a field of the model
+    Result: <column>: not a field of model <model>
+
+37. Use an invalid slug (e.g. "Summer Sale")
+    Result: offerSlug: "Summer Sale" must be lowercase letters, digits, - or _
+
+38. CREATE with required fields left empty
+    Result: e.g. offerTitle, offerImage: required
+
+39. CREATE with a slug that already exists
+    Result: Fragment: already exists at <path>
+
+40. UPDATE or DELETE a slug that doesn't exist
+    Result: Fragment: not found at <path>
+
+41. UPDATE a fragment that uses a different model
+    Result: Fragment: uses model <X>, not <Y>
+
+42. Put text in a number field
+    Result: <field>: "<value>" is not a number (or "is not a whole number")
+
+43. Enter an invalid date (e.g. 31/12/2026)
+    Result: <field>: "31/12/2026" is not a date (use e.g. 2026-10-01T00:00:00.000+05:30)
+
+44. Enter an invalid true/false value (e.g. "maybe")
+    Result: <field>: "maybe" must be true/false, 1/0 or yes/no
+
+45. Put several lines in a single-value field
+    Result: <field>: takes one value, but the cell has several lines
+
+
+KNOWN LIMITATION (not a defect)
+Reference fields (offerCategories, offerCards, offerCta, offerImage, etc.) are saved as written. The tool doesn't check that the referenced fragment or asset exists.

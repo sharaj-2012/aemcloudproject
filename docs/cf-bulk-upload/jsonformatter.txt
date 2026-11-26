@@ -1,0 +1,591 @@
+JSON Formatter (DAM JSON Editor) - QA test cases
+
+Environment: AEM as a Cloud Service author (publish only for SE-06)
+Users: QA author (can modify /content/dam/aemcloudproject/qa-json), QA read-only user (read only)
+Test data folder: /content/dam/aemcloudproject/qa-json
+Test files: sample.json, broken.json (trailing comma), numbers.json (12345678901234567890 and 1.0), array.json, compact.json (one line), crlf.json (Windows line endings), bom.json (UTF-8 with BOM), latin1.json (ISO-8859-1), hostile.json (<img src=x onerror=alert(1)> value), large.json (3-4 MB), unedited.json, scratch.json, image.png, a FOLDER named folder.json
+Inbox items: a workflow with a participant step (e.g. Request for Activation) on sample.json, unedited.json and image.png
+
+Known behaviour (not defects): last save wins (earlier content kept as a version); a tree edit re-indents the whole file to 2 spaces; dam:sha1 is not updated on save; very large files may load slowly.
+
+
+=== 1. Assets console - Edit JSON option ===
+
+EJ-01 | High | Positive | Edit JSON is offered for one JSON asset (card view)
+Precondition: Logged in as QA author. Test data uploaded to /content/dam/aemcloudproject/qa-json. Assets console in Card view.
+Steps:
+  1. Open Assets > /content/dam/aemcloudproject/qa-json.
+  2. Select sample.json (tick its card).
+  3. Open the Create dropdown in the selection toolbar.
+Expected: 'Edit JSON' is listed in the Create dropdown together with the standard options (Workflow, Version, Live Copy ...).
+Result: Not Run
+
+EJ-02 | Medium | Positive | Edit JSON is offered in List view
+Precondition: As EJ-01, Assets console switched to List view.
+Steps:
+  1. Select the row for sample.json.
+  2. Open the Create dropdown.
+Expected: 'Edit JSON' is listed.
+Result: Not Run
+
+EJ-03 | Medium | Positive | Edit JSON is offered in Column view
+Precondition: As EJ-01, Assets console switched to Column view.
+Steps:
+  1. Select sample.json in the column.
+  2. Open the Create dropdown.
+Expected: 'Edit JSON' is listed.
+Result: Not Run
+
+EJ-04 | High | Negative | Edit JSON is hidden for a non-JSON asset
+Precondition: image.png uploaded.
+Steps:
+  1. Select image.png.
+  2. Open the Create dropdown.
+Expected: 'Edit JSON' is NOT listed.
+Result: Not Run
+
+EJ-05 | High | Negative | Edit JSON is hidden when two items are selected
+Precondition: sample.json and broken.json uploaded.
+Steps:
+  1. Select sample.json and broken.json.
+  2. Open the Create dropdown.
+Expected: 'Edit JSON' is NOT listed.
+Result: Not Run
+
+EJ-06 | Medium | Negative | Edit JSON is hidden for a folder whose name ends in .json
+Precondition: Folder named folder.json created inside /content/dam/aemcloudproject/qa-json.
+Steps:
+  1. Select the folder folder.json.
+  2. Open the Create dropdown.
+Expected: 'Edit JSON' is NOT listed.
+Result: Not Run
+
+EJ-07 | High | Positive | Edit JSON opens the editor for the selected file
+Precondition: As EJ-01.
+Steps:
+  1. Select sample.json.
+  2. Create > Edit JSON.
+Expected: The 'Edit JSON' page opens in the same tab. The URL ends with /content/dam/aemcloudproject/qa-json/sample.json and the header shows that path.
+Result: Not Run
+
+EJ-08 | Medium | Positive | Standard Create options still work
+Precondition: As EJ-01.
+Steps:
+  1. Select sample.json.
+  2. Create > Version. Create a version with a comment.
+  3. Create > Workflow and start any workflow.
+Expected: Both standard options behave exactly as before the feature was installed.
+Result: Not Run
+
+
+=== 2. Editor - opening a file ===
+
+LD-01 | High | Positive | Editor opens a valid JSON file
+Precondition: sample.json uploaded.
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/sample.json.
+Expected: Header shows the asset path. Left pane shows the JSON text; right pane shows it as a tree. No error message. Save button is disabled (nothing changed yet).
+Result: Not Run
+
+LD-02 | High | Negative | Read-only user cannot edit
+Precondition: Logged in as the QA read-only user (read access to /content/dam/aemcloudproject/qa-json only).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/sample.json.
+  2. Try typing in the left pane.
+  3. Right-click a row in the tree.
+Expected: Info banner 'You can view this file but not change it.' is shown. No Save button. Typing has no effect. No right-click menu in the tree.
+Result: Not Run
+
+LD-03 | Medium | Edge | File saved with Windows line endings
+Precondition: crlf.json uploaded (CRLF line endings).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/crlf.json.
+  2. Type a space anywhere, then delete it.
+Expected: File opens normally. After typing and deleting the space, Save is still disabled (the file is not treated as changed).
+Result: Not Run
+
+LD-04 | Medium | Edge | File with a UTF-8 BOM
+Precondition: bom.json uploaded (starts with a UTF-8 byte order mark).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/bom.json.
+  2. Check the first character of the text.
+Expected: No invisible or strange character at the start; the JSON is shown as valid.
+Result: Not Run
+
+LD-05 | High | Negative | File that is not UTF-8 is refused
+Precondition: latin1.json uploaded (ISO-8859-1 encoded, contains é).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/latin1.json.
+Expected: Error 'File is not valid UTF-8 and cannot be edited here.' No editor is shown and Save is disabled, so the file cannot be corrupted.
+Result: Not Run
+
+LD-06 | High | Positive | Invalid JSON file opens with the error shown
+Precondition: broken.json uploaded.
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/broken.json.
+Expected: Text is shown with an error 'Line 3, column 1: ...' (line and column of the problem). Save and Format are disabled. Tree shows 'Empty document' with the note 'Preview out of date - fix errors'.
+Result: Not Run
+
+LD-07 | High | Negative | Path that is not a DAM asset is rejected
+Precondition: None.
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/%2Fevil.example/x.json
+Expected: Error 'Not a DAM asset path.' Nothing is loaded; Save, Format and Compare are disabled.
+Result: Not Run
+
+LD-08 | Medium | Negative | Asset that does not exist
+Precondition: None.
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/does-not-exist.json.
+Expected: Error 'Could not load file (HTTP 404)'. Save is disabled.
+Result: Not Run
+
+LD-09 | Medium | Edge | Large JSON file
+Precondition: large.json uploaded (about 3-4 MB).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/large.json.
+  2. Note how long it takes until the text and tree appear.
+Expected: File opens (there is no size limit). Record the load time in Comments. KNOWN ISSUE: very large files can make the page unresponsive; if it does not respond within 60 seconds, mark Fail and raise a defect.
+Result: Not Run
+
+LD-10 | Medium | Positive | Close returns to the Assets folder
+Precondition: Editor open on sample.json with no unsaved changes.
+Steps:
+  1. Click Close.
+Expected: Assets console opens at /content/dam/aemcloudproject/qa-json.
+Result: Not Run
+
+
+=== 3. Editor - validation ===
+
+VA-01 | High | Negative | Syntax error shows line and column
+Precondition: Editor open on sample.json.
+Steps:
+  1. Delete a comma between two properties.
+Expected: Red error text 'Line X, column Y: ...' appears above the editor and a red marker appears at that line. Save and Format are disabled. Tree shows 'Preview out of date - fix errors'.
+Result: Not Run
+
+VA-02 | High | Positive | Fixing the error clears it
+Precondition: Continue from VA-01.
+Steps:
+  1. Put the comma back.
+Expected: Error disappears, Save becomes enabled only if the text differs from the opened file, and the tree updates within about 1 second.
+Result: Not Run
+
+VA-03 | High | Negative | Duplicate keys are rejected
+Precondition: Editor open on sample.json.
+Steps:
+  1. Replace the content with {"a":1,"a":2}.
+Expected: An error is shown and Save is disabled.
+Result: Not Run
+
+VA-04 | Medium | Negative | Extra content after the JSON is rejected
+Precondition: Editor open on sample.json.
+Steps:
+  1. Replace the content with {} {}.
+Expected: An error is shown and Save is disabled.
+Result: Not Run
+
+VA-05 | Medium | Negative | Empty document is rejected
+Precondition: Editor open on sample.json.
+Steps:
+  1. Select all text and delete it.
+Expected: An error is shown and Save is disabled.
+Result: Not Run
+
+VA-06 | Low | Edge | Top-level number, string or null is valid JSON
+Precondition: Editor open on scratch.json.
+Steps:
+  1. Replace the content with 42 and save.
+  2. Repeat with "text" and with null.
+Expected: No error; each save succeeds with 'Saved - version ...'.
+Result: Not Run
+
+VA-07 | High | Negative | No Auto repair option
+Precondition: Continue from VA-01 (an error is showing).
+Steps:
+  1. Look at the red error bar under the editor.
+  2. Hover over the red marker on the error line.
+Expected: The error bar shows only 'Show me'. The hover tooltip has no 'Auto repair' action.
+Result: Not Run
+
+VA-08 | Low | Positive | Show me jumps to the error
+Precondition: Continue from VA-01, error line scrolled out of view.
+Steps:
+  1. Click 'Show me'.
+Expected: Editor scrolls to and places the cursor at the error location.
+Result: Not Run
+
+VA-09 | Medium | Positive | Undo restores the text
+Precondition: Continue from VA-01.
+Steps:
+  1. Press Ctrl+Z (Cmd+Z on Mac).
+Expected: The deleted comma comes back and the error clears.
+Result: Not Run
+
+
+=== 4. Editor - tree Insert / Remove ===
+
+TR-01 | High | Positive | Right-click menu offers only Insert and Remove
+Precondition: Editor open on numbers.json (valid).
+Steps:
+  1. Click a row in the tree (e.g. 'name').
+  2. Right-click it.
+Expected: Menu shows only: Remove, Insert before, Insert after. No Edit, Cut, Copy, Paste, Duplicate, Convert, Extract, Sort or Transform.
+Result: Not Run
+
+TR-02 | High | Positive | Insert after shows the insert types
+Precondition: Continue from TR-01.
+Steps:
+  1. Click 'Insert after'.
+Expected: Menu reopens with Insert: Object, Array, Value. Structure is greyed out unless the row is inside an array.
+Result: Not Run
+
+TR-03 | High | Positive | Insert a value
+Precondition: Continue from TR-02.
+Steps:
+  1. Click Value.
+  2. Type a key name and press Enter.
+  3. Type a value and press Enter.
+Expected: A new entry appears in the tree and in the text on the left. Save becomes enabled.
+Result: Not Run
+
+TR-04 | Medium | Positive | Insert an object and an array
+Precondition: Editor open on numbers.json.
+Steps:
+  1. Right-click a row > Insert after > Object.
+  2. Right-click a row > Insert after > Array.
+Expected: An empty object {} and an empty array [] are added in the tree and in the text.
+Result: Not Run
+
+TR-05 | Medium | Positive | Insert a structure inside an array of objects
+Precondition: Editor open on array.json (array of objects).
+Steps:
+  1. Right-click an item in the array > Insert after > Structure.
+Expected: A new item with the same keys as the first item (empty values) is added.
+Result: Not Run
+
+TR-06 | High | Positive | Remove a row
+Precondition: Editor open on numbers.json.
+Steps:
+  1. Right-click the 'name' row > Remove.
+Expected: 'name' disappears from the tree and from the text. Save becomes enabled.
+Result: Not Run
+
+TR-07 | High | Edge | Tree edits keep numbers exactly
+Precondition: Editor open on numbers.json (contains 12345678901234567890 and 1.0).
+Steps:
+  1. Remove any row through the tree.
+  2. Check the text on the left.
+  3. Save and reopen the file.
+Expected: 12345678901234567890 and 1.0 are unchanged in the text, in the tree and after reopening (not rounded to ...7000 or 1).
+Result: Not Run
+
+TR-08 | High | Negative | Tree is locked while the text is invalid
+Precondition: Editor open on numbers.json.
+Steps:
+  1. Break the text on the left (delete a comma).
+  2. Right-click a row in the tree.
+Expected: No menu opens, so the tree cannot overwrite text that is still being fixed.
+Result: Not Run
+
+TR-09 | High | Positive | Typing updates the tree
+Precondition: Editor open on numbers.json.
+Steps:
+  1. Add a new property in the text on the left, e.g. "added": true,
+Expected: The new property appears in the tree within about 1 second.
+Result: Not Run
+
+TR-10 | Low | Edge | Tree edit re-indents the text
+Precondition: Editor open on a file whose arrays are written on one line, e.g. [1, 2, 3].
+Steps:
+  1. Remove any row through the tree.
+Expected: The whole text is re-indented with 2 spaces (e.g. the array is split over several lines). Data is unchanged. This is expected behaviour.
+Result: Not Run
+
+
+=== 5. Editor - Format ===
+
+FM-01 | Medium | Positive | Format re-indents without changing data
+Precondition: Editor open on compact.json (all on one line, contains 1.0).
+Steps:
+  1. Click Format.
+Expected: Text is indented with 2 spaces. Key order and number formats (e.g. 1.0) are unchanged. Save becomes enabled.
+Result: Not Run
+
+FM-02 | Low | Positive | Undo after Format
+Precondition: Continue from FM-01.
+Steps:
+  1. Press Ctrl+Z (Cmd+Z).
+Expected: Text returns to the one-line version.
+Result: Not Run
+
+
+=== 6. Editor - Compare ===
+
+CP-01 | Medium | Positive | Compare with no edits
+Precondition: Editor open on sample.json, nothing changed.
+Steps:
+  1. Click Compare.
+Expected: Message 'No differences.' The button label changes to 'Back to editor'.
+Result: Not Run
+
+CP-02 | High | Positive | Compare shows edits side by side
+Precondition: Editor open on sample.json.
+Steps:
+  1. Change one value and remove one property.
+  2. Click Compare.
+Expected: Side-by-side view: opened version on the left, your text on the right. Removed lines in red, added lines in green, changed words highlighted.
+Result: Not Run
+
+CP-03 | Medium | Positive | Normalize formatting hides whitespace-only changes
+Precondition: Editor open on compact.json.
+Steps:
+  1. Click Format.
+  2. Click Compare.
+  3. Tick 'Normalize formatting'.
+Expected: Before ticking: many lines differ. After ticking: 'No differences.' (only formatting changed).
+Result: Not Run
+
+CP-04 | Medium | Positive | Back to editor keeps the edits
+Precondition: Continue from CP-02.
+Steps:
+  1. Click 'Back to editor'.
+Expected: Editor panes return with the edits still in place.
+Result: Not Run
+
+CP-05 | High | Negative | HTML in JSON values is shown as text
+Precondition: hostile.json uploaded (value <img src=x onerror=alert(1)>).
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsoneditor.html/content/dam/aemcloudproject/qa-json/hostile.json.
+  2. Add a property.
+  3. Click Compare.
+Expected: The value is shown literally as text. No image is rendered and no alert pops up.
+Result: Not Run
+
+
+=== 7. Editor - Save and versions ===
+
+SV-01 | High | Positive | Save a valid change
+Precondition: Editor open on sample.json.
+Steps:
+  1. Change a value.
+  2. Click Save.
+Expected: Message 'Saved - version jsoneditor-<date and time>'. Save becomes disabled again.
+Result: Not Run
+
+SV-02 | High | Positive | Saved content is stored
+Precondition: Continue from SV-01.
+Steps:
+  1. Reload the editor page.
+  2. In Assets, download sample.json.
+Expected: Both show the saved content.
+Result: Not Run
+
+SV-03 | High | Positive | A version is created and can be restored
+Precondition: Continue from SV-01.
+Steps:
+  1. In Assets select sample.json > Timeline > Versions.
+  2. Open the newest 'jsoneditor-...' version.
+  3. Revert to it.
+Expected: A version named jsoneditor-<date and time> exists and holds the content from BEFORE the save. Revert restores that content.
+Result: Not Run
+
+SV-04 | Medium | Edge | Nothing to save
+Precondition: Editor open on sample.json.
+Steps:
+  1. Change a value, then change it back.
+Expected: Save stays disabled (no change). If saved through the API, the response is 'Nothing to save.' and no version is created.
+Result: Not Run
+
+SV-05 | Medium | Positive | File size is updated
+Precondition: Continue from SV-01 with a change that adds text.
+Steps:
+  1. In Assets open the Properties of sample.json (or check the card).
+Expected: Size shown matches the new file. Note: the dam:sha1 fingerprint is intentionally NOT updated.
+Result: Not Run
+
+SV-06 | Medium | Positive | Modified date and user are updated
+Precondition: Continue from SV-01.
+Steps:
+  1. Check Modified on the card / Properties.
+Expected: Shows the save time and the QA author's name.
+Result: Not Run
+
+SV-07 | High | Edge | Last save wins between two tabs
+Precondition: sample.json open in two browser tabs (A and B).
+Steps:
+  1. Change a value in tab A and save.
+  2. Change a different value in tab B and save.
+  3. Reopen the file and check Timeline > Versions.
+Expected: File contains tab B's version (no conflict warning, by design). Tab A's content is preserved in the version list and can be restored.
+Result: Not Run
+
+SV-08 | Medium | Positive | Leaving with unsaved changes warns
+Precondition: Editor open on sample.json.
+Steps:
+  1. Change a value without saving.
+  2. Click Close or try to close the tab.
+Expected: Browser asks whether to leave the page.
+Result: Not Run
+
+SV-09 | Medium | Negative | Save after the session expired
+Precondition: Editor open on sample.json.
+Steps:
+  1. Sign out of AEM in another tab.
+  2. Change a value and click Save.
+Expected: An error says the session may have expired; the edited text stays in the editor.
+Result: Not Run
+
+
+=== 8. Inbox - View JSON changes ===
+
+IB-01 | High | Positive | View JSON changes is offered for a JSON payload
+Precondition: sample.json saved at least once through the editor. A workflow with a participant step (e.g. Request for Activation) started on sample.json and assigned to the QA author.
+Steps:
+  1. Open /aem/inbox.
+  2. Select the workflow item for sample.json.
+Expected: 'View JSON changes' appears in the action bar.
+Result: Not Run
+
+IB-02 | High | Negative | Hidden for a non-JSON payload
+Precondition: A workflow item whose payload is a page or image.png.
+Steps:
+  1. Select that item.
+Expected: 'View JSON changes' is NOT shown.
+Result: Not Run
+
+IB-03 | Medium | Negative | Hidden for an item without a payload
+Precondition: An Inbox task or item with no payload.
+Steps:
+  1. Select that item.
+Expected: 'View JSON changes' is NOT shown.
+Result: Not Run
+
+IB-04 | High | Positive | Opens the changes page in a new tab
+Precondition: As IB-01.
+Steps:
+  1. Select the item.
+  2. Click 'View JSON changes'.
+Expected: A new tab opens on the 'JSON changes' page for sample.json. It shows: 'Last changed by <user> on <date>. Left: version jsoneditor-... saved <date>. Right: current content.'
+Result: Not Run
+
+IB-05 | High | Positive | Diff shows the latest change
+Precondition: Continue from IB-04; note what was changed in the last editor save.
+Steps:
+  1. Compare the diff with the last change made in the editor.
+Expected: Left = file before the last save, right = current file; only that change is highlighted.
+Result: Not Run
+
+IB-06 | Low | Positive | Normalize formatting on the changes page
+Precondition: Continue from IB-04 after a save that also re-indented the file.
+Steps:
+  1. Tick 'Normalize formatting'.
+Expected: Whitespace-only differences disappear; real changes remain.
+Result: Not Run
+
+IB-07 | Medium | Edge | File that has never been edited
+Precondition: A workflow item on unedited.json (uploaded, never saved in the editor).
+Steps:
+  1. Select it and click 'View JSON changes'.
+Expected: Message 'No earlier version to compare with.'
+Result: Not Run
+
+IB-08 | Low | Negative | Changes page for a non-JSON asset
+Precondition: None.
+Steps:
+  1. Open /mnt/overlay/aemcloudproject/gui/content/jsonchanges.html/content/dam/aemcloudproject/qa-json/image.png
+Expected: Message 'This asset is not a JSON file.'
+Result: Not Run
+
+IB-09 | Low | Positive | Close on the changes page
+Precondition: Changes page open from the Inbox.
+Steps:
+  1. Click Close.
+Expected: The tab closes and the Inbox is still open.
+Result: Not Run
+
+IB-10 | Medium | Positive | Standard Inbox actions still work
+Precondition: As IB-01.
+Steps:
+  1. Use Open, Payload, Delegate and Complete on items.
+Expected: All behave as before.
+Result: Not Run
+
+
+=== 9. Security and API ===
+
+SE-01 | High | Negative | Save request with wrong Content-Type is refused
+Precondition: Postman / curl with an author login. CSRF token from /libs/granite/csrf/token.json.
+Steps:
+  1. POST to /content/dam/aemcloudproject/qa-json/sample.json.jsoneditor.json with Content-Type: text/plain and a valid JSON body.
+Expected: HTTP 415, body status 'wrong_content_type', message 'Requests must be sent as application/json.' File unchanged.
+Result: Not Run
+
+SE-02 | Medium | Negative | Save request with invalid JSON
+Precondition: As SE-01.
+Steps:
+  1. POST with Content-Type: application/json and body {"a": 1,} .
+Expected: HTTP 400, status 'invalid_json' with line and column. File unchanged.
+Result: Not Run
+
+SE-03 | Medium | Negative | Save request for a non-JSON asset
+Precondition: As SE-01.
+Steps:
+  1. POST to /content/dam/aemcloudproject/qa-json/image.png.jsoneditor.json with a JSON body.
+Expected: HTTP 415, message 'Only JSON assets can be edited.'
+Result: Not Run
+
+SE-04 | High | Negative | Save request by a read-only user
+Precondition: Postman / curl logged in as the QA read-only user.
+Steps:
+  1. POST a valid change to sample.json.jsoneditor.json.
+Expected: HTTP 403, message 'You do not have permission to modify this asset.' File unchanged.
+Result: Not Run
+
+SE-05 | High | Negative | Save request without CSRF token
+Precondition: Browser session as QA author (cookie login, not basic auth).
+Steps:
+  1. From the browser console run a fetch POST to sample.json.jsoneditor.json without the CSRF-Token header.
+Expected: Request is rejected (HTTP 403) by AEM's CSRF filter. Note: requires the default CSRF filter configuration (POST included).
+Result: Not Run
+
+SE-06 | High | Negative | Feature is not available on publish
+Precondition: Publish instance with sample.json published.
+Steps:
+  1. GET <publish>/content/dam/aemcloudproject/qa-json/sample.json.jsonchanges.json
+  2. POST <publish>/content/dam/aemcloudproject/qa-json/sample.json.jsoneditor.json
+Expected: Neither request returns the feature's JSON (no 'status' field); typically 404 or 403.
+Result: Not Run
+
+SE-07 | Medium | Negative | No calls to external sites
+Precondition: Editor open, browser DevTools > Network.
+Steps:
+  1. Load the editor, edit, Compare and Save.
+Expected: All requests go to the AEM host (AEM's own shell analytics excepted); no CDN or third-party calls from the editor.
+Result: Not Run
+
+SE-08 | Low | Positive | Changes data is not cached
+Precondition: As SE-01.
+Steps:
+  1. GET /content/dam/aemcloudproject/qa-json/sample.json.jsonchanges.json
+Expected: Response header Cache-Control: no-store.
+Result: Not Run
+
+
+=== 10. Regression ===
+
+RG-01 | Medium | Positive | Other Assets toolbar actions unaffected
+Precondition: As EJ-01.
+Steps:
+  1. Select sample.json.
+  2. Use Properties, Download, Move and Delete (on a copy).
+Expected: All behave as before.
+Result: Not Run
+
+RG-02 | Low | Positive | Uploading JSON files still works
+Precondition: None.
+Steps:
+  1. Upload a new .json file to /content/dam/aemcloudproject/qa-json.
+Expected: Upload succeeds and the asset is processed normally.
+Result: Not Run
